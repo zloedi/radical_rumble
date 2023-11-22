@@ -70,6 +70,7 @@
     <Compile Include="ZloediUtils/SingleShot.cs" />
     <Compile Include="ZloediUtils/WrapBox.cs" />
     <Compile Include="ZloediUtils/WBUI.cs" />
+    <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="Pawn.cs" />
