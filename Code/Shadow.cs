@@ -12,6 +12,7 @@ public enum DeltaType {
 }
 
 public class Row {
+    public object parentObject;
     public string name;
     public int maxRow;
     public DeltaType type;
@@ -60,9 +61,9 @@ public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false ) 
         nameToArray[nameKey] = row;
 
         arrayToShadow[row] = new Row {
+            parentObject = obj,
             name = nameKey,
             type = deltaType,
-            // the grids are special, they get 'resized' sometimes, put their delta limit here
             maxRow = maxRow,
         };
 

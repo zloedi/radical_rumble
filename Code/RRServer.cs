@@ -157,7 +157,6 @@ static string DeltaGameState() {
 
 // == commands ==
 
-
 static void SvBroadcastCommand_kmd( string [] argv, int zport ) {
     string cmd = "";
     for ( int i = 1; i < argv.Length; i++ ) {
@@ -185,6 +184,19 @@ static void SvPrintClients_kmd( string [] argv ) {
     foreach ( var c in ZServer.clients ) {
         Log( $"endpoint: {c.endPoint}; zport: {c.netChan.zport}" ); 
     }
+}
+
+static void SvSetTerrain_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 4 ) {
+        Log( $"Usage: {argv[0]} <x> <y> <terrain>" );
+        return;
+    }
+
+    int.TryParse( argv[1], out int x );
+    int.TryParse( argv[2], out int y );
+    int.TryParse( argv[3], out int terrain );
+
+    game.SetTerrain( x, y, terrain );
 }
 
 

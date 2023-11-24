@@ -33,8 +33,16 @@ public static bool mouse1Down;
 
 public static bool isPaused = false;
 
+public static Board board => game.board;
+
 static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 static Action _tick = () => {};
+
+[Description( "0 -- play; 1 -- map editor" )]
+static int ClState_kvar = 0;
+static bool ClPrintOutgoingCommands_kvar = false;
+static string [] _tickNames = { "Play",   "Map Editor", };
+static Action [] _ticks =     { () => {}, MapEditor.Tick };
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -72,7 +80,7 @@ public static void Tick( int timeDeltaMs ) {
 
     WrapBox.DisableCanvasScale();
 
-    if ( Cellophane.VarChanged( nameof( ClServerIpAddress_kvar ), typeof( RRClient ) ) ) {
+    if ( Cellophane.VarChanged( nameof( ClServerIpAddress_kvar ) ) ) {
         ZClient.Reset( ClServerIpAddress_kvar );
         game.Reset();
     }
@@ -140,7 +148,7 @@ public static void Tick( int timeDeltaMs ) {
 
     Draw.FillScreen();
 
-    _tick();
+    _ticks[ClState_kvar % _ticks.Length]();
 
     //if ( ! mouse0Down && ! mouse1Down && AllowSpam() ) {
     //    // ! make sure we update the same set (i.e. selected) on the server too !
@@ -163,11 +171,26 @@ public static void Tick( int timeDeltaMs ) {
     //    UpdateFiltersLocal();
     //}
 
+    if ( Cellophane.VarChanged( nameof( ClState_kvar ) ) ) {
+        Color c = Color.white;
+        c.a = 3;
+        string state = _tickNames[ClState_kvar % _ticks.Length];
+        SingleShot.AddConditional( dt => {
+            string txt = $"State: {state}";
+            Draw.OutlinedTextCenter( Screen.width / 2, Screen.height / 2, txt, color: c, scale: 2 );
+            c.a -= dt;
+            return c.a > 0;
+        } );
+        Qonsole.Log( $"Changed state to {state}" );
+    }
+
     if ( ZClient.state != ZClient.State.Connected ) {
         Draw.FillScreen( new Color( 0, 0, 0, 0.75f ) );
         Draw.centralBigRedMessage = "Connecting to server...";
         Draw.BigRedMessage();
     }
+    
+    SingleShot.TickMs( timeDeltaMs );
 }
 
 public static void Execute( string command ) {
@@ -221,7 +244,9 @@ static void OnConnected() {
 
 static List<ushort> deltaChange = new List<ushort>();
 static List<int> deltaNumbers = new List<int>();
-public static bool UndeltaGameState( string [] argv ) {
+public static bool UndeltaGameState( string [] argv, out bool updateBoardFilters ) {
+    updateBoardFilters = false;
+
     if ( argv.Length < 1 ) {
         return false;
     }
@@ -243,6 +268,9 @@ public static bool UndeltaGameState( string [] argv ) {
 
         if ( Delta.UndeltaNum( ref idx, argv, deltaChange, deltaNumbers, out bool keepGoing ) ) {
             result = true;
+            if ( shadowRow.parentObject == game.board ) {
+                updateBoardFilters = true;
+            }
             if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( byte [] )row )[deltaChange[i]] = ( byte )deltaNumbers[i];
@@ -306,12 +334,18 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     if ( ! Cellophane.GetArgvBare( deltaCmd, out string [] argv ) ) {
+        Error( $"Packet: {packetStr}" );
+        Error( $"Delta Cmd: {deltaCmd}" );
         Error( "Expected game delta leading in the packet. Dropping the packet." );
         return;
     }
 
     // apply server game state on the client
-    UndeltaGameState( argv );
+    if ( UndeltaGameState( argv, out bool updateBoardFilters ) ) {
+        if ( updateBoardFilters ) {
+            game.board.UpdateFilters();
+        } 
+    }
 
     if ( ClPrintIncomingPackets_kvar == 2 ) {
         Log( $"incoming packet: '{packetStr}'" );
@@ -332,6 +366,38 @@ static void OnServerPacket( List<byte> packet ) {
 // use this to block them until proper time
 public static bool AllowSpam() {
     return ! ZClient.HasUnsentReliableCommands();
+}
+
+public static void DrawHex( int hx, Color color ) {
+    Vector2Int c = board.HexToCoord( hx );
+    Draw.Hex( c, color );
+}
+
+public static void DrawBoard( float voidsAlpha = 0.4f, Color? colorSolid = null ) {
+    Color c = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
+
+    foreach ( ushort hx in board.filter.solid ) {
+        DrawHex( hx, c );
+    }
+
+    // draw void hexes in grid range
+    if ( voidsAlpha > 0.00001f ) {
+        foreach ( ushort hx in board.filter.no_solid ) {
+            DrawHex( hx, new Color( 0, 0, 0, voidsAlpha ) );
+        }
+    }
+
+    //if ( ShowBoardBounds_cvar ) {
+    //    QGL.LateDrawLineRect( boardBounds.x + _pan.x, boardBounds.y + _pan.y,
+    //                                                        boardBounds.width, boardBounds.height );
+    //}
+}
+
+public static void SvCmd( string cmd ) {
+    if ( ClPrintOutgoingCommands_kvar ) {
+        Log( cmd );
+    }
+    ZClient.RegisterReliableCmd( cmd );
 }
 
 

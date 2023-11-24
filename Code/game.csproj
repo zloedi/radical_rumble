@@ -70,13 +70,25 @@
     <Compile Include="ZloediUtils/SingleShot.cs" />
     <Compile Include="ZloediUtils/WrapBox.cs" />
     <Compile Include="ZloediUtils/WBUI.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Color.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Color32.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Mathf.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector2.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector2Int.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector3.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector3Int.cs" />
     <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="Game_sv.cs" />
     <Compile Include="Main.cs" />
+    <Compile Include="MapEditor.cs" />
+    <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="RRClient.cs" />
     <Compile Include="RRServer.cs" />
+
     <Compile Include="Shadow.cs" />
+    <Compile Include="FilterUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
