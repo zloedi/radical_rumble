@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 partial class Game {
 
@@ -13,6 +14,8 @@ public Board board = new Board();
 
 // rows sent over the network
 public Array [] syncedRows;
+// rows stored on map editor save
+public Array [] persistentRows;
 // resizeable board rows 
 public Array [] gridRows;
 
@@ -20,6 +23,12 @@ public Game() {
     syncedRows = new Array [] {
         pawn.hp,
 
+        board.size,
+        board.terrain,
+        board.flags,
+    };
+
+    persistentRows = new Array [] {
         board.size,
         board.terrain,
         board.flags,
@@ -37,7 +46,7 @@ public bool Init( bool skipShadowClones = false ) {
     if ( ! shadow.CreateShadows( pawn, skipClone: skipShadowClones ) ) {
         return false;
     }
-    if ( ! shadow.CreateShadows( board, maxRow: board.numItems, skipClone: skipShadowClones ) ) {
+    if ( ! shadow.CreateShadows( board, skipClone: skipShadowClones ) ) {
         return false;
     }
     return true;
@@ -45,6 +54,73 @@ public bool Init( bool skipShadowClones = false ) {
 
 public void Reset() {
     pawn.Reset();
+}
+
+List<ushort> deltaChange = new List<ushort>();
+List<int> deltaNumbers = new List<int>();
+public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
+    updateBoardFilters = false;
+
+    if ( argv.Length < 1 ) {
+        return false;
+    }
+
+    bool result = false;
+
+    for ( int idx = 0; idx < argv.Length; ) {
+        string rowName = argv[idx++];
+
+        if ( ! shadow.nameToArray.TryGetValue( rowName, out Array row ) ) {
+            Error( $"Undelta: Can't find {rowName} in row names." );
+            continue;
+        }
+
+        if ( ! shadow.arrayToShadow.TryGetValue( row, out Shadow.Row shadowRow ) ) {
+            Error( $"Undelta: Can't find {rowName} in shadows." );
+            continue;
+        }
+
+        if ( Delta.UndeltaNum( ref idx, argv, deltaChange, deltaNumbers, out bool keepGoing ) ) {
+            result = true;
+            if ( shadowRow.parentObject == board ) {
+                updateBoardFilters = true;
+            }
+            if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+                for ( int i = 0; i < deltaChange.Count; i++ ) {
+                    ( ( byte [] )row )[deltaChange[i]] = ( byte )deltaNumbers[i];
+                }
+            } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+                for ( int i = 0; i < deltaChange.Count; i++ ) {
+                    ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];
+                }
+            } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+                for ( int i = 0; i < deltaChange.Count; i++ ) {
+                    ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
+                }
+            }
+        }
+
+        if ( ! keepGoing ) {
+            break;
+        }
+    }
+
+#if false
+    if ( persist && argv.Length > 1 && board.numItems > 0 ) {
+#if UNITY_STANDALONE
+        List<ushort> list = new List<ushort>();
+        for ( int i = 0; i < board.numItems; i++ ) {
+            if ( board.terrain[i] != 0 ) {
+                list.Add( ( ushort )i );
+            }
+        }
+        Hexes.PrintList( list, board.width, board.height, logText: "Undelta Board grid",
+                                        hexListString: (l,i) => $"{l[i].x},{l[i].y}", hexSize: 48 );
+#endif
+    }
+#endif
+
+    return result;
 }
 
 

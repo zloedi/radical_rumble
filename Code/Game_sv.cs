@@ -46,9 +46,9 @@ public void SetTerrain( int x, int y, int terrain ) {
                     row.SetValue( temp.GetValue( src ), dst );
                 }
             }
+            shadow.SetMaxRow( row, board.numItems );
         }
 
-        shadow.CreateShadows( board, maxRow: board.numItems, skipClone: true );
         Log( $"Resized grid. w: {newW} h: {newH}" );
         Sv.RegisterTrail( $"client_hint_grid_moved {minx} {miny}" );
 
@@ -65,7 +65,7 @@ public void SetTerrain( int x, int y, int terrain ) {
     if ( terrain == 0 ) {
 
         // make sure there is no redundant info on void terrain
-        foreach ( var arr in gridRows ) {
+        foreach ( Array arr in gridRows ) {
             Array.Clear( arr, hx, 1 );
         }
 
@@ -130,9 +130,9 @@ public void SetTerrain( int x, int y, int terrain ) {
                     row.SetValue( temp.GetValue( src ), dst );
                 }
             }
+            shadow.SetMaxRow( row, board.numItems );
         }
 
-        shadow.CreateShadows( board, maxRow: board.numItems, skipClone: true );
         Log( $"Resized grid. w: {newW} h: {newH}" );
         Sv.RegisterTrail( $"client_hint_grid_moved {minx} {miny}" );
     }

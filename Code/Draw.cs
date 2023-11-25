@@ -5,18 +5,19 @@ using UnityEngine;
 static class Draw {
 
 
-public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 400 );
+public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 300 );
 
 public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
 
 public static Vector2Int panning;
 
+public static readonly Color bgrColor = new Color( 0.2f, 0.2f, 0.25f );
 //public static string bottomMessage;
 //public static string bottomError;
 
 public static void FillScreen( Color? color = null ) {
-    Color c = color == null ? new Color( 0.2f, 0.2f, 0.25f ) : color.Value;
+    Color c = color == null ? bgrColor : color.Value;
     Draw.FillRect( Draw.wboxScreen, c );
 }
 
@@ -60,7 +61,7 @@ public static Vector2Int ScreenPosToHexCoord( Vector2 scrPos ) {
     int w = Hexes.hexSpriteWidth * pixelSize;
 
     float a = w+pixelSize*2; float b = w/2+pixelSize;
-    float c = 0             ; float d = w-pixelSize*2;
+    float c = 0            ; float d = w-pixelSize*2;
 
     float det = (a * d - b * c);
 
@@ -77,7 +78,6 @@ public static Vector2Int ScreenPosToHexCoord( Vector2 scrPos ) {
 
 public static Vector2Int HexCoordToSqGrid( int hxcx, int hxcy ) {
     int w = Hexes.hexSpriteWidth;
-    int h = Hexes.hexSpriteHeight;
 
     int x = hxcx * ( w + 2 ) + hxcy * ( w / 2 + 1 );
     int y = hxcx * 0         + hxcy * ( w - 2 );

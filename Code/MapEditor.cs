@@ -10,6 +10,7 @@ static class MapEditor {
 
 [Description( "0 -- none; 1 -- place terrain; 2 -- place start positions" )]
 static int State_cvar = 0;
+static string LastSavedMap_cvar = "unnamed";
 
 static string [] _tickNames = { "None",  "Place Terrain",  "Place Tower" };
 static Action [] _ticks =     { None_tck, PlaceTerrain_tck, PlaceTower_tck };
@@ -21,7 +22,7 @@ static bool _mouseHexChanged;
 static bool CanClick => QUI.hotWidget == 0 && QUI.activeWidget == 0;
 
 public static void Tick() {
-    Vector2Int newHex = Draw.ScreenPosToHexCoord( Cl.mousePosition );
+    Vector2Int newHex = ScreenPosToHexCoord( Cl.mousePosition );
     _mouseHexChanged = ( _mouseHexCoord - newHex ).sqrMagnitude > 0;
     _mouseHexCoord = newHex;
     Cl.DrawBoard();
@@ -41,12 +42,12 @@ static void PlaceTerrain_tck() {
     }
 
     if ( Cl.mouse0Down || ( Cl.mouse0Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int hxc = Draw.ScreenPosToHexCoord( Cl.mousePosition );
+        Vector2Int hxc = ScreenPosToHexCoord( Cl.mousePosition );
         Cl.SvCmd( $"sv_set_terrain {hxc.x} {hxc.y} 128" );
     }
 
     if ( Cl.mouse1Down || ( Cl.mouse1Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int hxc = Draw.ScreenPosToHexCoord( Cl.mousePosition );
+        Vector2Int hxc = ScreenPosToHexCoord( Cl.mousePosition );
         Cl.SvCmd( $"sv_set_terrain {hxc.x} {hxc.y} 0" );
     }
 }
@@ -83,6 +84,30 @@ static void PlaceTower_tck() {
     //        _errorMessage = "Place the cursor on a start hex.";
     //    }
     //}
+}
+
+static Vector2Int ScreenPosToHexCoord( Vector2 screenPos ) {
+    return Hexes.ScreenToHex( screenPos, 12 * Draw.pixelSize );
+}
+
+static void Save_cmd( string [] argv ) {
+    if ( argv.Length >= 2 ) {
+        LastSavedMap_cvar = argv[1];
+        if ( ! LastSavedMap_cvar.EndsWith( ".map" ) ) {
+            LastSavedMap_cvar += ".map";
+        }
+    }
+    Cl.SvCmd( $"sv_save_map {LastSavedMap_cvar}" );
+}
+
+static void Load_cmd( string [] argv ) {
+    if ( argv.Length >= 2 ) {
+        LastSavedMap_cvar = argv[1];
+        if ( ! LastSavedMap_cvar.EndsWith( ".map" ) ) {
+            LastSavedMap_cvar += ".map";
+        }
+    }
+    Cl.SvCmd( $"sv_load_map {LastSavedMap_cvar}" );
 }
 
 

@@ -1,7 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Text;
+
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
+using GalliumMath;
+#endif
 
 static class RRServer {
 
@@ -14,11 +21,12 @@ static int SvTraceLevel_kvar = 1;
 
 [Description("Print outgoing packets on game Tick(): 1 -- persistent and non-delta only; 2 -- all")]
 static bool SvPrintOutgoingPackets_kvar = false;
-
+static bool SvPrintIncomingCommands_kvar = false;
 [Description("Send log messages to clients.")]
 static bool SvBounceLog_kvar = false;
 [Description("Send log errors to clients.")]
 static bool SvBounceError_kvar = false;
+static string SvLastLoadedMap_kvar = "unnamed";
 
 public static Game game = new Game();
 
@@ -91,13 +99,20 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
         return false;
     }
 
+    LoadLastMap();
+
     ZServer.net.TryExecuteOOB = s => Qonsole.TryExecute( s );
     ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
     ZServer.onTick_f = RRServer.Tick;
     ZServer.onClientDisconnect_f = zport => {};
-    ZServer.onClientConnect_f = zport => {};
+    // FIXME: blanket resend the universe
+    ZServer.onClientConnect_f = zport => game.shadow.ClearShadowRows();
 
     return ZServer.Init();
+}
+
+public static void Done() {
+    ZServer.Done();
 }
 
 // returns game state delta followed by any explicit commands to clients
@@ -123,12 +138,16 @@ public static List<byte> Tick( int dt, bool needPacket ) {
     return _sentPacket;
 }
 
-public static void Execute( int zport, string command ) {
+public static bool Execute( int zport, string command ) {
     try {
-        Cellophane.TryExecuteString( command, context: zport );
+        if ( SvPrintIncomingCommands_kvar ) {
+            Log( $"{zport}: {command}" );
+        }
+        return Cellophane.TryExecuteString( command, context: zport );
     } catch ( Exception e ) {
         Error( e.ToString() );
     }
+    return false;
 }
 
 static string DeltaGameState() {
@@ -155,7 +174,87 @@ static string DeltaGameState() {
     return delta;
 }
 
+static string MapsDir() {
+#if UNITY_STANDALONE
+    string path;
+    if ( Application.isEditor ) {
+        path = Application.dataPath + "/../../Build/";
+    } else {
+        path = Application.dataPath + "/../";
+    }
+    return path;
+#else
+    string exeLocation = System.Reflection.Assembly.GetEntryAssembly().Location;
+    return System.IO.Path.GetDirectoryName( exeLocation );
+#endif
+}
+
+static void LoadLastMap() {
+    if ( string.IsNullOrEmpty( SvLastLoadedMap_kvar ) ) {
+        return;
+    }
+    string path = Path.Combine( MapsDir(), SvLastLoadedMap_kvar );
+    string cmd = "";
+    try {
+        cmd = File.ReadAllText( path );
+        game.shadow.ClearShadowRows();
+        Cellophane.TryExecuteString( cmd );
+        Log( $"Loaded '{path}'" );
+    } catch ( Exception ) {
+        Error( $"Failed to read file '{path}'" );
+    }
+}
+
 // == commands ==
+
+static void SvLoadMap_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 2 ) {
+        Error( $"{argv[0]} No filename supplied." );
+        return;
+    }
+    SvLastLoadedMap_kvar = argv[1];
+    LoadLastMap();
+}
+
+static void SvSaveMap_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 2 ) {
+        Error( $"{argv[0]} No filename supplied." );
+        return;
+    }
+    SvLastLoadedMap_kvar = argv[1];
+    string path = Path.Combine( MapsDir(), SvLastLoadedMap_kvar );
+    string storage = "sv_undelta\n";
+    string emitRow( string name, string c, string v ) {
+        return $"{name}{c} :{v} :\n";
+    }
+    foreach ( Array row in game.persistentRows ) {
+        Shadow.Row shadowRow = game.shadow.arrayToShadow[row];
+        if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+            byte [] zero = new byte[row.Length];
+            if ( Delta.DeltaBytes( ( byte[] )row, zero, out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+            ushort [] zero = new ushort[row.Length];
+            if ( Delta.DeltaShorts( ( ushort[] )row, zero,
+                                                        out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+            int [] zero = new int[row.Length];
+            if ( Delta.DeltaInts( ( int[] )row, zero, out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        }
+    }
+    storage += ";";
+    try {
+        File.WriteAllText( path, storage );
+        Log( $"Saved '{path}'" );
+    } catch ( Exception ) {
+        Error( $"Failed to save '{path}'" );
+    }
+}
 
 static void SvBroadcastCommand_kmd( string [] argv, int zport ) {
     string cmd = "";
@@ -171,13 +270,13 @@ static void SvExecute_kmd( string [] argv, int zport ) {
         return;
     }
     Log( $"Executing a command from {zport}" );
-    string [] newArgv = new string[argv.Length - 1];
-    Array.Copy( argv, 1, newArgv, 0, newArgv.Length );
-    if ( Array.IndexOf( newArgv, argv[0] ) >= 0 ) {
+    string [] cpargv = new string[argv.Length - 1];
+    Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
+    if ( Array.IndexOf( cpargv, argv[0] ) >= 0 ) {
         Error( "{argv[0]}: Can't be recursive." );
         return;
     }
-    Cellophane.TryExecute( newArgv, zport );
+    Cellophane.TryExecute( cpargv, zport );
 }
 
 static void SvPrintClients_kmd( string [] argv ) {
@@ -197,6 +296,20 @@ static void SvSetTerrain_kmd( string [] argv, int zport ) {
     int.TryParse( argv[3], out int terrain );
 
     game.SetTerrain( x, y, terrain );
+}
+
+static void SvUndelta_kmd( string [] argv ) {
+    if ( argv.Length < 3 ) {
+        Log( "Nothing to undelta." );
+        return;
+    }
+    string [] cpargv = new string[argv.Length - 1];
+    Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
+    if ( game.UndeltaState( cpargv, out bool updateBoardFilters ) ) {
+        if ( updateBoardFilters ) {
+            game.board.UpdateFilters();
+        } 
+    }
 }
 
 

@@ -80,5 +80,10 @@ static void QonsoleTick_kmd( string [] argv ) {
     }
 }
 
+static void QonsoleDone_kmd( string [] argv ) {
+    Cl.Done();
+    Sv.Done();
+}
+
 
 }

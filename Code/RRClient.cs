@@ -15,7 +15,7 @@ public static string ClServerIpAddress_kvar = "89.190.193.149";
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;
 
-[Description("Print incoming packets on game ReceivePacket(): 1 -- some; 2 -- all")]
+[Description("Print incoming packets: 1 -- some; 2 -- all")]
 static int ClPrintIncomingPackets_kvar = 0;
 
 public static Game game = new Game();
@@ -41,8 +41,8 @@ static Action _tick = () => {};
 [Description( "0 -- play; 1 -- map editor" )]
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
-static string [] _tickNames = { "Play",   "Map Editor", };
-static Action [] _ticks =     { () => {}, MapEditor.Tick };
+static string [] _tickNames = { "Play",           "Map Editor", };
+static Action [] _ticks =     { () => DrawBoard(), MapEditor.Tick };
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -73,6 +73,10 @@ public static bool Init() {
 
     // we don't need shadow copies of game state on the client
     return game.Init( skipShadowClones: true );
+}
+
+public static void Done() {
+    ZClient.Done();
 }
 
 public static void Tick( int timeDeltaMs ) {
@@ -181,7 +185,7 @@ public static void Tick( int timeDeltaMs ) {
             c.a -= dt;
             return c.a > 0;
         } );
-        Qonsole.Log( $"Changed state to {state}" );
+        Log( $"Changed state to {state}" );
     }
 
     if ( ZClient.state != ZClient.State.Connected ) {
@@ -242,73 +246,6 @@ static void OnConnected() {
     game.Reset();
 }
 
-static List<ushort> deltaChange = new List<ushort>();
-static List<int> deltaNumbers = new List<int>();
-public static bool UndeltaGameState( string [] argv, out bool updateBoardFilters ) {
-    updateBoardFilters = false;
-
-    if ( argv.Length < 1 ) {
-        return false;
-    }
-
-    bool result = false;
-
-    for ( int idx = 0; idx < argv.Length; ) {
-        string rowName = argv[idx++];
-
-        if ( ! game.shadow.nameToArray.TryGetValue( rowName, out Array row ) ) {
-            Error( $"Undelta: Can't find {rowName} in row names." );
-            continue;
-        }
-
-        if ( ! game.shadow.arrayToShadow.TryGetValue( row, out Shadow.Row shadowRow ) ) {
-            Error( $"Can't find {rowName} in shadows." );
-            continue;
-        }
-
-        if ( Delta.UndeltaNum( ref idx, argv, deltaChange, deltaNumbers, out bool keepGoing ) ) {
-            result = true;
-            if ( shadowRow.parentObject == game.board ) {
-                updateBoardFilters = true;
-            }
-            if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
-                for ( int i = 0; i < deltaChange.Count; i++ ) {
-                    ( ( byte [] )row )[deltaChange[i]] = ( byte )deltaNumbers[i];
-                }
-            } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
-                for ( int i = 0; i < deltaChange.Count; i++ ) {
-                    ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];
-                }
-            } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
-                for ( int i = 0; i < deltaChange.Count; i++ ) {
-                    ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
-                }
-            }
-        }
-
-        if ( ! keepGoing ) {
-            break;
-        }
-    }
-
-#if false
-    if ( persist && argv.Length > 1 && board.numItems > 0 ) {
-#if UNITY_STANDALONE
-        List<ushort> list = new List<ushort>();
-        for ( int i = 0; i < board.numItems; i++ ) {
-            if ( board.terrain[i] != 0 ) {
-                list.Add( ( ushort )i );
-            }
-        }
-        Hexes.PrintList( list, board.width, board.height, logText: "Undelta Board grid",
-                                        hexListString: (l,i) => $"{l[i].x},{l[i].y}", hexSize: 48 );
-#endif
-    }
-#endif
-
-    return result;
-}
-
 static void OnServerPacket( List<byte> packet ) {
     if ( packet.Count == 0 ) {
         if ( ClPrintIncomingPackets_kvar == 2 ) {
@@ -341,13 +278,13 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // apply server game state on the client
-    if ( UndeltaGameState( argv, out bool updateBoardFilters ) ) {
+    if ( game.UndeltaState( argv, out bool updateBoardFilters ) ) {
         if ( updateBoardFilters ) {
             game.board.UpdateFilters();
         } 
     }
 
-    if ( ClPrintIncomingPackets_kvar == 2 ) {
+    if ( ClPrintIncomingPackets_kvar == 1 ) {
         Log( $"incoming packet: '{packetStr}'" );
     }
 
@@ -373,7 +310,7 @@ public static void DrawHex( int hx, Color color ) {
     Draw.Hex( c, color );
 }
 
-public static void DrawBoard( float voidsAlpha = 0.4f, Color? colorSolid = null ) {
+public static void DrawBoardSkewed( float voidsAlpha = 0.4f, Color? colorSolid = null ) {
     Color c = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
 
     foreach ( ushort hx in board.filter.solid ) {
@@ -391,6 +328,33 @@ public static void DrawBoard( float voidsAlpha = 0.4f, Color? colorSolid = null 
     //    QGL.LateDrawLineRect( boardBounds.x + _pan.x, boardBounds.y + _pan.y,
     //                                                        boardBounds.width, boardBounds.height );
     //}
+}
+
+public static void DrawBoard( Color? colorSolid = null ) {
+    void drawHex( ushort hx, Color c ) {
+        Vector2Int axial = board.HexToCoord( hx );
+        //Vector2 scr = Hexes.HexToScreen( axial.x, axial.y, 12 / Hexes.SQRT_3 * Draw.pixelSize );
+        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
+        int w = Hexes.hexSpriteWidth * Draw.pixelSize;
+        int h = Hexes.hexSpriteHeight * Draw.pixelSize;
+        QGL.LateBlit( Hexes.hexSprite, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
+                                                                                w, h, color: c );
+    }
+
+    Color csolid = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
+
+    // draw void hexes in grid range
+    Color cvoid = Draw.bgrColor;
+    cvoid *= 0.75f;
+    cvoid.a = 1;
+
+    foreach ( ushort hx in board.filter.no_solid ) {
+        drawHex( hx, cvoid );
+    }
+
+    foreach ( ushort hx in board.filter.solid ) {
+        drawHex( hx, csolid );
+    }
 }
 
 public static void SvCmd( string cmd ) {

@@ -77,5 +77,23 @@ public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false ) 
     return true;
 }
 
+public void SetMaxRow( Array row, int maxRow ) {
+    if ( arrayToShadow.TryGetValue( row, out Row shadowRow ) ) {
+        shadowRow.maxRow = maxRow;
+    } else {
+        Error( "Couldn't find row in the shadow rows." );
+    }
+}
+
+public void ClearShadowRows() {
+    foreach ( var kv in nameToArray ) {
+        Row row = arrayToShadow[kv.Value];
+        Array arr = row.array;
+        int len = row.maxRow > 0 ? row.maxRow : arr.Length;
+        Array.Clear( arr, 0, len );
+        Log( $"Reset shadow row on {kv.Key}" );
+    }
+}
+
 
 }
