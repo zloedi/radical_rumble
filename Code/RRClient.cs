@@ -307,62 +307,8 @@ public static bool AllowSpam() {
     return ! ZClient.HasUnsentReliableCommands();
 }
 
-public static void DrawHex( int hx, Color color ) {
-    Vector2Int c = board.HexToCoord( hx );
-    Draw.Hex( c, color );
-}
-
-public static void DrawBoardSkewed( float voidsAlpha = 0.4f, Color? colorSolid = null ) {
-    Color c = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
-
-    foreach ( ushort hx in board.filter.solid ) {
-        DrawHex( hx, c );
-    }
-
-    // draw void hexes in grid range
-    if ( voidsAlpha > 0.00001f ) {
-        foreach ( ushort hx in board.filter.no_solid ) {
-            DrawHex( hx, new Color( 0, 0, 0, voidsAlpha ) );
-        }
-    }
-
-    //if ( ShowBoardBounds_cvar ) {
-    //    QGL.LateDrawLineRect( boardBounds.x + _pan.x, boardBounds.y + _pan.y,
-    //                                                        boardBounds.width, boardBounds.height );
-    //}
-}
-
 public static void DrawBoard( Color? colorSolid = null ) {
-    void drawHex( ushort hx, Color c ) {
-        Vector2Int axial = board.HexToCoord( hx );
-        //Vector2 scr = Hexes.HexToScreen( axial.x, axial.y, 12 / Hexes.SQRT_3 * Draw.pixelSize );
-        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
-        int w = Hexes.hexSpriteWidth * Draw.pixelSize;
-        int h = Hexes.hexSpriteHeight * Draw.pixelSize;
-        QGL.LateBlit( Hexes.hexSpriteRegular, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
-                                                                                w, h, color: c );
-    }
-
-    Color csolid = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
-
-    // draw void hexes in grid range
-    Color cvoid = Draw.bgrColor;
-    cvoid *= 0.75f;
-    cvoid.a = 1;
-
-    foreach ( ushort hx in board.filter.no_solid ) {
-        drawHex( hx, cvoid );
-    }
-
-    foreach ( ushort hx in board.filter.solid ) {
-        drawHex( hx, csolid );
-    }
-
-    foreach ( ushort hx in board.filter.solid ) {
-        Vector2Int axial = board.HexToCoord( hx );
-        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
-        Hexes.DrawHexWithLines( scr, 11 * Draw.pixelSize, Color.black * 0.1f );
-    }
+    Draw.Board( board.width, board.filter.solid, board.filter.no_solid, colorSolid );
 }
 
 public static void SvCmd( string cmd ) {

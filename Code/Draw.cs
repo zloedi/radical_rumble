@@ -10,8 +10,6 @@ public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.wi
 public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
 
-public static Vector2Int panning;
-
 public static readonly Color bgrColor = new Color( 0.2f, 0.2f, 0.25f );
 //public static string bottomMessage;
 //public static string bottomError;
@@ -57,54 +55,43 @@ public static void OutlinedTextCenter( int x, int y, string text, Color? color =
     QGL.LatePrintNokia( text, x, y, color: color, scale: scale );
 }
 
-public static Vector2Int ScreenPosToHexCoord( Vector2 scrPos ) {
-    int w = Hexes.hexSpriteWidth * pixelSize;
+public static void Board( int boardW, List<ushort> solid, List<ushort> no_solid,
+                                                                        Color? colorSolid = null ) {
+    Vector2Int hexToCoord( int hx ) {
+        int w = boardW == 0 ? 256 : boardW;
+        return new Vector2Int( hx % w, hx / w );
+    }
 
-    float a = w+pixelSize*2; float b = w/2+pixelSize;
-    float c = 0            ; float d = w-pixelSize*2;
+    void drawHex( ushort hx, Color c ) {
+        Vector2Int axial = hexToCoord( hx );
+        //Vector2 scr = Hexes.HexToScreen( axial.x, axial.y, 12 / Hexes.SQRT_3 * Draw.pixelSize );
+        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
+        int w = Hexes.hexSpriteWidth * Draw.pixelSize;
+        int h = Hexes.hexSpriteHeight * Draw.pixelSize;
+        QGL.LateBlit( Hexes.hexSpriteRegular, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
+                                                                                w, h, color: c );
+    }
 
-    float det = (a * d - b * c);
+    Color csolid = colorSolid != null ? colorSolid.Value : new Color( 0.54f, 0.5f, 0.4f );
 
-    float aa =  d / det; float bb = -b / det;
-    float cc = -c / det; float dd =  a / det;
+    // draw void hexes in grid range
+    Color cvoid = Draw.bgrColor;
+    cvoid *= 0.75f;
+    cvoid.a = 1;
 
-    Vector2 axial = new Vector2(
-        ( scrPos.x - panning.x ) * aa + ( scrPos.y - panning.y ) * bb,
-        ( scrPos.x - panning.x ) * cc + ( scrPos.y - panning.y ) * dd
-    );
+    foreach ( ushort hx in no_solid ) {
+        drawHex( hx, cvoid );
+    }
 
-    return Hexes.AxialRound( axial );
-}
+    foreach ( ushort hx in solid ) {
+        drawHex( hx, csolid );
+    }
 
-public static Vector2Int HexCoordToSqGrid( int hxcx, int hxcy ) {
-    int w = Hexes.hexSpriteWidth;
-
-    int x = hxcx * ( w + 2 ) + hxcy * ( w / 2 + 1 );
-    int y = hxcx * 0         + hxcy * ( w - 2 );
-
-    return new Vector2Int( x, y );
-}
-
-public static Vector2Int HexCoordToScreen( int hxcx, int hxcy ) {
-    return HexCoordToSqGrid( hxcx, hxcy ) * pixelSize;
-}
-
-public static Vector2Int HexCoordToScreen( Vector2Int hxc ) {
-    return HexCoordToScreen( hxc.x, hxc.y );
-}
-
-public static Vector2Int HexCoordToScreenPan( Vector2Int hxc ) {
-    return HexCoordToScreen( hxc.x, hxc.y ) + panning;
-}
-
-public static void HexScreen( Vector2Int scrPos, Color color ) {
-    int w = Hexes.hexSpriteWidth * pixelSize;
-    int h = Hexes.hexSpriteHeight * pixelSize;
-    QGL.LateBlit( Hexes.hexSpriteRegular, scrPos.x - w / 2, scrPos.y - w / 2, w, h, color: color );
-}
-
-public static void Hex( Vector2Int hxc, Color color ) {
-    HexScreen( HexCoordToScreenPan( hxc ), color );
+    foreach ( ushort hx in solid ) {
+        Vector2Int axial = hexToCoord( hx );
+        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
+        Hexes.DrawHexWithLines( scr, 11 * Draw.pixelSize, Color.black * 0.1f );
+    }
 }
 
 
