@@ -1,6 +1,12 @@
 using System;
 using System.Collections.Generic;
 
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
+using GalliumMath;
+#endif
+
 partial class Game {
 
 
@@ -21,7 +27,10 @@ public Array [] gridRows;
 
 public Game() {
     syncedRows = new Array [] {
+        pawn.def,
         pawn.hp,
+        pawn.pos0_tx,
+        pawn.pos1_tx,
 
         board.size,
         board.terrain,
@@ -43,7 +52,8 @@ public Game() {
 public bool Init( bool skipShadowClones = false ) {
     shadow.Log = Log;
     shadow.Error = Error;
-    if ( ! shadow.CreateShadows( pawn, skipClone: skipShadowClones ) ) {
+    if ( ! shadow.CreateShadows( pawn, skipClone: skipShadowClones,
+                                                                ignoreType: typeof( Vector2 ) ) ) {
         return false;
     }
     if ( ! shadow.CreateShadows( board, skipClone: skipShadowClones ) ) {

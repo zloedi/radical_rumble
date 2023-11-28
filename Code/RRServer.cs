@@ -117,6 +117,13 @@ public static void Done() {
 
 // returns game state delta followed by any explicit commands to clients
 public static List<byte> Tick( int dt, bool needPacket ) {
+
+    // ==
+
+    game.TickServer( dt );
+
+    // ==
+
     _sentPacket.Clear();
 
     string packet = DeltaGameState();
@@ -315,6 +322,21 @@ static void SvUndelta_kmd( string [] argv ) {
             game.board.UpdateFilters();
         }
     }
+}
+
+static void SvSpawn_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 4 ) {
+        Error( $"{argv[0]} <def_name> <x> <y>" );
+        return;
+    }
+    if ( ! PawnDef.FindIdxByName( argv[1], out int def ) ) {
+        Error( $"{argv[0]} Can't find def named {argv[1]}" );
+        return;
+    }
+
+    float x = Cellophane.AtoF( argv[2] );
+    float y = Cellophane.AtoF( argv[3] );
+    game.Spawn( def, x, y );
 }
 
 

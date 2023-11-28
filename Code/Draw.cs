@@ -59,6 +59,13 @@ public static void OutlinedTextCenter( int x, int y, string text, Color? color =
     QGL.LatePrintNokia( text, x, y, color: color, scale: scale );
 }
 
+public static Vector2 ScreenToGamePosition( Vector2 xy ) {
+    Vector2 origin = Hexes.HexToScreen( Vector2Int.zero, hexPixelSize );
+    xy -= _pan;
+    xy /= hexPixelSize;
+    return xy - origin;
+}
+
 public static Vector2 HexToScreen( int x, int y ) {
     return Hexes.HexToScreen( x, y, hexPixelSize );
 }
@@ -105,7 +112,6 @@ public static void CenterBoardOnScreen() {
     GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
     _pan.x = -x + ( Screen.width - w ) / 2;
     _pan.y = -y + ( Screen.height - h ) / 2;
-    Qonsole.Log( _pan );
 }
 
 public static void OffsetView( Vector2 xy ) {

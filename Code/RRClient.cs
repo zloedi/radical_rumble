@@ -361,5 +361,19 @@ static void ClCenterBoard_kmd( string [] argv ) {
     Draw.CenterBoardOnScreen();
 }
 
+static void ClSpawn_kmd( string [] argv ) {
+    if ( argv.Length < 2 ) {
+        Error( $"{argv[0]} <def_name>" );
+        return;
+    }
+
+    if ( ! PawnDef.FindByName( argv[1], out PawnDef.Def def ) ) {
+        Log( $"{argv[0]} Can't find def named {argv[1]}" );
+        return;
+    }
+    Vector2 gamePos = Draw.ScreenToGamePosition( mousePosition );
+    SvCmd( $"sv_spawn {argv[1]} {gamePos.x} {gamePos.y}" );
+}
+
 
 }

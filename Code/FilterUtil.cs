@@ -6,7 +6,7 @@ using System.Reflection;
 public static class FilterUtil {
 
 
-    // use reflection to create and collect all lists
+// use reflection to create and collect all lists
 public static void CreateAll( object o, out List<IList> all ) {
     all = new List<IList>();
     FieldInfo [] fields = o.GetType().GetFields();

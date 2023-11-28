@@ -1,10 +1,36 @@
 using System;
+
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
 using GalliumMath;
+#endif
+
+using static PawnDef;
 
 using Sv = RRServer;
 
 partial class Game {
 
+
+public void TickServer( int dt ) {
+    pawn.UpdateFilters();
+
+    foreach ( var z in pawn.filter.no_garbage ) {
+        pawn.pos0_tx[z] = Pawn.ToTx( pawn.pos0[z] );
+        pawn.pos1_tx[z] = Pawn.ToTx( pawn.pos1[z] );
+    }
+}
+
+public void Spawn( int def, float x, float y ) {
+    int z = pawn.Create( def );
+    if ( z == 0 ) {
+        Error( "Out of pawns, can't create." );
+        return;
+    }
+    pawn.pos0[z] = new Vector2( x, y );
+    Log( $"Spawned {defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
+}
 
 public void SetTerrain( int x, int y, int terrain ) {
     const int BORDER = 2;
