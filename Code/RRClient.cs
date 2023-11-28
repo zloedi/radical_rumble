@@ -223,7 +223,7 @@ static void UpdateTraceLevel() {
     ZClient.netChan.Log = s => {};
 
     if ( ClTraceLevel_kvar >= 0 ) {
-        game.Log = s => Qonsole.Log( $"[00C0FF]Client: [-] {s}" );
+        game.Log = s => Qonsole.Log( $"[00C0FF]Client:[-] {s}" );
         game.Error = s => Qonsole.Error( $"Client: {s}" );
         ZClient.Error = game.Error;
         ZClient.net.Error = game.Error;
@@ -270,10 +270,13 @@ static void OnServerPacket( List<byte> packet ) {
         deltaCmd += packetStr[i];
     }
 
-    if ( ! Cellophane.GetArgvBare( deltaCmd, out string [] argv ) ) {
+    string trailingCommands = packetStr.Substring( deltaNumChars ).TrimStart();
+
+    if ( ! Cellophane.GetArgvBare( deltaCmd, out string [] argv )
+                                                                && trailingCommands.Length == 0 ) {
         Error( $"Packet: {packetStr}" );
         Error( $"Delta Cmd: {deltaCmd}" );
-        Error( "Expected game delta leading in the packet. Dropping the packet." );
+        Error( "Expected game delta and/or trail commands. Dropping the packet." );
         return;
     }
 
@@ -289,7 +292,6 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // maybe there are some trailing commands after the delta, try to execute them here
-    string trailingCommands = packetStr.Substring( deltaNumChars ).TrimStart();
 
     // really messes up when there is 'echo' inside 'echo'
     // i.e. when server is set to bounce logs and the bounce is logged with the packet
@@ -355,6 +357,12 @@ public static void DrawBoard( Color? colorSolid = null ) {
     foreach ( ushort hx in board.filter.solid ) {
         drawHex( hx, csolid );
     }
+
+    foreach ( ushort hx in board.filter.solid ) {
+        Vector2Int axial = board.HexToCoord( hx );
+        Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
+        Hexes.DrawHexWithLines( scr, 11 * Draw.pixelSize, Color.black * 0.1f );
+    }
 }
 
 public static void SvCmd( string cmd ) {
@@ -362,6 +370,29 @@ public static void SvCmd( string cmd ) {
         Log( cmd );
     }
     ZClient.RegisterReliableCmd( cmd );
+}
+
+// == commands ==
+
+static DateTime _pingStart;
+
+static void Ping_kmd( string [] argv ) {
+    Log( $"pinging {ClServerIpAddress_kvar}" );
+    _pingStart = DateTime.UtcNow;
+    SvCmd( "sv_ping" );
+}
+
+static void Pong_kmd( string [] argv ) {
+    if ( argv.Length < 2 ) {
+        Error( $"{argv[0]} Needs zport." );
+        return;
+    }
+    int.TryParse( argv[1], out int zport );
+    if ( zport != ZClient.netChan.zport ) {
+        return;
+    }
+    double ping = ( DateTime.UtcNow - _pingStart ).TotalMilliseconds;
+    Log( $"ping: {ping} milliseconds" );
 }
 
 

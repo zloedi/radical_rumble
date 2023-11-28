@@ -207,6 +207,10 @@ static void LoadLastMap() {
 
 // == commands ==
 
+static void SvPing_kmd( string [] argv, int zport ) {
+    RegisterTrail( $"pong {zport}" );
+}
+
 static void SvLoadMap_kmd( string [] argv, int zport ) {
     if ( argv.Length < 2 ) {
         Error( $"{argv[0]} No filename supplied." );
@@ -308,7 +312,7 @@ static void SvUndelta_kmd( string [] argv ) {
     if ( game.UndeltaState( cpargv, out bool updateBoardFilters ) ) {
         if ( updateBoardFilters ) {
             game.board.UpdateFilters();
-        } 
+        }
     }
 }
 
