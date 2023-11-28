@@ -22,7 +22,7 @@ static bool _mouseHexChanged;
 static bool CanClick => QUI.hotWidget == 0 && QUI.activeWidget == 0;
 
 public static void Tick() {
-    Vector2Int newHex = ScreenPosToHexCoord( Cl.mousePosition );
+    Vector2Int newHex = Draw.ScreenToHex( Cl.mousePosition );
     _mouseHexChanged = ( _mouseHexCoord - newHex ).sqrMagnitude > 0;
     _mouseHexCoord = newHex;
     Cl.DrawBoard();
@@ -42,12 +42,12 @@ static void PlaceTerrain_tck() {
     }
 
     if ( Cl.mouse0Down || ( Cl.mouse0Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int hxc = ScreenPosToHexCoord( Cl.mousePosition );
+        Vector2Int hxc = Draw.ScreenToHex( Cl.mousePosition );
         Cl.SvCmd( $"sv_set_terrain {hxc.x} {hxc.y} 128" );
     }
 
     if ( Cl.mouse1Down || ( Cl.mouse1Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int hxc = ScreenPosToHexCoord( Cl.mousePosition );
+        Vector2Int hxc = Draw.ScreenToHex( Cl.mousePosition );
         Cl.SvCmd( $"sv_set_terrain {hxc.x} {hxc.y} 0" );
     }
 }
@@ -84,10 +84,6 @@ static void PlaceTower_tck() {
     //        _errorMessage = "Place the cursor on a start hex.";
     //    }
     //}
-}
-
-static Vector2Int ScreenPosToHexCoord( Vector2 screenPos ) {
-    return Hexes.ScreenToHex( screenPos, 12 * Draw.pixelSize );
 }
 
 static void Save_cmd( string [] argv ) {

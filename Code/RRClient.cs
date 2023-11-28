@@ -145,9 +145,9 @@ public static void Tick( int timeDeltaMs ) {
     QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
 
     Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
-    //Draw.UpdateBoardBounds();
-    //Draw.UpdatePanning();
-
+    Draw.boardW = game.board.width;
+    Draw.solid = game.board.filter.solid;
+    Draw.no_solid = game.board.filter.no_solid;
     Draw.centralBigRedMessage = null;
 
     Draw.FillScreen();
@@ -284,6 +284,9 @@ static void OnServerPacket( List<byte> packet ) {
     if ( game.UndeltaState( argv, out bool updateBoardFilters ) ) {
         if ( updateBoardFilters ) {
             game.board.UpdateFilters();
+            Draw.boardW = game.board.width;
+            Draw.solid = game.board.filter.solid;
+            Draw.no_solid = game.board.filter.no_solid;
         } 
     }
 
@@ -308,7 +311,7 @@ public static bool AllowSpam() {
 }
 
 public static void DrawBoard( Color? colorSolid = null ) {
-    Draw.Board( board.width, board.filter.solid, board.filter.no_solid, colorSolid );
+    Draw.Board( colorSolid );
 }
 
 public static void SvCmd( string cmd ) {
@@ -339,6 +342,23 @@ static void Pong_kmd( string [] argv ) {
     }
     double ping = ( DateTime.UtcNow - _pingStart ).TotalMilliseconds;
     Log( $"ping: {ping} milliseconds" );
+}
+
+static void ClBoardMoved_kmd( string [] argv ) {
+    if ( argv.Length < 3 ) {
+        Qonsole.Error( $"{argv[0]} needs x y" );
+        return;
+    }
+
+    int.TryParse( argv[1], out int x );
+    int.TryParse( argv[2], out int y );
+
+    Vector2 scr = Draw.HexToScreen( x, y );
+    Draw.OffsetView( scr );
+}
+
+static void ClCenterBoard_kmd( string [] argv ) {
+    Draw.CenterBoardOnScreen();
 }
 
 

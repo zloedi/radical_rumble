@@ -199,6 +199,7 @@ static void LoadLastMap() {
         cmd = File.ReadAllText( path );
         game.shadow.ClearShadowRows();
         Cellophane.TryExecuteString( cmd );
+        RegisterTrail( "cl_center_board" );
         Log( $"Loaded '{path}'" );
     } catch ( Exception ) {
         Error( $"Failed to read file '{path}'" );

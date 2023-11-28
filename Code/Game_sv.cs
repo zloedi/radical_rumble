@@ -50,7 +50,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
-        Sv.RegisterTrail( $"client_hint_grid_moved {minx} {miny}" );
+        Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
 
         x -= minx;
         y -= miny;
@@ -134,7 +134,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
-        Sv.RegisterTrail( $"client_hint_grid_moved {minx} {miny}" );
+        Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
     }
 }
 
