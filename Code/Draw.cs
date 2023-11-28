@@ -100,7 +100,7 @@ public static Vector2Int HexCoordToScreenPan( Vector2Int hxc ) {
 public static void HexScreen( Vector2Int scrPos, Color color ) {
     int w = Hexes.hexSpriteWidth * pixelSize;
     int h = Hexes.hexSpriteHeight * pixelSize;
-    QGL.LateBlit( Hexes.hexSprite, scrPos.x - w / 2, scrPos.y - w / 2, w, h, color: color );
+    QGL.LateBlit( Hexes.hexSpriteRegular, scrPos.x - w / 2, scrPos.y - w / 2, w, h, color: color );
 }
 
 public static void Hex( Vector2Int hxc, Color color ) {

@@ -339,7 +339,7 @@ public static void DrawBoard( Color? colorSolid = null ) {
         Vector2 scr = Hexes.HexToScreen( axial, 12 * Draw.pixelSize );
         int w = Hexes.hexSpriteWidth * Draw.pixelSize;
         int h = Hexes.hexSpriteHeight * Draw.pixelSize;
-        QGL.LateBlit( Hexes.hexSprite, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
+        QGL.LateBlit( Hexes.hexSpriteRegular, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
                                                                                 w, h, color: c );
     }
 
