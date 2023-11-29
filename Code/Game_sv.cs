@@ -17,8 +17,8 @@ public void TickServer( int dt ) {
     pawn.UpdateFilters();
 
     foreach ( var z in pawn.filter.no_garbage ) {
-        pawn.pos0_tx[z] = Pawn.ToTx( pawn.pos0[z] );
-        pawn.pos1_tx[z] = Pawn.ToTx( pawn.pos1[z] );
+        pawn.pos0_tx[z] = ToTx( pawn.pos0[z] );
+        pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
     }
 }
 

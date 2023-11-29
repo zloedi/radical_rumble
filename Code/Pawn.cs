@@ -97,16 +97,6 @@ public void UpdateFilters() {
     }
 }
 
-public static int ToTx( float f ) {
-    int dec = ( int )f;
-    int frac = ( int )( ( f - dec ) * ( 1 << 8 ) );
-    return dec << 8 | frac;
-}
-
-public static int ToTx( Vector2 v ) {
-    return ( ToTx( v.x ) << 16 ) | ToTx( v.y );
-}
-
 static T [] RegisterRow<T>() {
     var r = new T[MAX_PAWN];
     _allRows.Add( r );

@@ -107,6 +107,15 @@ public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
                 }
+                if ( row == pawn.pos0_tx ) {
+                    for ( int i = 0; i < deltaChange.Count; i++ ) {
+                        pawn.pos0[deltaChange[i]] = TxToV( deltaNumbers[i] );
+                    }
+                } else if ( row == pawn.pos1_tx ) {
+                    for ( int i = 0; i < deltaChange.Count; i++ ) {
+                        pawn.pos1[deltaChange[i]] = TxToV( deltaNumbers[i] );
+                    }
+                }
             }
         }
 
@@ -131,6 +140,30 @@ public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
 #endif
 
     return result;
+}
+
+const int FRAC_BITS = 8;
+public static int ToTx( float f ) {
+    int dec = ( int )f;
+    int frac = ( int )( ( f - dec ) * ( 1 << FRAC_BITS ) );
+    return dec << FRAC_BITS | frac;
+}
+
+public static int ToTx( Vector2 v ) {
+    return ( ToTx( v.x ) << 16 ) | ToTx( v.y );
+}
+
+public static float TxToF( int tx ) {
+    const float fracDenom = 1 << FRAC_BITS;
+
+    tx &= 0xffff;
+    float dec = tx >> FRAC_BITS;
+    float frac = ( tx & ( ( 1 << FRAC_BITS ) - 1 ) ) / fracDenom;
+    return dec + frac;
+}
+
+public static Vector2 TxToV( int tx ) {
+    return new Vector2( TxToF( tx >> 16 ), TxToF( tx ) );
 }
 
 
