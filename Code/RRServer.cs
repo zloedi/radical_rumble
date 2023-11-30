@@ -329,7 +329,7 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
         Error( $"{argv[0]} <def_name> <x> <y>" );
         return;
     }
-    if ( ! PawnDef.FindIdxByName( argv[1], out int def ) ) {
+    if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
         Error( $"{argv[0]} Can't find def named {argv[1]}" );
         return;
     }

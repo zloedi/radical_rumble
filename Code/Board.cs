@@ -54,7 +54,7 @@ public class Board {
         return hxc.x >= 0 && hxc.x < width && hxc.y >= 0 && hxc.y < height;
     }
 
-    public Vector2Int HexToCoord( int hx ) {
+    public Vector2Int Axial( int hx ) {
         int w = width == 0 ? 256 : width;
         return new Vector2Int( hx % w, hx / w );
     }

@@ -85,6 +85,7 @@
     <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
+    <Compile Include="PlayerQGL.cs" />
     <Compile Include="RRClient.cs" />
     <Compile Include="RRServer.cs" />
 

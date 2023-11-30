@@ -6,7 +6,7 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-using static PawnDef;
+using static Pawn.Def;
 
 using Sv = RRServer;
 
@@ -29,7 +29,7 @@ public void Spawn( int def, float x, float y ) {
         return;
     }
     pawn.pos0[z] = new Vector2( x, y );
-    Log( $"Spawned {defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
+    Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
 }
 
 public void SetTerrain( int x, int y, int terrain ) {

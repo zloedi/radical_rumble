@@ -19,13 +19,14 @@ static string _stateName => _tickNames[State_cvar % _ticks.Length];
 static Vector2Int _mouseHexCoord;
 static bool _mouseHexChanged;
 
+static Pawn pawn => Cl.game.pawn;
+
 static bool CanClick => QUI.hotWidget == 0 && QUI.activeWidget == 0;
 
 public static void Tick() {
     Vector2Int newHex = Draw.ScreenToHex( Cl.mousePosition );
     _mouseHexChanged = ( _mouseHexCoord - newHex ).sqrMagnitude > 0;
     _mouseHexCoord = newHex;
-    Cl.DrawBoard();
     _ticks[State_cvar % _ticks.Length]();
 }
 
@@ -33,9 +34,12 @@ static void None_tck() {
 }
 
 static void PlaceTerrain_tck() {
-    //Draw.HexesBoard();
-    //Draw.PlayerCursors();
-    //Draw.HexesStart();
+    pawn.UpdateFilters();
+
+    Draw.FillScreen();
+    Draw.CenterBoardOnScreen();
+    Draw.Board();
+    Draw.PawnSprites( skipModels: true );
 
     if ( ! CanClick ) {
         return;

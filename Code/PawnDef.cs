@@ -9,21 +9,23 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-using static PawnDef.Flags;
+using static Pawn.Def.Flags;
 
-public static class PawnDef {
+partial class Pawn {
 
 public static Def Archer = Register( new Def {
     range = 4,
     maxHP = 20,
-    speed = 0.1f,
+    speed = 1f,
     damage = 1,
+    color = Color.red,
 } );
 
 public static Def Brute = Register( new Def {
     maxHP = 20,
     speed = 0.1f,
     damage = 1,
+    color = Color.green,
 } );
 
 public static Def Flyer = Register( new Def {
@@ -31,42 +33,37 @@ public static Def Flyer = Register( new Def {
     maxHP = 20,
     speed = 0.1f,
     damage = 1,
+    color = new Color( 0f, 0.4f, 1f ),
 } );
 
 public static Def Tower = Register( new Def {
     range = 10,
     maxHP = 200,
     damage = 2,
+    color = Color.magenta,
 } );
 
 // =============================
 
-public enum Flags {
-    Flying,
-}
-
 public class Def {
+    [Flags]
+    public enum Flags {
+        None,
+        Flying = 1 << 0,
+    }
+
     public string name;
     public Flags flags;
     public int maxHP;
     public float speed;
     public float range;
     public float damage;
+    public Color color;
 }
 
 public static List<Def> defs;
 
-static PawnDef() {
-    FieldInfo [] fields = typeof( PawnDef ).GetFields();
-    foreach ( FieldInfo fi in fields ) {
-        if ( fi.FieldType == typeof( Def ) ) {
-            var def = fi.GetValue( null ) as Def;
-            def.name = fi.Name;
-        }
-    }
-}
-
-public static bool FindIdxByName( string name, out int defIdx ) {
+public static bool FindDefIdxByName( string name, out int defIdx ) {
     var nlw = name.ToLowerInvariant();
     for ( int i = 1; i < defs.Count; i++ ) {
         var d = defs[i];
@@ -79,8 +76,8 @@ public static bool FindIdxByName( string name, out int defIdx ) {
     return false;
 }
 
-public static bool FindByName( string name, out Def def ) {
-    if ( FindIdxByName( name, out int idx ) ) {
+public static bool FindDefByName( string name, out Def def ) {
+    if ( FindDefIdxByName( name, out int idx ) ) {
         def = defs[idx];
         return true;
     }

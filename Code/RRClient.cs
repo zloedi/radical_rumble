@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Reflection;
 using UnityEngine;
 
 static class RRClient {
@@ -20,6 +21,8 @@ static int ClPrintIncomingPackets_kvar = 0;
 
 public static Game game = new Game();
 
+public static int deltaTime;
+
 public static Vector2 mousePosition = new Vector2( -1, -1 );
 public static Vector2 mouseDelta;
 
@@ -36,13 +39,12 @@ public static bool isPaused = false;
 public static Board board => game.board;
 
 static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
-static Action _tick = () => {};
 
 [Description( "0 -- play; 1 -- map editor" )]
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
-static string [] _tickNames = { "Play",           "Map Editor", };
-static Action [] _ticks =     { () => DrawBoard(), MapEditor.Tick };
+static string [] _tickNames = { "Play",        "Map Editor", };
+static Action [] _ticks =     { PlayerQGL.Tick, MapEditor.Tick };
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -80,7 +82,9 @@ public static void Done() {
 }
 
 public static void Tick( int timeDeltaMs ) {
-    ZClient.Tick( timeDeltaMs );
+    deltaTime = timeDeltaMs;
+
+    ZClient.Tick( deltaTime );
 
     WrapBox.DisableCanvasScale();
 
@@ -145,12 +149,7 @@ public static void Tick( int timeDeltaMs ) {
     QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
 
     Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
-    Draw.boardW = game.board.width;
-    Draw.solid = game.board.filter.solid;
-    Draw.no_solid = game.board.filter.no_solid;
     Draw.centralBigRedMessage = null;
-
-    Draw.FillScreen();
 
     _ticks[ClState_kvar % _ticks.Length]();
 
@@ -284,9 +283,6 @@ static void OnServerPacket( List<byte> packet ) {
     if ( game.UndeltaState( argv, out bool updateBoardFilters ) ) {
         if ( updateBoardFilters ) {
             game.board.UpdateFilters();
-            Draw.boardW = game.board.width;
-            Draw.solid = game.board.filter.solid;
-            Draw.no_solid = game.board.filter.no_solid;
         } 
     }
 
@@ -367,12 +363,32 @@ static void ClSpawn_kmd( string [] argv ) {
         return;
     }
 
-    if ( ! PawnDef.FindByName( argv[1], out PawnDef.Def def ) ) {
+    if ( ! Pawn.FindDefByName( argv[1], out Pawn.Def def ) ) {
         Log( $"{argv[0]} Can't find def named {argv[1]}" );
         return;
     }
     Vector2 gamePos = Draw.ScreenToGamePosition( mousePosition );
     SvCmd( $"sv_spawn {argv[1]} {gamePos.x} {gamePos.y}" );
+}
+
+static void ClPrintPawns_kmd( string [] argv ) {
+    for ( int z = 0; z < Pawn.MAX_PAWN; z++ ) {
+        if ( game.pawn.IsGarbage( z ) ) {
+            continue;
+        }
+        FieldInfo [] fields = typeof( Pawn ).GetFields();
+        foreach ( FieldInfo fi in fields ) {
+            Array a = fi.GetValue( game.pawn ) as Array;
+            if ( a != null && a.Length == Pawn.MAX_PAWN ) {
+                string val = a.GetValue( z ).ToString();
+                if ( fi.Name == "def" ) {
+                    val += $" ({Pawn.defs[game.pawn.def[z]].name})";
+                }
+                Qonsole.Log( $"{fi.Name}: {val}" );
+            }
+        }
+        Qonsole.Log( "\n" );
+    }
 }
 
 

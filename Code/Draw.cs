@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Cl = RRClient;
+
 static class Draw {
 
 
@@ -10,9 +12,9 @@ public static int hexPixelSize => 12 * pixelSize;
 
 public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
-public static int boardW;
-public static List<ushort> solid;
-public static List<ushort> no_solid;
+
+public static Board board => Cl.game.board;
+public static Pawn pawn => Cl.game.pawn;
 
 public static readonly Color bgrColor = new Color( 0.2f, 0.2f, 0.25f );
 
@@ -74,9 +76,59 @@ public static Vector2Int ScreenToHex( Vector2 xy ) {
     return Hexes.ScreenToHex( xy - _pan, hexPixelSize );
 }
 
-public static void Board( Color? colorSolid = null ) {
+public static class model {
+    public static Vector2 [] pos = new Vector2[Pawn.MAX_PAWN];
+    public static float [] t = new float[Pawn.MAX_PAWN];
+}
+
+public static void PawnSprites( bool skipModels = false ) {
+    Vector2 dsprite = new Vector2( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
+    Vector2 size = dsprite * Draw.pixelSize;
+    Vector2 offPrn = new Vector2( Draw.pixelSize, Draw.pixelSize * 3 / 2 );
+    Vector2 offShadow = new Vector2( Draw.pixelSize, Draw.pixelSize );
+
+    var offShad = offShadow;
+    var sz = size * 0.75f;
+    var szHalf = sz * 0.5f;
+
+    Vector2 [] posRow = skipModels ? pawn.pos0 : model.pos;
+
+    void getScreenPos( int z, out Vector2 pos, out Vector2 topLeft ) {
+        pos = _pan + posRow[z] * Draw.hexPixelSize;
+        topLeft = pos - szHalf;
+    }
+
+    foreach ( var z in pawn.filter.no_flying ) {
+        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
+        QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: Color.black * 0.3f );
+        Pawn.Def def = Pawn.defs[pawn.def[z]];
+        Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
+        QGL.LateBlit( Hexes.hexSpriteRegular, pos - offShad, sz, color: c );
+        //Hexes.DrawHexWithLines( scrPos - offShad, sz.x * 1.2f, def.color * 0.75f );
+        QGL.LatePrint( def.name[0], scrPos + offPrn - offShad, color: def.color, scale: Draw.pixelSize );
+    }
+
+    offShad = offShadow * 7;
+    sz = size * 1;
+    szHalf = sz * 0.5f;
+
+    foreach ( var z in pawn.filter.flying ) {
+        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
+        QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: Color.black * 0.3f );
+    }
+
+    foreach ( var z in pawn.filter.flying ) {
+        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
+        Pawn.Def def = pawn.GetDef( z );
+        Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
+        QGL.LateBlit( Hexes.hexSpriteRegular, pos - offShad, sz, color: c );
+        QGL.LatePrint( def.name[0], scrPos + offPrn - offShad, color: def.color, scale: Draw.pixelSize );
+    }
+}
+
+public static void Board( Color? colorSolid = null, bool skipVoidHexes = false ) {
     Vector2 hexToScreen( ushort hx ) {
-        return _pan + Hexes.HexToScreen( Axial( hx ), hexPixelSize );
+        return _pan + Hexes.HexToScreen( board.Axial( hx ), hexPixelSize );
     }
 
     void drawHex( ushort hx, Color c ) {
@@ -94,15 +146,17 @@ public static void Board( Color? colorSolid = null ) {
     cvoid *= 0.75f;
     cvoid.a = 1;
 
-    foreach ( ushort hx in no_solid ) {
-        drawHex( hx, cvoid );
+    if ( ! skipVoidHexes ) {
+        foreach ( ushort hx in board.filter.no_solid ) {
+            drawHex( hx, cvoid );
+        }
     }
 
-    foreach ( ushort hx in solid ) {
+    foreach ( ushort hx in board.filter.solid ) {
         drawHex( hx, csolid );
     }
 
-    foreach ( ushort hx in solid ) {
+    foreach ( ushort hx in board.filter.solid ) {
         Vector2 scr = hexToScreen( hx );
         Hexes.DrawHexWithLines( scr, 11 * Draw.pixelSize, Color.black * 0.1f );
     }
@@ -129,15 +183,15 @@ public static void OffsetView( Vector2 xy ) {
 }
 
 static void GetBoardBoundsInPixels( out int x, out int y, out int w, out int h ) {
-    if ( solid.Count == 0 ) {
+    if ( board.filter.solid.Count == 0 ) {
         x = y = w = h = 0;
         return;
     }
 
     int minx = 999999, miny = 999999;
     int maxx = 0, maxy = 0;
-    foreach ( ushort hx in solid ) {
-        Vector2 p = Hexes.HexToScreen( Axial( hx ), hexPixelSize );
+    foreach ( ushort hx in board.filter.solid ) {
+        Vector2 p = Hexes.HexToScreen( board.Axial( hx ), hexPixelSize );
         minx = ( int )Mathf.Min( p.x, minx );
         miny = ( int )Mathf.Min( p.y, miny );
         maxx = ( int )Mathf.Max( p.x, maxx );
@@ -153,11 +207,6 @@ static void GetBoardBoundsInPixels( out int x, out int y, out int w, out int h )
 
     y -= Hexes.hexSpriteRegularHeight / 2 * pixelSize;
     h += Hexes.hexSpriteRegularHeight * pixelSize;
-}
-
-static Vector2Int Axial( int hx ) {
-    int w = boardW == 0 ? 256 : boardW;
-    return new Vector2Int( hx % w, hx / w );
 }
 
 
