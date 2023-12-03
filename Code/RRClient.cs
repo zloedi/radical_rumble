@@ -349,7 +349,7 @@ static void ClBoardMoved_kmd( string [] argv ) {
     int.TryParse( argv[1], out int x );
     int.TryParse( argv[2], out int y );
 
-    Vector2 scr = Draw.HexToScreen( x, y );
+    Vector2 scr = Draw.AxialToScreenNoPan( x, y );
     Draw.OffsetView( scr );
 }
 

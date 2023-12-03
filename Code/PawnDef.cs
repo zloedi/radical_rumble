@@ -63,6 +63,16 @@ public class Def {
 
 public static List<Def> defs;
 
+void FillDefNames() {
+    FieldInfo [] fields = typeof( Pawn ).GetFields();
+    foreach ( FieldInfo fi in fields ) {
+        if ( fi.FieldType == typeof( Def ) ) {
+            var def = fi.GetValue( null ) as Def;
+            def.name = fi.Name;
+        }
+    }
+}
+
 public static bool FindDefIdxByName( string name, out int defIdx ) {
     var nlw = name.ToLowerInvariant();
     for ( int i = 1; i < defs.Count; i++ ) {

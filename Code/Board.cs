@@ -42,6 +42,10 @@ public class Board {
         return terrain[hx] != 0;
     }
 
+    public bool IsSolid( Vector2Int axial ) {
+        return IsSolid( Hex( axial ) );
+    }
+
     public int Clamp( int hx ) {
         return Mathf.Clamp( hx, 0, numItems - 1 );
     }
@@ -57,6 +61,14 @@ public class Board {
     public Vector2Int Axial( int hx ) {
         int w = width == 0 ? 256 : width;
         return new Vector2Int( hx % w, hx / w );
+    }
+
+    public int Hex( Vector2Int axial ) {
+        return Hex( axial.x, axial.y );
+    }
+
+    public int Hex( int x, int y ) {
+        return x + y * width;
     }
 
     public class Filter {

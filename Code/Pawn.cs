@@ -44,13 +44,7 @@ public Filter filter = new Filter();
 static List<Array> _allRows = new List<Array>();
 
 public Pawn() {
-    FieldInfo [] fields = typeof( Pawn ).GetFields();
-    foreach ( FieldInfo fi in fields ) {
-        if ( fi.FieldType == typeof( Def ) ) {
-            var def = fi.GetValue( null ) as Def;
-            def.name = fi.Name;
-        }
-    }
+    FillDefNames();
 }
 
 public void Reset() {

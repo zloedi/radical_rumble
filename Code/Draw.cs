@@ -68,17 +68,50 @@ public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     return xy - origin;
 }
 
-public static Vector2 HexToScreen( int x, int y ) {
+public static Vector2 AxialToScreenNoPan( int x, int y ) {
     return Hexes.HexToScreen( x, y, hexPixelSize );
 }
 
-public static Vector2Int ScreenToHex( Vector2 xy ) {
+public static Vector2 AxialToScreen( Vector2Int axial ) {
+    return AxialToScreen( axial.x, axial.y );
+}
+
+public static Vector2 AxialToScreen( int x, int y ) {
+    return _pan + Hexes.HexToScreen( x, y, hexPixelSize );
+}
+
+public static Vector2 HexToScreen( int hx ) {
+    return AxialToScreen( board.Axial( hx ) );
+}
+
+public static int ScreenToHex( Vector2 xy ) {
+    Vector2Int axial = ScreenToAxial( xy );
+    return board.Hex( axial );
+}
+
+public static Vector2Int ScreenToAxial( Vector2 xy ) {
     return Hexes.ScreenToHex( xy - _pan, hexPixelSize );
 }
 
 public static class model {
     public static Vector2 [] pos = new Vector2[Pawn.MAX_PAWN];
     public static float [] t = new float[Pawn.MAX_PAWN];
+}
+
+public static void TerrainTile( int x, int y, Color? c = null, float sz = 1 ) {
+    Vector2 scr = AxialToScreen( x, y );
+    int w = ( int )( Hexes.hexSpriteRegularWidth * Draw.pixelSize * sz );
+    int h = ( int )( Hexes.hexSpriteRegularHeight * Draw.pixelSize * sz );
+    QGL.LateBlit( Hexes.hexSpriteRegular, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
+                                                                            w, h, color: c );
+}
+
+public static void TerrainTile( Vector2Int axial, Color? c = null, float sz = 1 ) {
+    TerrainTile( axial.x, axial.y, c, sz );
+}
+
+public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
+    TerrainTile( board.Axial( hx ), c, sz );
 }
 
 public static void PawnSprites( bool skipModels = false ) {
