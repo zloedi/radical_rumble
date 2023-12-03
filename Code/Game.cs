@@ -166,9 +166,5 @@ public static Vector2 TxToV( int tx ) {
     return new Vector2( TxToF( tx >> 16 ), TxToF( tx ) );
 }
 
-public static bool CanReach( int hxA, int hxB ) {
-    return false;
-}
-
 
 }
