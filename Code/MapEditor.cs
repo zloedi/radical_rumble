@@ -173,6 +173,32 @@ static void PatherTest_tck() {
         }
         _navMap[_hxA] = 0;
         HexPather.FloodMap( _hxA, 256, board.width, _navMap, board.numItems, _patherCTX );
+        foreach ( var hx in board.filter.solid ) {
+#if false
+            Vector2Int a = board.Axial( _hxA );
+            Vector2Int b = board.Axial( hx );
+            _patherCTX.floodMap[hx] |= Hexes.AxialDistance( a, b ) << 8;
+#else
+            Vector3Int a = Hexes.AxialToCubeInt( board.Axial( _hxA ) );
+            Vector3Int b = Hexes.AxialToCubeInt( board.Axial( hx ) );
+            int dist = ( b - a ).sqrMagnitude;
+            _patherCTX.floodMap[hx] = _patherCTX.floodMap[hx] << 16 | dist;
+#endif
+        }
+    }
+
+#if false
+    foreach ( var hx in board.filter.solid ) {
+        Vector2 spos = Draw.HexToScreen( hx );
+        int dist = _patherCTX.floodMap[hx] >> 8;
+        QGL.LatePrint( dist, spos );
+    }
+#endif
+
+    foreach ( var hx in board.filter.solid ) {
+        Vector2 spos = Draw.HexToScreen( hx );
+        int dist = _patherCTX.floodMap[hx] & 0xffff;
+        QGL.LatePrint( dist, spos );
     }
 
     HexPather.TracePath( _hxB, board.width, _patherCTX, _path );
