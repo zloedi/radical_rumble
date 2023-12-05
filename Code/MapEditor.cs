@@ -12,8 +12,14 @@ static class MapEditor {
 static int State_cvar = 1;
 static string LastSavedMap_cvar = "unnamed";
 
-static Action [] _ticks = { None_tck, PlaceTerrain_tck, PlaceTower_tck, PatherTest_tck, HexTracing_tck };
-static string [] _tickNames = new string[_ticks.Length];
+static string [] _tickNames;
+static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tickNames,
+    None_tck,
+    PlaceTerrain_tck,
+    PlaceTower_tck,
+    PatherTest_tck,
+    HexTracing_tck
+);
 
 static string _stateName => _tickNames[State_cvar % _ticks.Length];
 static Vector2Int _mouseHexCoord;
@@ -333,16 +339,7 @@ static void HexTracing_tck() {
 }
 
 static void SetState_cmd( string [] argv ) {
-    int idx;
-    if ( argv.Length < 2 || ( idx = Array.IndexOf( _tickNames, argv[1] ) ) < 0 ) {
-        foreach ( var n in _tickNames ) {
-            Cl.Log( n );
-        }
-        Cl.Log( $"{argv[0]} <state_name>" );
-        return;
-    }
-    State_cvar = idx;
-    Qonsole.Log( $"Setting state to {argv[1]}" );
+    TickUtil.SetState( argv, _ticks, _tickNames, ref State_cvar );
 }
 
 static void Save_cmd( string [] argv ) {

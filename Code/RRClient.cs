@@ -43,8 +43,9 @@ static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 [Description( "0 -- play; 1 -- map editor" )]
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
-static string [] _tickNames = { "Play",        "Map Editor", };
-static Action [] _ticks =     { PlayerQGL.Tick, MapEditor.Tick };
+static string [] _tickNames;
+static Action [] _ticks = TickUtil.RegisterTicks( typeof( RRClient ), out _tickNames,
+                                                                Play_tck, Edit_tck );
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -70,8 +71,8 @@ public static bool Init() {
     ZClient.onConnected_f = OnConnected;
 
     //QUI.DrawLineRect = (x,y,w,h) => QGL.LateDrawLineRect(x,y,w,h,color:Color.magenta);
-    QUI.Log = s => ZClient.Log( s );
-    QUI.Error = s => ZClient.Error( s );
+    TickUtil.Log = QUI.Log = s => ZClient.Log( s );
+    TickUtil.Error = QUI.Error = s => ZClient.Error( s );
 
     // we don't need shadow copies of game state on the client
     return game.Init( skipShadowClones: true );
@@ -214,6 +215,23 @@ public static bool IsLocalGame() {
     return false;
 }
 
+// some actions can potentially flood the net channel
+// use this to block them until proper time
+public static bool AllowSpam() {
+    return ! ZClient.HasUnsentReliableCommands();
+}
+
+public static void DrawBoard( Color? colorSolid = null ) {
+    Draw.Board( colorSolid );
+}
+
+public static void SvCmd( string cmd ) {
+    if ( ClPrintOutgoingCommands_kvar ) {
+        Log( cmd );
+    }
+    ZClient.RegisterReliableCmd( cmd );
+}
+
 static void UpdateTraceLevel() {
     ZClient.Log = s => {};
     ZClient.Error = s => {};
@@ -300,21 +318,12 @@ static void OnServerPacket( List<byte> packet ) {
     }
 }
 
-// some actions can potentially flood the net channel
-// use this to block them until proper time
-public static bool AllowSpam() {
-    return ! ZClient.HasUnsentReliableCommands();
+static void Play_tck() {
+    PlayerQGL.Tick();
 }
 
-public static void DrawBoard( Color? colorSolid = null ) {
-    Draw.Board( colorSolid );
-}
-
-public static void SvCmd( string cmd ) {
-    if ( ClPrintOutgoingCommands_kvar ) {
-        Log( cmd );
-    }
-    ZClient.RegisterReliableCmd( cmd );
+static void Edit_tck() {
+    MapEditor.Tick();
 }
 
 // == commands ==
@@ -389,6 +398,10 @@ static void ClPrintPawns_kmd( string [] argv ) {
         }
         Qonsole.Log( "\n" );
     }
+}
+
+static void ClSetState_kmd( string [] argv ) { 
+    TickUtil.SetState( argv, _ticks, _tickNames, ref ClState_kvar );
 }
 
 
