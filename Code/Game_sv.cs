@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 #if UNITY_STANDALONE
 using UnityEngine;
@@ -16,6 +17,33 @@ partial class Game {
 public void TickServer( int dt ) {
     pawn.UpdateFilters();
 
+    float dtSecs = dt / 1000f;
+
+    foreach ( var z in pawn.filter.no_moving ) {
+        int dest = 176;
+
+        Vector2Int axial = Hexes.ScreenToHex( pawn.pos0[z] );
+        GetCachedPath( board.Hex( axial ), dest, out List<int> path );
+        if ( path.Count > 1 ) {
+            pawn.pos1[z] = Hexes.HexToScreen( board.Axial( path[1] ) );
+        }
+
+        List<Vector2> pathLine = new List<Vector2>();
+        SingleShot.Add( deltat => {
+            pathLine.Clear();
+            foreach ( var hx in path ) {
+                pathLine.Add( Draw.HexToScreen( hx ) );
+            }
+            QGL.LateDrawLine( pathLine );
+        } );
+    }
+
+    foreach ( var z in pawn.filter.moving ) {
+        //pawn.posT[z] += dtSecs * pawn.GetDef( z ).speed;
+        //pawn.posT[z] = Mathf.Min( pawn.posT[z], 1 );
+        //pawn.pos[z] = Vector2.Lerp( pawn.pos0[z], pawn.pos1[z], pawn.posT[z] );
+    }
+
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.pos0_tx[z] = ToTx( pawn.pos0[z] );
         pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
@@ -28,7 +56,7 @@ public void Spawn( int def, float x, float y ) {
         Error( "Out of pawns, can't create." );
         return;
     }
-    pawn.pos0[z] = new Vector2( x, y );
+    pawn.pos1[z] = pawn.pos0[z] = new Vector2( x, y );
     Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
 }
 
@@ -162,6 +190,18 @@ public void SetTerrain( int x, int y, int terrain ) {
         Log( $"Resized grid. w: {newW} h: {newH}" );
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
     }
+}
+
+Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
+void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
+    int key = ( hxSrc << 16 ) | hxTarget;
+    if ( _pathCache.TryGetValue( key, out path ) ) {
+        return;
+    }
+    Qonsole.Log( "[ffc000]Casting the real pather...[-]" );
+    board.GetPath( hxSrc, hxTarget );
+    path = new List<int>( board.strippedPath );
+    _pathCache[key] = path;
 }
 
 

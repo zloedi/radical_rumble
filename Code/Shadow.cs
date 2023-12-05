@@ -29,7 +29,7 @@ public Dictionary<Array,Row> arrayToShadow = new Dictionary<Array,Row>();
 
 // pass down an object of rows
 public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false,
-                                                                        Type ignoreType = null ) {
+                                                            params Type [] ignoreTypes ) {
     FieldInfo [] fields = obj.GetType().GetFields();
 
     foreach ( FieldInfo fi in fields ) {
@@ -54,7 +54,7 @@ public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false,
             deltaType = DeltaType.Uint16;
         } else if ( elemType == typeof( int ) ) {
             deltaType = DeltaType.Int32;
-        } else if ( elemType == ignoreType ) {
+        } else if ( Array.IndexOf( ignoreTypes, elemType ) >= 0 ) {
             deltaType = DeltaType.None;
         } else {
             Error( $"Unknown DeltaType {elemType} on field {nameKey}" );

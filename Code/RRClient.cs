@@ -330,6 +330,10 @@ static void Edit_tck() {
 
 static DateTime _pingStart;
 
+static void PrintHex_kmd( string [] argv ) { 
+    Qonsole.Log( Draw.ScreenToHex( mousePosition ) );
+}
+
 static void Ping_kmd( string [] argv ) {
     Log( $"pinging {ClServerIpAddress_kvar}" );
     _pingStart = DateTime.UtcNow;

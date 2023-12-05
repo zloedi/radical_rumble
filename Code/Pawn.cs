@@ -18,6 +18,7 @@ public class Filter {
 
     public List<byte> garbage = null, no_garbage = null;
     public List<byte> flying = null, no_flying = null;
+    public List<byte> moving = null, no_moving = null;
 
     public Filter() {
         FilterUtil.CreateAll( this, out all );
@@ -34,6 +35,8 @@ public const int MAX_PAWN = 256;
 
 public byte [] hp = RegisterRow<byte>();
 public byte [] def = RegisterRow<byte>();
+public Vector2 [] pos = RegisterRow<Vector2>();
+public float [] posT = RegisterRow<float>();
 public Vector2 [] pos0 = RegisterRow<Vector2>();
 public Vector2 [] pos1 = RegisterRow<Vector2>();
 public int [] pos0_tx = RegisterRow<int>();
@@ -94,6 +97,14 @@ public bool IsFlying( int z ) {
     return ( GetDef( z ).flags & Flags.Flying ) != 0;
 }
 
+public bool IsMoving( int z ) {
+    return ( pos0[z] - pos1[z] ).sqrMagnitude > 0.00001f;
+}
+
+public bool IsIdling( int z ) {
+    return pos0[z] == pos1[z];
+}
+
 public void Destroy( int z ) {
     _createSeq = z;
     def[z] = 0;
@@ -117,6 +128,10 @@ public void UpdateFilters() {
 
     foreach ( int z in filter.no_garbage ) {
         assign( z, IsFlying( z ), filter.flying, filter.no_flying );
+    }
+
+    foreach ( int z in filter.no_garbage ) {
+        assign( z, IsMoving( z ), filter.moving, filter.no_moving );
     }
 }
 

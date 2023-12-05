@@ -52,8 +52,7 @@ public Game() {
 public bool Init( bool skipShadowClones = false ) {
     shadow.Log = Log;
     shadow.Error = Error;
-    if ( ! shadow.CreateShadows( pawn, skipClone: skipShadowClones,
-                                                                ignoreType: typeof( Vector2 ) ) ) {
+    if ( ! shadow.CreateShadows( pawn, 0, skipShadowClones, typeof( float ), typeof( Vector2 ) ) ) {
         return false;
     }
     if ( ! shadow.CreateShadows( board, skipClone: skipShadowClones ) ) {
@@ -64,6 +63,7 @@ public bool Init( bool skipShadowClones = false ) {
 
 public void Reset() {
     pawn.Reset();
+    _pathCache.Clear();
 }
 
 List<ushort> deltaChange = new List<ushort>();

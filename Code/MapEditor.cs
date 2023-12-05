@@ -161,9 +161,9 @@ static bool CanReach( int hxA, int hxB, byte [] navMap ) {
 }
 
 static int _hxA, _hxB;
-static HexPather.Context _patherCTX = HexPather.CreateContext( Board.MAX_GRID );
-static byte [] _navMap = new byte[Board.MAX_GRID];
-static List<int> _path = new List<int>();
+static HexPather.Context _patherCTX => board.patherCTX;
+static byte [] _navMap => board.navMap;
+static List<int> _path => board.path;
 static List<Vector2> _pathLine = new List<Vector2>();
 static void PatherTest_tck() {
     Draw.FillScreen();
@@ -188,7 +188,7 @@ static void PatherTest_tck() {
             Vector3Int a = Hexes.AxialToCubeInt( board.Axial( _hxA ) );
             Vector3Int b = Hexes.AxialToCubeInt( board.Axial( hx ) );
             int dist = ( b - a ).sqrMagnitude;
-            _patherCTX.floodMap[hx] = _patherCTX.floodMap[hx] << 16 | dist;
+            _patherCTX.floodMap[hx] = ( _patherCTX.floodMap[hx] << 16 ) | dist;
 #endif
         }
     }
@@ -218,6 +218,7 @@ static void PatherTest_tck() {
     Draw.TerrainTile( _hxA, c: Color.cyan, sz: 0.75f );
     Draw.TerrainTile( _hxB, c: Color.yellow, sz: 0.75f );
 
+#if false
     var pth = new List<int>();
 
     if ( _path.Count > 2 ) {
@@ -249,9 +250,12 @@ static void PatherTest_tck() {
             }
         }
     }
+#endif
+
+    board.StripPath();
 
     _pathLine.Clear();
-    foreach ( var hx in pth ) {
+    foreach ( var hx in board.strippedPath ) {
         _pathLine.Add( Draw.HexToScreen( hx ) );
     }
     QGL.LateDrawLine( _pathLine );
