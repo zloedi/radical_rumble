@@ -13,29 +13,39 @@ using Sv = RRServer;
 
 partial class Game {
 
+static bool SvShowPaths_kvar = false;
 
-public void TickServer( int dt ) {
+public void TickServer( int deltaTimeMS ) {
+    float dtSecs = deltaTimeMS / 1000f;
+
     pawn.UpdateFilters();
 
-    float dtSecs = dt / 1000f;
-
+    int newMovers = 0;
     foreach ( var z in pawn.filter.no_moving ) {
         int dest = 176;
 
-        Vector2Int axial = Hexes.ScreenToHex( pawn.pos0[z] );
-        GetCachedPath( board.Hex( axial ), dest, out List<int> path );
+        GetCachedPath( VToHex( pawn.pos0[z] ), dest, out List<int> path );
         if ( path.Count > 1 ) {
-            pawn.pos1[z] = Hexes.HexToScreen( board.Axial( path[1] ) );
+            pawn.pos1[z] = HexToV( path[1] );
+            newMovers++;
         }
 
-        List<Vector2> pathLine = new List<Vector2>();
-        SingleShot.Add( deltat => {
+#if UNITY_STANDALONE
+        if ( SvShowPaths_kvar ) {
+            List<Vector2> pathLine = new List<Vector2>();
             pathLine.Clear();
             foreach ( var hx in path ) {
                 pathLine.Add( Draw.HexToScreen( hx ) );
             }
-            QGL.LateDrawLine( pathLine );
-        } );
+            SingleShot.Add( dt => {
+                QGL.LateDrawLine( pathLine );
+            } );
+        }
+#endif
+    }
+
+    if ( newMovers > 0 ) {
+        pawn.UpdateFilters_moving();
     }
 
     foreach ( var z in pawn.filter.moving ) {
@@ -192,16 +202,75 @@ public void SetTerrain( int x, int y, int terrain ) {
     }
 }
 
+// target can be a void hex bordering the solids
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
 void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
     int key = ( hxSrc << 16 ) | hxTarget;
     if ( _pathCache.TryGetValue( key, out path ) ) {
         return;
     }
+
     Qonsole.Log( $"[ffc000]Casting the real pather. Num paths in cache: {_pathCache.Count}[-]" );
     board.GetPath( hxSrc, hxTarget );
-    path = new List<int>( board.strippedPath );
-    _pathCache[key] = path;
+
+    // each segment is a valid path in both ways
+    CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
+
+    path = _pathCache[key];
+}
+
+void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
+    CachePathBothWays( hxA, hxB, path );
+    
+    for ( int i = 0; i < path.Count - 1; i++ ) {
+        int i0 = i + 0;
+        int i1 = i + 1;
+        var seg = new List<int>() { path[i0], path[i1] };
+        CachePathBothWays( seg[0], seg[1], seg );
+    }
+
+    var p = new List<int>( path );
+    for ( int i = p.Count - 1; i >= 3; i-- ) {
+        p.RemoveAt( i );
+        CachePathBothWays( p[0], p[p.Count-1], p );
+    }
+
+    p = new List<int>( path );
+    p.Reverse();
+    for ( int i = p.Count - 1; i >= 3; i-- ) {
+        p.RemoveAt( i );
+        CachePathBothWays( p[0], p[p.Count-1], p );
+    }
+}
+
+void CachePathBothWays( int hxA, int hxB, List<int> path ) {
+    int key0 = ( hxA << 16 ) | hxB;
+    _pathCache[key0] = new List<int>( path );
+
+    int key1 = ( hxB << 16 ) | hxA;
+    _pathCache[key1] = new List<int>( path );
+    _pathCache[key1].Reverse();
+}
+
+void SetMoving( int zNoMoving, int hxDest ) {
+    pawn.pos1[zNoMoving] = Hexes.HexToScreen( board.Axial( hxDest ) );
+    pawn.UpdateFilters_moving();
+}
+
+int VToHex( Vector2 v ) {
+    return board.Hex( VToAxial( v ) );
+}
+
+Vector2Int VToAxial( Vector2 v ) {
+    return Hexes.ScreenToHex( v );
+}
+
+Vector2 AxialToV( Vector2Int axial ) {
+    return Hexes.HexToScreen( axial );
+}
+
+Vector2 HexToV( int hx ) {
+    return AxialToV( board.Axial( hx ) );
 }
 
 

@@ -24,6 +24,11 @@ public class Filter {
         FilterUtil.CreateAll( this, out all );
     }
 
+    public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
+        var l = condition ? la : lb;
+        l.Add( ( byte )z );
+    }
+
     public void Clear() {
         foreach ( var l in all ) {
             l.Clear();
@@ -114,25 +119,24 @@ public bool IsGarbage( int z ) {
     return def[z] == 0;
 }
 
+public void UpdateFilters_moving() {
+    foreach ( int z in filter.no_garbage ) {
+        filter.Assign( z, IsMoving( z ), filter.moving, filter.no_moving );
+    }
+}
+
 public void UpdateFilters() {
     filter.Clear();
 
-    void assign( int z, bool condition, List<byte> la, List<byte> lb ) {
-        var l = condition ? la : lb;
-        l.Add( ( byte )z );
-    }
-
     for ( int z = 0; z < MAX_PAWN; z++ ) {
-        assign( z, IsGarbage( z ), filter.garbage, filter.no_garbage );
+        filter.Assign( z, IsGarbage( z ), filter.garbage, filter.no_garbage );
     }
 
     foreach ( int z in filter.no_garbage ) {
-        assign( z, IsFlying( z ), filter.flying, filter.no_flying );
+        filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
     }
 
-    foreach ( int z in filter.no_garbage ) {
-        assign( z, IsMoving( z ), filter.moving, filter.no_moving );
-    }
+    UpdateFilters_moving();
 }
 
 static T [] RegisterRow<T>() {

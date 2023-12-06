@@ -315,6 +315,9 @@ static void SvUndelta_kmd( string [] argv ) {
         Log( "Nothing to undelta." );
         return;
     }
+
+    game.Reset();
+
     string [] cpargv = new string[argv.Length - 1];
     Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
     if ( game.UndeltaState( cpargv, out bool updateBoardFilters ) ) {

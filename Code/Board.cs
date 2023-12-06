@@ -63,6 +63,10 @@ public class Board {
         return hxc.x >= 0 && hxc.x < width && hxc.y >= 0 && hxc.y < height;
     }
 
+    public int Distance( int hxA, int hxB ) {
+        return Hexes.AxialDistance( Axial( hxA ), Axial( hxB ) );
+    }
+
     public Vector2Int Axial( int hx ) {
         int w = width == 0 ? 256 : width;
         return new Vector2Int( hx % w, hx / w );
@@ -88,7 +92,8 @@ public class Board {
         navMap[hxTarget] = 0;
 
         // flood the map with score
-        HexPather.FloodMap( hxTarget, 256, width, navMap, numItems, patherCTX );
+        int axialDist = Distance( hxSrc, hxTarget );
+        HexPather.FloodMap( hxTarget, axialDist + 1, width, navMap, numItems, patherCTX );
 
         // put the geometrical distance in the score
         foreach ( var hx in filter.solid ) {
