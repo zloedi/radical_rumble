@@ -79,7 +79,9 @@ public class Board {
     // hxTarget may be a void hex
     public void GetPath( int hxSrc, int hxTarget ) {
         // fill the obstacle map
-        Array.Clear( navMap, 0, numItems );
+        foreach ( var hx in filter.solid ) {
+            navMap[hx] = 0;
+        }
         foreach ( var hx in filter.no_solid ) {
             navMap[hx] = 1;
         }

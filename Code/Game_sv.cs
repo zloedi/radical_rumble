@@ -198,7 +198,7 @@ void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
     if ( _pathCache.TryGetValue( key, out path ) ) {
         return;
     }
-    Qonsole.Log( "[ffc000]Casting the real pather...[-]" );
+    Qonsole.Log( $"[ffc000]Casting the real pather. Num paths in cache: {_pathCache.Count}[-]" );
     board.GetPath( hxSrc, hxTarget );
     path = new List<int>( board.strippedPath );
     _pathCache[key] = path;
