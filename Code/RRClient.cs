@@ -19,6 +19,8 @@ public static int ClTraceLevel_kvar = 1;
 [Description("Print incoming packets: 1 -- some; 2 -- all")]
 static int ClPrintIncomingPackets_kvar = 0;
 
+static bool ShowBoardBounds_kvar = false;
+
 public static Game game = new Game();
 
 public static Vector2 mousePosition = new Vector2( -1, -1 );
@@ -171,6 +173,10 @@ public static void Tick( double timeDelta ) {
     //    }
     //}
 
+    if ( ShowBoardBounds_kvar ) {
+        Draw.BoardBounds();
+    }
+
     QUI.End();
 
     //if ( mouse0Down || mouse1Down ) {
@@ -267,6 +273,7 @@ static void UpdateTraceLevel() {
 
 static void OnConnected() {
     game.Reset();
+    Draw.model.Clear();
 }
 
 static void OnServerPacket( List<byte> packet ) {

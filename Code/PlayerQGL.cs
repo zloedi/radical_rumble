@@ -26,6 +26,7 @@ public static void Tick() {
     }
 
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );
+    Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
     Draw.PawnSprites();
 }

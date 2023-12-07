@@ -68,16 +68,17 @@ public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     return xy - origin;
 }
 
-public static Vector2 AxialToScreenNoPan( int x, int y ) {
-    return Hexes.HexToScreen( x, y, hexPixelSize );
+public static Vector2Int AxialToScreenNoPan( int x, int y ) {
+    Vector2 v = Hexes.HexToScreen( x, y, hexPixelSize );
+    return new Vector2Int( ( int )v.x, ( int )v.y );
 }
 
-public static Vector2 AxialToScreen( Vector2Int axial ) {
+public static Vector2Int AxialToScreen( Vector2Int axial ) {
     return AxialToScreen( axial.x, axial.y );
 }
 
-public static Vector2 AxialToScreen( int x, int y ) {
-    return _pan + Hexes.HexToScreen( x, y, hexPixelSize );
+public static Vector2Int AxialToScreen( int x, int y ) {
+    return _pan + AxialToScreenNoPan( x, y );
 }
 
 public static Vector2 HexToScreen( int hx ) {
@@ -96,6 +97,11 @@ public static Vector2Int ScreenToAxial( Vector2 xy ) {
 public static class model {
     public static Vector2 [] pos = new Vector2[Pawn.MAX_PAWN];
     public static float [] t = new float[Pawn.MAX_PAWN];
+
+    public static void Clear() {
+        Array.Clear( pos, 0, pos.Length );
+        Array.Clear( t, 0, t.Length );
+    }
 }
 
 public static void TerrainTile( int x, int y, Color? c = null, float sz = 1 ) {
@@ -115,57 +121,62 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
 }
 
 public static void PawnSprites( bool skipModels = false ) {
-    Vector2 dsprite = new Vector2( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
-    Vector2 size = dsprite * Draw.pixelSize;
-    Vector2 offPrn = new Vector2( Draw.pixelSize, Draw.pixelSize * 3 / 2 );
-    Vector2 offShadow = new Vector2( Draw.pixelSize, Draw.pixelSize );
+    Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
+    Vector2Int size = dsprite * Draw.pixelSize;
+    Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
+    Vector2Int offShadow = new Vector2Int( Draw.pixelSize, Draw.pixelSize );
 
     var offShad = offShadow;
-    var sz = size * 0.75f;
-    var szHalf = sz * 0.5f;
+    var sz = new Vector2Int( ( int )( size.x * 0.8f ), ( int )( size.y * 0.8f ) );
+    var szHalf = sz / 2;
 
     Vector2 [] posRow = skipModels ? pawn.pos0 : model.pos;
 
-    void getScreenPos( int z, out Vector2 pos, out Vector2 topLeft ) {
-        pos = _pan + posRow[z] * Draw.hexPixelSize;
-        topLeft = pos - szHalf;
+    void blit( Vector2Int vpos, Vector2Int vsz, Color color ) {
+        QGL.LateBlit( Hexes.hexSpriteRegular, vpos, vsz, color: color );
+    }
+
+    void print( int z, Vector2Int vpos ) {
+        Pawn.Def def = Pawn.defs[pawn.def[z]];
+        Vector2Int v = vpos + szHalf + offPrn;
+        QGL.LatePrint( def.name[0], v, color: def.color, scale: Draw.pixelSize );
+    }
+
+    void getScreenPos( int z, out Vector2Int topLeft ) {
+        Vector2 pos = _pan + posRow[z] * Draw.hexPixelSize - szHalf;
+        topLeft = new Vector2Int( ( int )pos.x, ( int )pos.y );
     }
 
     foreach ( var z in pawn.filter.no_flying ) {
-        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
-        QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: Color.black * 0.3f );
+        getScreenPos( z, out Vector2Int pos );
+        blit( pos, sz, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        QGL.LateBlit( Hexes.hexSpriteRegular, pos - offShad, sz, color: c );
-        //Hexes.DrawHexWithLines( scrPos - offShad, sz.x * 1.2f, def.color * 0.75f );
-        QGL.LatePrint( def.name[0], scrPos + offPrn - offShad, color: def.color, scale: Draw.pixelSize );
+        blit( pos - offShad, sz, color: c );
+        print( z, pos - offShad );
     }
 
     offShad = offShadow * 7;
-    sz = size * 1;
-    szHalf = sz * 0.5f;
+    sz = size;
+    szHalf = sz / 2;
 
     foreach ( var z in pawn.filter.flying ) {
-        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
-        QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: Color.black * 0.3f );
+        getScreenPos( z, out Vector2Int pos );
+        blit( pos, sz, color: Color.black * 0.3f );
     }
 
     foreach ( var z in pawn.filter.flying ) {
-        getScreenPos( z, out Vector2 scrPos, out Vector2 pos );
+        getScreenPos( z, out Vector2Int pos );
         Pawn.Def def = pawn.GetDef( z );
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        QGL.LateBlit( Hexes.hexSpriteRegular, pos - offShad, sz, color: c );
-        QGL.LatePrint( def.name[0], scrPos + offPrn - offShad, color: def.color, scale: Draw.pixelSize );
+        blit( pos - offShad, sz, color: c );
+        print( z, pos - offShad );
     }
 }
 
 public static void Board( Color? colorSolid = null, bool skipVoidHexes = false ) {
-    Vector2 hexToScreen( ushort hx ) {
-        return _pan + Hexes.HexToScreen( board.Axial( hx ), hexPixelSize );
-    }
-
     void drawHex( ushort hx, Color c ) {
-        Vector2 scr = hexToScreen( hx );
+        Vector2 scr = HexToScreen( hx );
         int w = Hexes.hexSpriteRegularWidth * Draw.pixelSize;
         int h = Hexes.hexSpriteRegularHeight * Draw.pixelSize;
         QGL.LateBlit( Hexes.hexSpriteRegular, ( int )( scr.x - w / 2 ), ( int )( scr.y - h / 2 ),
@@ -190,15 +201,20 @@ public static void Board( Color? colorSolid = null, bool skipVoidHexes = false )
     }
 
     foreach ( ushort hx in board.filter.solid ) {
-        Vector2 scr = hexToScreen( hx );
+        Vector2 scr = HexToScreen( hx );
         Hexes.DrawHexWithLines( scr, 11 * Draw.pixelSize, Color.black * 0.1f );
     }
 }
 
+public static void BoardBounds() {
+    GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
+    QGL.LateDrawLineRect( x + _pan.x, y + _pan.y, w, h );
+}
+
 public static void CenterBoardOnScreen() {
     GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
-    _pan.x = -x + ( Screen.width - w ) / 2;
-    _pan.y = -y + ( Screen.height - h ) / 2;
+    _pan.x = ( Screen.width - w ) / 2 - x;
+    _pan.y = ( Screen.height - h ) / 2 - y;
 }
 
 public static void OffsetView( Vector2 xy ) {

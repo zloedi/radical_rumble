@@ -71,7 +71,7 @@ static void Main( string[] args ) {
             forcePacket = true;
         }
 
-        ZServer.Tick( maxTick - tick, forcePacket );
+        ZServer.TickWithClocks( forcePacket );
 
         if ( forcePacket ) {
             pulseTime = PULSE_TIME;
