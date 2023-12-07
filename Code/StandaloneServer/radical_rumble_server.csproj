@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{23D2762F-F5F8-43C5-AAAA-398426379F1A}</ProjectGuid>
+    <ProjectGuid>{0093a0bd-c612-4f6d-b3de-2644713f08ca}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>radical_rumble_server</RootNamespace>
     <AssemblyName>radical_rumble_server</AssemblyName>
@@ -55,46 +55,16 @@
     <Compile Include="../ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3Int.cs" />
-    <Compile Include="../AbilityCard.cs" />
     <Compile Include="../Board.cs" />
-    <Compile Include="../Common.cs" />
     <Compile Include="../Game.cs" />
+    <Compile Include="../Game_sv.cs" />
     <Compile Include="../Pawn.cs" />
-    <Compile Include="../Server.cs" />
+    <Compile Include="../PawnDef.cs" />
+    <Compile Include="../RRServer.cs" />
+    <Compile Include="../Shadow.cs" />
+    <Compile Include="../FilterUtil.cs" />
     <Compile Include="StandaloneServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="../Blinkblade.cs" />
-    <Compile Include="../C32_BlurryJab.cs" />
-    <Compile Include="../C33_TwinStrike.cs" />
-	<!--Compile Include="../C34_SapSpeed.cs" />
-	<Compile Include="../C35_KineticTransfer.cs" />
-	<Compile Include="../C36_Overdrive.cs" />
-	<Compile Include="../C37_PowerLeak.cs" />
-	<Compile Include="../C38_HitandRun.cs" />
-	<Compile Include="../C39_DriveRecharge.cs" />
-	<Compile Include="../C40_CascadingReaction.cs" />
-	<Compile Include="../C41_TemporalDisplacement.cs" />
-	<Compile Include="../C42_ExperimentalAdjustment.cs" />
-	<Compile Include="../C43_SandInTheHourglass.cs" />
-	<Compile Include="../C44_BorrowedTime.cs" />
-	<Compile Include="../C45_SystemsReboot.cs" />
-	<Compile Include="../C46_RecklessAugmentation.cs" />
-	<Compile Include="../C47_MakeItCount.cs" />
-	<Compile Include="../C48_DoubleTime.cs" />
-	<Compile Include="../C49_PrecisionTiming.cs" />
-	<Compile Include="../C50_PotentialEnergy.cs" />
-	<Compile Include="../C51_BreakneckSpeed.cs" />
-	<Compile Include="../C52_FlashingFlurry.cs" />
-	<Compile Include="../C53_StabThemAll.cs" />
-	<Compile Include="../C54_TheKnifesEdge.cs" />
-	<Compile Include="../C55_PhasingBlades.cs" />
-	<Compile Include="../C56_RushedToTheEnd.cs" />
-	<Compile Include="../C57_QuantumUncertainty.cs" />
-	<Compile Include="../C58_FastestAlive.cs" />
-	<Compile Include="../C59_ReverseTheFlow.cs" />
-	<Compile Include="../C60_FracturedTimeline.cs" />
-	<Compile Include="../C61_AirSupport.cs" />
-	<Compile Include="../C62_TrainedFalcon.cs" /-->
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

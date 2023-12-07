@@ -30,8 +30,8 @@ public void TickServer( int deltaTimeMS ) {
             newMovers++;
         }
 
-#if UNITY_STANDALONE
         if ( SvShowPaths_kvar ) {
+#if UNITY_STANDALONE
             List<Vector2> pathLine = new List<Vector2>();
             pathLine.Clear();
             foreach ( var hx in path ) {
@@ -40,8 +40,8 @@ public void TickServer( int deltaTimeMS ) {
             SingleShot.Add( dt => {
                 QGL.LateDrawLine( pathLine );
             } );
-        }
 #endif
+        }
     }
 
     if ( newMovers > 0 ) {

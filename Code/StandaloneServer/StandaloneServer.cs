@@ -1,16 +1,16 @@
 using System;
 using System.Net;
 
-using static GameConstants;
-
 public static class StandaloneServer {
 
 static void Main( string[] args ) {
+    const int PULSE_TIME = 3333;
+    const int CONFIG_VERSION = 1;
+
     Qonsole.Init( CONFIG_VERSION );
 
     Game game = new Game();
 
-    const int PULSE_TIME = 3333;
 
     int pulseTime = PULSE_TIME;
     int traceLevel = 0;
@@ -25,13 +25,13 @@ static void Main( string[] args ) {
 
     try {
 
-    if ( ! Server.Init( svh: "RadicalRumbleServer: ", timestamps: true ) ) {
+    if ( ! RRServer.Init( svh: "RadicalRumbleServer: ", logTimestamps: true ) ) {
         ZServer.Error( "Failed to initialize standalone Radical Rumble server, quit." );
         return;
     }
 
-    Cellophane.Log = Server.Log;
-    Cellophane.Error = Server.Error;
+    Cellophane.Log = RRServer.Log;
+    Cellophane.Error = RRServer.Error;
 
     ZServer.onExit_f = Qonsole.FlushConfig;
 
@@ -65,9 +65,6 @@ static void Main( string[] args ) {
             tick -= dt;
             prevTime = now;
             pulseTime -= dt;
-            Common.timeDeltaMs = dt;
-            Common.timeDeltaSec = dt * 1000f;
-            Common.timeNow += dt;
         }
 
         if ( pulseTime < 0 ) {
