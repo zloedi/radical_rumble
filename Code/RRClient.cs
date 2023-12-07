@@ -21,8 +21,6 @@ static int ClPrintIncomingPackets_kvar = 0;
 
 public static Game game = new Game();
 
-public static int deltaTime;
-
 public static Vector2 mousePosition = new Vector2( -1, -1 );
 public static Vector2 mouseDelta;
 
@@ -33,6 +31,9 @@ public static bool mouse0Down;
 public static bool mouse1Held;
 public static bool mouse1Up;
 public static bool mouse1Down;
+
+public static double clock, clockPrev, clockDeltaDbl;
+public static int clockDelta;
 
 public static bool isPaused = false;
 
@@ -82,10 +83,15 @@ public static void Done() {
     ZClient.Done();
 }
 
-public static void Tick( int timeDeltaMs ) {
-    deltaTime = timeDeltaMs;
+public static void Tick( double timeDelta ) {
+    clockDeltaDbl = clock - clockPrev;
+    clockDelta = ( int )clockDeltaDbl;
+    clockPrev = clock;
 
-    ZClient.Tick( deltaTime );
+    // might change the clock
+    ZClient.Tick( clockDelta );
+
+    clock += timeDelta;
 
     WrapBox.DisableCanvasScale();
 
@@ -194,7 +200,7 @@ public static void Tick( int timeDeltaMs ) {
         Draw.BigRedMessage();
     }
     
-    SingleShot.TickMs( timeDeltaMs );
+    SingleShot.TickMs( clockDelta );
 }
 
 public static void Execute( string command ) {
@@ -328,12 +334,36 @@ static void Edit_tck() {
 
 // == commands ==
 
-static DateTime _pingStart;
+static void Clk_kmd( string [] argv ) {
+    if ( argv.Length < 2 ) {
+        Error( "supply a clock value" );
+        return;
+    }
+
+    int clClk = ( int )clock;
+    int.TryParse( argv[1], out int svClk );
+    int delta = svClk - clClk;
+
+    Qonsole.Log( $"{argv[0]}: cl clock: {clClk}" );
+    Qonsole.Log( $"{argv[0]}: sv clock: {svClk}" );
+    Qonsole.Log( $"{argv[0]}: delta: {delta}" );
+
+    if ( delta > 0 ) {
+        if ( delta > 100 ) {
+            clockPrev = clock = svClk;
+        } else {
+            clock = svClk;
+        }
+    } else if ( delta < -100 ) {
+        clockPrev = clock = svClk;
+    }
+}
 
 static void PrintHex_kmd( string [] argv ) { 
     Qonsole.Log( Draw.ScreenToHex( mousePosition ) );
 }
 
+static DateTime _pingStart;
 static void Ping_kmd( string [] argv ) {
     Log( $"pinging {ClServerIpAddress_kvar}" );
     _pingStart = DateTime.UtcNow;

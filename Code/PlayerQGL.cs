@@ -14,7 +14,7 @@ static Pawn pawn => Cl.game.pawn;
 public static void Tick() {
     pawn.UpdateFilters();
 
-    float dt = Cl.deltaTime / 1000f;
+    float dt = Cl.clockDelta / 1000f;
 
     foreach ( var z in pawn.filter.no_garbage ) {
         Vector2 a = pawn.pos0[z];

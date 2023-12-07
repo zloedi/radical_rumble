@@ -36,11 +36,14 @@ static void QonsolePostStart_kmd( string [] argv ) {
     if ( ! Cl.Init() ) {
         return;
     }
+    _clockDate = DateTime.UtcNow;
+    _clockPrevDate = DateTime.UtcNow;
     _initialized = true;
 }
 
 static int _pulse;
 static int _localServerSleep;
+static DateTime _clockDate, _clockPrevDate;
 static void QonsoleTick_kmd( string [] argv ) {
     if ( ! _initialized ) {
         return;
@@ -48,7 +51,11 @@ static void QonsoleTick_kmd( string [] argv ) {
 
     try {
 
-    int timeDeltaMs = ( int )( Time.deltaTime * 1000 + 0.5f );
+    _clockDate = DateTime.UtcNow;
+    // using integers leads to client outrunning the server clock
+    double timeDelta = ( _clockDate - _clockPrevDate ).TotalMilliseconds;
+    int timeDeltaMs = ( int )timeDelta;
+    _clockPrevDate = _clockDate;
 
     if ( Cl.IsLocalGame() ) {
         bool sendPacket = false;
@@ -56,7 +63,8 @@ static void QonsoleTick_kmd( string [] argv ) {
         // will invoke any incoming commands on the server 'onClientCommand_f'
         while ( ZServer.Poll( out bool hadCommands ) ) {
             if ( hadCommands ) {
-                // generate delta when any client command got executed and send it immediately
+                // generate delta when any client command got executed on the server
+                // and send the delta immediately
                 sendPacket = true;
                 break;
             }
@@ -68,7 +76,7 @@ static void QonsoleTick_kmd( string [] argv ) {
 
         if ( sendPacket || _localServerSleep <= 0 ) {
             // will invoke RRServer.Tick onTick_f and push any new packets
-            ZServer.Tick( Sv.TICK_TIME - _localServerSleep, sendPacket );
+            ZServer.TickWithClocks( sendPacket );
             _localServerSleep = Sv.TICK_TIME;
         }
         
@@ -76,7 +84,7 @@ static void QonsoleTick_kmd( string [] argv ) {
         _pulse = sendPacket ? Sv.PULSE_TIME : _pulse - timeDeltaMs;
     }
 
-    Cl.Tick( timeDeltaMs );
+    Cl.Tick( timeDelta );
 
     } catch ( Exception e ) {
         Qonsole.Error( e );

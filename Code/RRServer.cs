@@ -116,7 +116,7 @@ public static void Done() {
 }
 
 // returns game state delta followed by any explicit commands to clients
-public static List<byte> Tick( int dt, bool needPacket ) {
+public static List<byte> Tick( int dt, bool isForcedSend ) {
 
     // ==
 
@@ -127,14 +127,19 @@ public static List<byte> Tick( int dt, bool needPacket ) {
     _sentPacket.Clear();
 
     string packet = DeltaGameState();
+
     foreach ( var tc in _trailCommands ) {
         packet += $"; {tc}";
     }
     _trailCommands.Clear();
 
-    if ( string.IsNullOrEmpty( packet ) ) {
+    if ( string.IsNullOrEmpty( packet ) && ! isForcedSend ) {
+        // no delta nor trailing commands
         return _sentPacket;
     }
+
+    // if we do have a packet, append the clock
+    packet += $"; clk {ZServer.clock};";
 
     if ( SvPrintOutgoingPackets_kvar ) {
         Log( $"outgoing packet: {packet} len: {packet.Length}" );
