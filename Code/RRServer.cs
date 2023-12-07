@@ -26,7 +26,7 @@ static bool SvPrintIncomingCommands_kvar = false;
 static bool SvBounceLog_kvar = false;
 [Description("Send log errors to clients.")]
 static bool SvBounceError_kvar = false;
-static string SvLastLoadedMap_kvar = "unnamed";
+static string SvLastLoadedMap_kvar = "default.map";
 
 public static Game game = new Game();
 
