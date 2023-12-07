@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31605.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BBBB-00C04F79EFBA}") = "wurst_server", "wurst_server.csproj", "{23D2762F-F5F8-43C5-AAAA-398426379F1A}"
+Project("{9daa32a1-0559-49c9-ad61-e43c6f1454e4}") = "radical_rumble_server", "radical_rumble_server.csproj", "{0093a0bd-c612-4f6d-b3de-2644713f08ca}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,10 +10,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0093a0bd-c612-4f6d-b3de-2644713f08ca}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0093a0bd-c612-4f6d-b3de-2644713f08ca}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0093a0bd-c612-4f6d-b3de-2644713f08ca}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0093a0bd-c612-4f6d-b3de-2644713f08ca}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

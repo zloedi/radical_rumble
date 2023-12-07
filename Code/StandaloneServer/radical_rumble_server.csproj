@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{23D2762F-F5F8-43C5-AAAA-398426379F1A}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>wurst_server</RootNamespace>
-    <AssemblyName>wurst_server</AssemblyName>
+    <RootNamespace>radical_rumble_server</RootNamespace>
+    <AssemblyName>radical_rumble_server</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

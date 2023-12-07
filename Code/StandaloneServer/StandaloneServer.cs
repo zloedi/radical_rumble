@@ -25,8 +25,8 @@ static void Main( string[] args ) {
 
     try {
 
-    if ( ! Server.Init( svh: "WurstServer: ", timestamps: true ) ) {
-        ZServer.Error( "Failed to initialize standalone Wurst server, quit." );
+    if ( ! Server.Init( svh: "RadicalRumbleServer: ", timestamps: true ) ) {
+        ZServer.Error( "Failed to initialize standalone Radical Rumble server, quit." );
         return;
     }
 
@@ -35,7 +35,7 @@ static void Main( string[] args ) {
 
     ZServer.onExit_f = Qonsole.FlushConfig;
 
-    ZServer.Log( $"Starting Wurst server, test_drop_packets: {Net.TestDropPackets_cvar}" );
+    ZServer.Log( $"Starting Radical Rumble server, test_drop_packets: {Net.TestDropPackets_cvar}" );
     ZServer.Log( $"Receive Buffer Size: {ZServer.net.socket.ReceiveBufferSize}" );
     ZServer.Log( $"Send Buffer Size: {ZServer.net.socket.SendBufferSize}" );
 
@@ -91,7 +91,7 @@ static void Main( string[] args ) {
         Qonsole.FlushConfig();
     }
 
-    ZServer.Log( "Wurst server stopped." );
+    ZServer.Log( "Radical Rumble server stopped." );
     Qonsole.FlushConfig();
 }
 
