@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31605.320
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BBBB-00C04F79EFBA}") = "wurst_server", "wurst_server.csproj", "{23D2762F-F5F8-43C5-AAAA-398426379F1A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23D2762F-F5F8-43C5-AAAA-398426379F1A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4616279D-2F42-CCCC-AD99-7F679D0BC9BA}
+	EndGlobalSection
+EndGlobal
