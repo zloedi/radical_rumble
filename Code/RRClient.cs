@@ -418,7 +418,7 @@ static void ClSpawn_kmd( string [] argv ) {
         return;
     }
     Vector2 gamePos = Draw.ScreenToGamePosition( mousePosition );
-    SvCmd( $"sv_spawn {argv[1]} {gamePos.x} {gamePos.y}" );
+    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( gamePos.x )} {Cellophane.FtoA( gamePos.y )}" );
 }
 
 static void ClPrintPawns_kmd( string [] argv ) {
