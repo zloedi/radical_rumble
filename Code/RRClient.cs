@@ -85,15 +85,15 @@ public static void Done() {
     ZClient.Done();
 }
 
-public static void Tick( double timeDelta ) {
+public static void Tick( double timeDeltaDbl ) {
     clockDeltaDbl = clock - clockPrev;
-    clockDelta = ( int )clockDeltaDbl;
     clockPrev = clock;
+    clock += timeDeltaDbl;
+
+    clockDelta = ( int )clockDeltaDbl;
 
     // might change the clock
     ZClient.Tick( clockDelta );
-
-    clock += timeDelta;
 
     WrapBox.DisableCanvasScale();
 
@@ -357,11 +357,14 @@ static void Clk_kmd( string [] argv ) {
 
     if ( delta > 0 ) {
         if ( delta > 100 ) {
+            // the server clock is too far ahead, snap client to this time
             clockPrev = clock = svClk;
         } else {
+            // this will increase the delta next tick
             clock = svClk;
         }
     } else if ( delta < -100 ) {
+        // the server clock is too far behind, snap client to this time
         clockPrev = clock = svClk;
     }
 }

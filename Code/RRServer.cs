@@ -115,6 +115,35 @@ public static void Done() {
     ZServer.Done();
 }
 
+static int _pulse;
+static int _localServerSleep;
+public static void RunLocalServer( int timeDeltaMs ) {
+    bool sendPacket = false;
+
+    // will invoke any incoming commands on the server 'onClientCommand_f'
+    while ( ZServer.Poll( out bool hadCommands ) ) {
+        if ( hadCommands ) {
+            // generate delta when any client command got executed on the server
+            // and send the delta immediately
+            sendPacket = true;
+            break;
+        }
+    }
+
+    if ( _pulse <= 0 ) {
+        sendPacket = true;
+    }
+
+    if ( sendPacket || _localServerSleep <= 0 ) {
+        // will invoke RRServer.Tick onTick_f and push any new packets
+        ZServer.TickWithClocks( sendPacket );
+        _localServerSleep = TICK_TIME;
+    }
+    
+    _localServerSleep -= timeDeltaMs;
+    _pulse = sendPacket ? PULSE_TIME : _pulse - timeDeltaMs;
+}
+
 // returns game state delta followed by any explicit commands to clients
 public static List<byte> Tick( int dt, bool isForcedSend ) {
 

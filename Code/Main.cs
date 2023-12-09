@@ -7,6 +7,7 @@ using Sv = RRServer;
 
 static class Main {
 
+static bool LocalServerAlwaysOn_kvar = false;
 
 static bool _initialized = false;
 
@@ -30,8 +31,10 @@ static void QonsolePostStart_kmd( string [] argv ) {
     if ( ! Application.isPlaying ) {
         return;
     }
-    if ( ! Sv.Init( svh: "[FFA000]Server: [-]" ) ) {
-        return;
+    if ( Cl.IsLocalGame() || LocalServerAlwaysOn_kvar ) {
+        if ( ! Sv.Init( svh: "[FFA000]Server: [-]" ) ) {
+            return;
+        }
     }
     if ( ! Cl.Init() ) {
         return;
@@ -41,8 +44,6 @@ static void QonsolePostStart_kmd( string [] argv ) {
     _initialized = true;
 }
 
-static int _pulse;
-static int _localServerSleep;
 static DateTime _clockDate, _clockPrevDate;
 static void QonsoleTick_kmd( string [] argv ) {
     if ( ! _initialized ) {
@@ -58,30 +59,7 @@ static void QonsoleTick_kmd( string [] argv ) {
     _clockPrevDate = _clockDate;
 
     if ( Cl.IsLocalGame() ) {
-        bool sendPacket = false;
-
-        // will invoke any incoming commands on the server 'onClientCommand_f'
-        while ( ZServer.Poll( out bool hadCommands ) ) {
-            if ( hadCommands ) {
-                // generate delta when any client command got executed on the server
-                // and send the delta immediately
-                sendPacket = true;
-                break;
-            }
-        }
-
-        if ( _pulse <= 0 ) {
-            sendPacket = true;
-        }
-
-        if ( sendPacket || _localServerSleep <= 0 ) {
-            // will invoke RRServer.Tick onTick_f and push any new packets
-            ZServer.TickWithClocks( sendPacket );
-            _localServerSleep = Sv.TICK_TIME;
-        }
-        
-        _localServerSleep -= timeDeltaMs;
-        _pulse = sendPacket ? Sv.PULSE_TIME : _pulse - timeDeltaMs;
+        Sv.RunLocalServer( timeDeltaMs );
     }
 
     Cl.Tick( timeDelta );
