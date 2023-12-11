@@ -149,7 +149,7 @@ public static List<byte> Tick( int dt, bool isForcedSend ) {
 
     // ==
 
-    game.TickServer( dt );
+    game.TickServer();
 
     // ==
 
@@ -354,9 +354,10 @@ static void SvUndelta_kmd( string [] argv ) {
 
     string [] cpargv = new string[argv.Length - 1];
     Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
-    if ( game.UndeltaState( cpargv, out bool updateBoardFilters ) ) {
-        if ( updateBoardFilters ) {
-            game.board.UpdateFilters();
+    if ( game.UndeltaState( cpargv, out bool updateBoard ) && updateBoard ) {
+        foreach ( var hx in game.board.filter.spawners ) {
+            Vector2 v = game.HexToV( hx );
+            game.Spawn( game.board.pawnDef[hx], v.x, v.y );
         }
     }
 }
@@ -374,6 +375,15 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
     game.Spawn( def, x, y );
+}
+
+static void SvKill_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 2 ) {
+        Error( $"{argv[0]} <z>" );
+        return;
+    }
+    int.TryParse( argv[1], out int z );
+    game.Kill( z );
 }
 
 

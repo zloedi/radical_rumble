@@ -25,8 +25,9 @@ public static Action [] RegisterTicks( Type type, out string [] tickNames, param
 public static bool SetState( string [] argv, Action [] ticks, string [] tickNames, ref int state ) {
     int idx;
     if ( argv.Length < 2 || ( idx = Array.IndexOf( tickNames, argv[1] ) ) < 0 ) {
+        int i = 0;
         foreach ( var n in tickNames ) {
-            Log( n );
+            Log( $"{i++}: {n}" );
         }
         Log( $"{argv[0]} <state_name>" );
         return false;

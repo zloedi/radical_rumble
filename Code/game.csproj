@@ -20,7 +20,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -29,7 +29,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
+    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -77,6 +77,8 @@
     <Compile Include="ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="ArrayUtil.cs" />
+    <Compile Include="Clock.cs" />
     <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="Game_sv.cs" />
@@ -89,7 +91,6 @@
     <Compile Include="TickUtil.cs" />
     <Compile Include="RRClient.cs" />
     <Compile Include="RRServer.cs" />
-
     <Compile Include="Shadow.cs" />
     <Compile Include="FilterUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />

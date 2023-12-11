@@ -311,11 +311,7 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // apply server game state on the client
-    if ( game.UndeltaState( argv, out bool updateBoardFilters ) ) {
-        if ( updateBoardFilters ) {
-            game.board.UpdateFilters();
-        } 
-    }
+    game.UndeltaState( argv, out bool updateBoard );
 
     if ( ClPrintIncomingPackets_kvar == 1 ) {
         Log( $"incoming packet: '{packetStr}'" );

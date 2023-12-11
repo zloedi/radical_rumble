@@ -12,11 +12,6 @@ public class Board {
 
     public const int MAX_GRID = 4 * 1024;
 
-    [Flags]
-    public enum Flags {
-        Tower = 1 << 0,
-    }
-    
     public int width => size[0];
     public int height => size[1];
     public int numItems => width * height;
@@ -24,24 +19,24 @@ public class Board {
     public byte [] size = new byte[2];
 
     public byte [] terrain = new byte[MAX_GRID];
-    public byte [] flags = new byte[MAX_GRID];
+    public byte [] pawnDef = new byte[MAX_GRID];
 
     public byte [] navMap = new byte[MAX_GRID];
     public HexPather.Context patherCTX = HexPather.CreateContext( MAX_GRID );
     public List<int> path = new List<int>();
     public List<int> strippedPath = new List<int>();
 
-    public bool HasFlags( int hx, Flags f ) {
-        return ( ( Flags )flags[hx] & f ) != 0;
-    }
+    //public bool HasFlags( int hx, Flags f ) {
+    //    return ( ( Flags )flags[hx] & f ) != 0;
+    //}
 
-    public void RaiseFlags( int hx, Flags f ) {
-        flags[hx] |= ( byte )f;
-    }
+    //public void RaiseFlags( int hx, Flags f ) {
+    //    flags[hx] |= ( byte )f;
+    //}
 
-    public void LowerFlags( int hx, Flags f ) {
-        flags[hx] &= ( byte )( ~f );
-    }
+    //public void LowerFlags( int hx, Flags f ) {
+    //    flags[hx] &= ( byte )( ~f );
+    //}
 
     public bool IsSolid( int hx ) {
         return terrain[hx] != 0;
@@ -150,9 +145,15 @@ public class Board {
     public class Filter {
         public List<IList> all;
         public List<ushort> solid, no_solid;
+        public List<ushort> spawners, no_spawners;
 
         public Filter() {
             FilterUtil.CreateAll( this, out all );
+        }
+
+        public void Assign( int hx, bool condition, List<ushort> la, List<ushort> lb ) {
+            var l = condition ? la : lb;
+            l.Add( ( ushort )hx );
         }
 
         public void Clear() {
@@ -168,8 +169,11 @@ public class Board {
         filter.Clear();
 
         for ( int hx = 0; hx < numItems; hx++ ) {
-            var l = IsSolid( hx ) ? filter.solid : filter.no_solid;
-            l.Add( ( ushort )hx );
+            filter.Assign( hx, IsSolid( hx ), filter.solid, filter.no_solid );
+        }
+
+        for ( int hx = 0; hx < numItems; hx++ ) {
+            filter.Assign( hx, pawnDef[hx] != 0, filter.spawners, filter.no_spawners );
         }
     }
 

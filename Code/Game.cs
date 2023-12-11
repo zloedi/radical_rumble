@@ -18,6 +18,8 @@ public Shadow shadow = new Shadow();
 public Pawn pawn = new Pawn();
 public Board board = new Board();
 
+public Dictionary<ushort,List<byte>> gridPawn = new Dictionary<ushort,List<byte>>();
+
 // rows sent over the network
 public Array [] syncedRows;
 // rows stored on map editor save
@@ -34,18 +36,18 @@ public Game() {
 
         board.size,
         board.terrain,
-        board.flags,
+        board.pawnDef,
     };
 
     persistentRows = new Array [] {
         board.size,
         board.terrain,
-        board.flags,
+        board.pawnDef,
     };
 
     gridRows = new Array [] {
         board.terrain,
-        board.flags,
+        board.pawnDef,
     };
 }
 
@@ -65,12 +67,13 @@ public void Reset() {
     Log( "[ffc000]RESETTING THE GAME STATE[-]" );
     pawn.Reset();
     _pathCache.Clear();
+    gridPawn.Clear();
 }
 
 List<ushort> deltaChange = new List<ushort>();
 List<int> deltaNumbers = new List<int>();
-public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
-    updateBoardFilters = false;
+public bool UndeltaState( string [] argv, out bool updateBoard ) {
+    updateBoard = false;
 
     if ( argv.Length < 1 ) {
         return false;
@@ -94,7 +97,7 @@ public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
         if ( Delta.UndeltaNum( ref idx, argv, deltaChange, deltaNumbers, out bool keepGoing ) ) {
             result = true;
             if ( shadowRow.parentObject == board ) {
-                updateBoardFilters = true;
+                updateBoard = true;
             }
             if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
@@ -140,7 +143,35 @@ public bool UndeltaState( string [] argv, out bool updateBoardFilters ) {
     }
 #endif
 
+    if ( updateBoard ) {
+        board.UpdateFilters();
+        gridPawn.Clear();
+        _pathCache.Clear();
+    }
+
     return result;
+}
+
+// assumes filters are updated
+public void RegisterIntoGrids() {
+    foreach ( var l in gridPawn.Values ) {
+        l.Clear();
+    }
+    foreach ( int z in pawn.filter.no_garbage ) {
+        ushort hex = ( ushort )VToHex( pawn.pos0[z] );
+        List<byte> l;
+        if ( ! gridPawn.TryGetValue( hex, out l ) ) {
+            l = gridPawn[hex] = new List<byte>();
+        }
+        l.Add( ( byte )z );
+    }
+}
+
+public bool GetPawnsOnHex( int hx, out List<byte> l ) {
+    if ( ! gridPawn.TryGetValue( ( ushort )hx, out l ) ) {
+        l = gridPawn[( ushort )hx] = new List<byte>();
+    }
+    return l.Count > 0;
 }
 
 const int FRAC_BITS = 8;
@@ -165,6 +196,26 @@ public static float TxToF( int tx ) {
 
 public static Vector2 TxToV( int tx ) {
     return new Vector2( TxToF( tx >> 16 ), TxToF( tx ) );
+}
+
+public int VToHex( Vector2 v ) {
+    return board.Hex( VToAxial( v ) );
+}
+
+public Vector2Int VToAxial( Vector2 v ) {
+    return Hexes.ScreenToHex( v );
+}
+
+public Vector2 AxialToV( Vector2Int axial ) {
+    return Hexes.HexToScreen( axial );
+}
+
+public Vector2 HexToV( int hx ) {
+    return AxialToV( board.Axial( hx ) );
+}
+
+public bool BoardHasDef( int hx, Pawn.Def def ) {
+    return Pawn.defs[board.pawnDef[hx]] == def;
 }
 
 

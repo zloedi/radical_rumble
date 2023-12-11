@@ -9,24 +9,26 @@ using Cl = RRClient;
 static class MapEditor {
 
 
-static int State_cvar = 1;
 static string LastSavedMap_cvar = "unnamed";
 
+static int State_cvar = 1;
 static string [] _tickNames;
 static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tickNames,
     None_tck,
     PlaceTerrain_tck,
-    PlaceTower_tck,
+    PlaceTowers_tck,
     PatherTest_tck,
     HexTracing_tck
 );
 
 static string _stateName => _tickNames[State_cvar % _ticks.Length];
-static Vector2Int _mouseHexCoord;
+static Vector2Int _mouseAxial;
+static int _mouseHex;
 static bool _mouseHexChanged;
 
 static Board board => Cl.game.board;
 static Pawn pawn => Cl.game.pawn;
+static Game game => Cl.game;
 
 static bool CanClick => QUI.hotWidget == 0 && QUI.activeWidget == 0;
 
@@ -45,22 +47,37 @@ static MapEditor() {
 }
 
 public static void Tick() {
-    Vector2Int newHex = Draw.ScreenToAxial( Cl.mousePosition );
-    _mouseHexChanged = ( _mouseHexCoord - newHex ).sqrMagnitude > 0;
-    _mouseHexCoord = newHex;
+    Vector2Int axial = Draw.ScreenToAxial( Cl.mousePosition );
+    _mouseHexChanged = ( _mouseAxial - axial ).sqrMagnitude > 0;
+    _mouseAxial = axial;
+    _mouseHex = board.Hex( axial );
     _ticks[State_cvar % _ticks.Length]();
+}
+
+static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
+    Draw.FillScreen();
+    Draw.CenterBoardOnScreen();
+    Draw.Board( skipVoidHexes: skipVoidHexes );
+
+    if ( pawnsAlpha > 0.0001f ) {
+        pawn.UpdateFilters();
+        game.RegisterIntoGrids();
+        Draw.PawnSprites( skipModels: true, alpha: pawnsAlpha );
+    }
+}
+
+static void TickEnd() {
+    var wbox = Draw.wboxScreen.TopCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
+    var text = $"Editor State: {_stateName}";
+    int size = Draw.pixelSize * 2 / 3;
+    WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: size );
 }
 
 static void None_tck() {
 }
 
 static void PlaceTerrain_tck() {
-    pawn.UpdateFilters();
-
-    Draw.FillScreen();
-    Draw.CenterBoardOnScreen();
-    Draw.Board();
-    Draw.PawnSprites( skipModels: true );
+    TickBegin( pawnsAlpha: 0.2f );
 
     if ( ! CanClick ) {
         return;
@@ -75,40 +92,35 @@ static void PlaceTerrain_tck() {
         Vector2Int axial = Draw.ScreenToAxial( Cl.mousePosition );
         Cl.SvCmd( $"sv_set_terrain {axial.x} {axial.y} 0" );
     }
+
+    TickEnd();
 }
 
-static void PlaceTower_tck() {
-    //Draw.HexesBoard( voidsAlpha: 0.2f );
-    //Draw.PlayerCursors();
-    //Draw.HexesStart();
+static void PlaceTowers_tck() {
+    TickBegin();
 
-    //if ( ! CanClick ) {
-    //    return;
-    //}
+    if ( ! CanClick ) {
+        return;
+    }
 
-    //int hx = Cl.mouseHex;
+    if ( Cl.mouse0Down ) {
+        if ( ! game.BoardHasDef( _mouseHex, Pawn.Tower ) ) { 
+            Vector2 v = game.HexToV( _mouseHex );
+            Cl.SvCmd( $"sv_spawn tower {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
+        }
+    }
 
-    //if ( ! Cl.game.board.IsInBounds( hx ) ) {
-    //    return;
-    //}
+    if ( Cl.mouse1Down ) {
+        if ( game.GetPawnsOnHex( _mouseHex, out List<byte> l ) ) {
+            foreach ( var z in l ) {
+                if ( pawn.IsStructure( z ) ) {
+                    Cl.SvCmd( $"sv_kill {z}" );
+                }
+            }
+        }
+    }
 
-    //if ( Cl.mouse0Down ) {
-    //    if ( Cl.game.board.IsSolid( hx ) ) {
-    //        Cl.SvCmd( $"server_set_start_hex {hx} 1" );
-    //        _errorMessage = null;
-    //    } else {
-    //        _errorMessage = "Place the cursor on a solid hex.";
-    //    }
-    //}
-
-    //if ( Cl.mouse1Down ) {
-    //    if ( Cl.game.board.HasStartFlag( hx ) ) {
-    //        Cl.SvCmd( $"server_set_start_hex {hx} 0" );
-    //        _errorMessage = null;
-    //    } else {
-    //        _errorMessage = "Place the cursor on a start hex.";
-    //    }
-    //}
+    TickEnd();
 }
 
 static bool CanReach( int hxA, int hxB, byte [] navMap ) {
@@ -166,9 +178,7 @@ static byte [] _navMap => board.navMap;
 static List<int> _path => board.path;
 static List<Vector2> _pathLine = new List<Vector2>();
 static void PatherTest_tck() {
-    Draw.FillScreen();
-    Draw.CenterBoardOnScreen();
-    Draw.Board( skipVoidHexes: true );
+    TickBegin( pawnsAlpha: 0 );
 
     _hxB = Draw.ScreenToHex( Cl.mousePosition );
     if ( Cl.mouse0Down ) {
@@ -259,13 +269,13 @@ static void PatherTest_tck() {
         _pathLine.Add( Draw.HexToScreen( hx ) );
     }
     QGL.LateDrawLine( _pathLine );
+
+    TickEnd();
 }
 
 static bool HexTracingVariant_cvar = false;
 static void HexTracing_tck() {
-    Draw.FillScreen();
-    Draw.CenterBoardOnScreen();
-    Draw.Board( skipVoidHexes: true );
+    TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
 
     _hxB = Draw.ScreenToHex( Cl.mousePosition );
 
@@ -340,6 +350,8 @@ static void HexTracing_tck() {
 
     Draw.TerrainTile( _hxA, c: Color.cyan, sz: 0.75f );
     Draw.TerrainTile( _hxB, c: Color.yellow, sz: 0.75f );
+
+    TickEnd();
 }
 
 static void SetState_cmd( string [] argv ) {

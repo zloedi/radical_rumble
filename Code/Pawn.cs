@@ -18,7 +18,6 @@ public class Filter {
 
     public List<byte> garbage = null, no_garbage = null;
     public List<byte> flying = null, no_flying = null;
-    public List<byte> moving = null, no_moving = null;
 
     public Filter() {
         FilterUtil.CreateAll( this, out all );
@@ -38,56 +37,46 @@ public class Filter {
 
 public const int MAX_PAWN = 256;
 
-public byte [] hp = RegisterRow<byte>();
-public byte [] def = RegisterRow<byte>();
-public Vector2 [] pos = RegisterRow<Vector2>();
-public float [] posT = RegisterRow<float>();
-public Vector2 [] pos0 = RegisterRow<Vector2>();
-public Vector2 [] pos1 = RegisterRow<Vector2>();
-public int [] pos0_tx = RegisterRow<int>();
-public int [] pos1_tx = RegisterRow<int>();
+public byte [] hp = null;
+public byte [] def = null;
+public Vector2 [] pos0 = null;
+public Vector2 [] pos1 = null;
+
+public int [] pos0_tx = null;
+public int [] pos1_tx = null;
 
 public Filter filter = new Filter();
 
-static List<Array> _allRows = new List<Array>();
+List<Array> _allRows = new List<Array>();
 
 public Pawn() {
+    ArrayUtil.CreateAll( this, MAX_PAWN, out _allRows );
     FillDefNames();
 }
 
 public void Reset() {
-    foreach ( var r in _allRows ) {
-        Array.Clear( r, 0, r.Length );
-    }
+    ArrayUtil.Clear( _allRows );
 }
 
-int _createSeq;
+int _lastFree;
 public int Create( int pawnDef ) {
     int z;
 
-    if ( _createSeq != 0 && IsGarbage( _createSeq ) ) {
-        z = _createSeq;
-    } else {
-        for ( z = 1; z < MAX_PAWN; z++ ) {
-            if ( IsGarbage( z ) ) {
-                break;
-            }
-        }
-        if ( z == MAX_PAWN ) {
-            return 0;
-        }
+    if ( ! ArrayUtil.FindFreeColumn( def, out z, _lastFree ) ) {
+        return 0;
     }
 
-    _createSeq = ( z + 1 ) & MAX_PAWN - 1;
-
-    foreach ( var r in _allRows ) {
-        Array.Clear( r, z, 1 );
-    }
+    ArrayUtil.ClearColumn( _allRows, z );
 
     def[z] = ( byte )pawnDef;
     hp[z] = ( byte )MaxHP( z );
 
     return z;
+}
+
+public void Destroy( int z ) {
+    def[z] = 0;
+    _lastFree = z;
 }
 
 public int MaxHP( int z ) {
@@ -102,6 +91,10 @@ public bool IsFlying( int z ) {
     return ( GetDef( z ).flags & Flags.Flying ) != 0;
 }
 
+public bool IsStructure( int z ) {
+    return ( GetDef( z ).flags & Flags.Structure ) != 0;
+}
+
 public bool IsMoving( int z ) {
     return ( pos0[z] - pos1[z] ).sqrMagnitude > 0.00001f;
 }
@@ -110,19 +103,8 @@ public bool IsIdling( int z ) {
     return pos0[z] == pos1[z];
 }
 
-public void Destroy( int z ) {
-    _createSeq = z;
-    def[z] = 0;
-}
-
 public bool IsGarbage( int z ) {
     return def[z] == 0;
-}
-
-public void UpdateFilters_moving() {
-    foreach ( int z in filter.no_garbage ) {
-        filter.Assign( z, IsMoving( z ), filter.moving, filter.no_moving );
-    }
 }
 
 public void UpdateFilters() {
@@ -135,14 +117,6 @@ public void UpdateFilters() {
     foreach ( int z in filter.no_garbage ) {
         filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
     }
-
-    UpdateFilters_moving();
-}
-
-static T [] RegisterRow<T>() {
-    var r = new T[MAX_PAWN];
-    _allRows.Add( r );
-    return r; 
 }
 
 

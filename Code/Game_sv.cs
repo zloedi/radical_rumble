@@ -13,12 +13,23 @@ using Sv = RRServer;
 
 partial class Game {
 
-static bool SvShowPaths_kvar = false;
+//static bool SvShowPaths_kvar = false;
 
-public void TickServer( int deltaTimeMS ) {
+public void TickServer() {
+    pawn.UpdateFilters();
+    RegisterIntoGrids();
+    foreach ( var z in pawn.filter.no_garbage ) {
+        pawn.pos0_tx[z] = ToTx( pawn.pos0[z] );
+        pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
+    }
+}
+
+#if false
+public void TickServer_( int deltaTimeMS ) {
     float dtSecs = deltaTimeMS / 1000f;
 
     pawn.UpdateFilters();
+    RegisterIntoGrids();
 
     int newMovers = 0;
     foreach ( var z in pawn.filter.no_moving ) {
@@ -27,6 +38,8 @@ public void TickServer( int deltaTimeMS ) {
         GetCachedPath( VToHex( pawn.pos0[z] ), dest, out List<int> path );
         if ( path.Count > 1 ) {
             pawn.pos1[z] = HexToV( path[1] );
+            int segmentDist = ToTx( ( pawn.pos1[z] - pawn.pos0[z] ).magnitude );
+            int duration = ( 60 * segmentDist / pawn.GetDef( z ).speed * 1000 ) >> FRAC_BITS;
             newMovers++;
         }
 
@@ -59,6 +72,7 @@ public void TickServer( int deltaTimeMS ) {
         pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
     }
 }
+#endif
 
 public void Spawn( int def, float x, float y ) {
     int z = pawn.Create( def );
@@ -66,8 +80,26 @@ public void Spawn( int def, float x, float y ) {
         Error( "Out of pawns, can't create." );
         return;
     }
-    pawn.pos1[z] = pawn.pos0[z] = new Vector2( x, y );
     Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
+    pawn.pos1[z] = pawn.pos0[z] = new Vector2( x, y );
+    if ( pawn.IsStructure( z ) ) {
+        int hx = VToHex( pawn.pos0[z] );
+        board.pawnDef[hx] = pawn.def[z];
+        Log( $"Placing a structure on the grid." );
+    }
+}
+
+public void Kill( int z ) {
+    if ( ( z < 1 && z >= Pawn.MAX_PAWN ) || pawn.IsGarbage( z ) ) {
+        Error( $"Invalid pawn {z}" );
+        return;
+    }
+    if ( pawn.IsStructure( z ) ) {
+        int hx = VToHex( pawn.pos0[z] );
+        board.pawnDef[hx] = 0;
+        Log( $"Removing a structure from the grid." );
+    }
+    pawn.Destroy( z );
 }
 
 public void SetTerrain( int x, int y, int terrain ) {
@@ -250,27 +282,6 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
     int key1 = ( hxB << 16 ) | hxA;
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
-}
-
-void SetMoving( int zNoMoving, int hxDest ) {
-    pawn.pos1[zNoMoving] = Hexes.HexToScreen( board.Axial( hxDest ) );
-    pawn.UpdateFilters_moving();
-}
-
-int VToHex( Vector2 v ) {
-    return board.Hex( VToAxial( v ) );
-}
-
-Vector2Int VToAxial( Vector2 v ) {
-    return Hexes.ScreenToHex( v );
-}
-
-Vector2 AxialToV( Vector2Int axial ) {
-    return Hexes.HexToScreen( axial );
-}
-
-Vector2 HexToV( int hx ) {
-    return AxialToV( board.Axial( hx ) );
 }
 
 

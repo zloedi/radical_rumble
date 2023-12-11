@@ -17,16 +17,18 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind Alpha1 ""cl_spawn Brute"";
         bind Alpha2 ""cl_spawn Archer"";
         bind Alpha3 ""cl_spawn Flyer"";
-        bind A +client_pan_left;
-        bind D +client_pan_right;
-        bind S +client_pan_down;
-        bind W +client_pan_up;
+        //bind A +client_pan_left;
+        //bind D +client_pan_right;
+        //bind S +client_pan_down;
+        //bind W +client_pan_up;
     " );
     Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
 }
 
 static void QonsolePostStart_kmd( string [] argv ) {
     _initialized = false;
+
+    try {
 
     if ( ! Application.isPlaying ) {
         return;
@@ -42,6 +44,10 @@ static void QonsolePostStart_kmd( string [] argv ) {
     _clockDate = DateTime.UtcNow;
     _clockPrevDate = DateTime.UtcNow;
     _initialized = true;
+
+    } catch ( Exception e ) {
+        Qonsole.Error( e );
+    }
 }
 
 static DateTime _clockDate, _clockPrevDate;

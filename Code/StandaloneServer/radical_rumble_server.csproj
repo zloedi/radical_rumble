@@ -55,7 +55,9 @@
     <Compile Include="../ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="../ArrayUtil.cs" />
     <Compile Include="../Board.cs" />
+    <Compile Include="../Clock.cs" />
     <Compile Include="../Game.cs" />
     <Compile Include="../Game_sv.cs" />
     <Compile Include="../Pawn.cs" />

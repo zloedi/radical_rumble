@@ -10,9 +10,11 @@ public static class PlayerQGL {
 
 
 static Pawn pawn => Cl.game.pawn;
+static Game game => Cl.game;
 
 public static void Tick() {
     pawn.UpdateFilters();
+    game.RegisterIntoGrids();
 
     float dt = Cl.clockDelta / 1000f;
 

@@ -74,7 +74,7 @@ public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false,
             arrayToShadow[row].array = ( Array )row.Clone();
         }
 
-        Log( $"Created shadow buffer {nameKey}" );
+        Log( $"Created shadow buffer {nameKey}, buffer clone: {!skipClone}" );
     }
 
     return true;

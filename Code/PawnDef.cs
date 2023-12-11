@@ -16,14 +16,14 @@ partial class Pawn {
 public static Def Archer = Register( new Def {
     range = 4,
     maxHP = 20,
-    speed = 1f,
+    speed = 120,
     damage = 1,
     color = Color.red,
 } );
 
 public static Def Brute = Register( new Def {
     maxHP = 20,
-    speed = 0.1f,
+    speed = 60,
     damage = 1,
     color = Color.green,
 } );
@@ -31,12 +31,13 @@ public static Def Brute = Register( new Def {
 public static Def Flyer = Register( new Def {
     flags = Flying,
     maxHP = 20,
-    speed = 0.1f,
+    speed = 60,
     damage = 1,
     color = new Color( 0f, 0.4f, 1f ),
 } );
 
 public static Def Tower = Register( new Def {
+    flags = Structure,
     range = 10,
     maxHP = 200,
     damage = 2,
@@ -49,13 +50,14 @@ public class Def {
     [Flags]
     public enum Flags {
         None,
-        Flying = 1 << 0,
+        Structure = 1 << 0,
+        Flying    = 1 << 1,
     }
 
     public string name;
     public Flags flags;
     public int maxHP;
-    public float speed;
+    public int speed;
     public float range;
     public float damage;
     public Color color;

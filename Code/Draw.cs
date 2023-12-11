@@ -120,7 +120,7 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
-public static void PawnSprites( bool skipModels = false ) {
+public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
     Vector2Int size = dsprite * Draw.pixelSize;
     Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
@@ -133,13 +133,16 @@ public static void PawnSprites( bool skipModels = false ) {
     Vector2 [] posRow = skipModels ? pawn.pos0 : model.pos;
 
     void blit( Vector2Int vpos, Vector2Int vsz, Color color ) {
+        color.a *= alpha;
         QGL.LateBlit( Hexes.hexSpriteRegular, vpos, vsz, color: color );
     }
 
     void print( int z, Vector2Int vpos ) {
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Vector2Int v = vpos + szHalf + offPrn;
-        QGL.LatePrint( def.name[0], v, color: def.color, scale: Draw.pixelSize );
+        var c = def.color;
+        c.a = alpha;
+        QGL.LatePrint( def.name[0], v, color: c, scale: Draw.pixelSize );
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {
