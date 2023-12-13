@@ -18,6 +18,7 @@ public class Filter {
 
     public List<byte> garbage = null, no_garbage = null;
     public List<byte> flying = null, no_flying = null;
+    public List<byte> structures = null, no_structures = null;
 
     public Filter() {
         FilterUtil.CreateAll( this, out all );
@@ -37,7 +38,8 @@ public class Filter {
 
 public const int MAX_PAWN = 256;
 
-public byte [] hp = null;
+public ushort [] hp = null;
+public byte [] team = null;
 public byte [] def = null;
 public Vector2 [] pos0 = null;
 public Vector2 [] pos1 = null;
@@ -116,6 +118,10 @@ public void UpdateFilters() {
 
     foreach ( int z in filter.no_garbage ) {
         filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
+    }
+
+    foreach ( int z in filter.no_flying ) {
+        filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
     }
 }
 

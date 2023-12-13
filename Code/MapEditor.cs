@@ -104,7 +104,9 @@ static void PlaceTowers_tck() {
     }
 
     if ( Cl.mouse0Down ) {
-        if ( ! game.BoardHasDef( _mouseHex, Pawn.Tower ) ) { 
+        if ( game.GetFirstPawnOnHex( _mouseHex, out int z ) ) {
+            Qonsole.OneShotCmd( $"map_editor_tower_set_team {z} 0;" );
+        } else {
             Vector2 v = game.HexToV( _mouseHex );
             Cl.SvCmd( $"sv_spawn tower {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
         }
@@ -352,6 +354,17 @@ static void HexTracing_tck() {
     Draw.TerrainTile( _hxB, c: Color.yellow, sz: 0.75f );
 
     TickEnd();
+}
+
+static void TowerSetTeam_cmd( string [] argv ) {
+    if ( argv.Length < 3 ) {
+        Cl.Log( $"{argv[0]} <z> <team>" );
+        return;
+    }
+    int.TryParse( argv[1], out int z );
+    int.TryParse( argv[2], out int team );
+    Cl.Log( $"Setting team on {z} to {team}..." );
+    Cl.SvCmd( $"sv_set_team {z} {team}" );
 }
 
 static void SetState_cmd( string [] argv ) {

@@ -357,7 +357,9 @@ static void SvUndelta_kmd( string [] argv ) {
     if ( game.UndeltaState( cpargv, out bool updateBoard ) && updateBoard ) {
         foreach ( var hx in game.board.filter.spawners ) {
             Vector2 v = game.HexToV( hx );
-            game.Spawn( game.board.pawnDef[hx], v.x, v.y );
+            if ( game.Spawn( game.board.pawnDef[hx], v.x, v.y, out int z ) ) {
+                game.pawn.team[z] = game.board.pawnTeam[hx];
+            }
         }
     }
 }
@@ -374,7 +376,7 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
 
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
-    game.Spawn( def, x, y );
+    game.Spawn( def, x, y, out int z );
 }
 
 static void SvKill_kmd( string [] argv, int zport ) {
@@ -384,6 +386,16 @@ static void SvKill_kmd( string [] argv, int zport ) {
     }
     int.TryParse( argv[1], out int z );
     game.Kill( z );
+}
+
+static void SvSetTeam_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 3 ) {
+        Error( $"{argv[0]} <z> <team>" );
+        return;
+    }
+    int.TryParse( argv[1], out int z );
+    int.TryParse( argv[2], out int team );
+    game.SetTeam( z, team );
 }
 
 

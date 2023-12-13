@@ -74,11 +74,11 @@ public void TickServer_( int deltaTimeMS ) {
 }
 #endif
 
-public void Spawn( int def, float x, float y ) {
-    int z = pawn.Create( def );
+public bool Spawn( int def, float x, float y, out int z ) {
+    z = pawn.Create( def );
     if ( z == 0 ) {
         Error( "Out of pawns, can't create." );
-        return;
+        return false;
     }
     Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
     pawn.pos1[z] = pawn.pos0[z] = new Vector2( x, y );
@@ -87,6 +87,7 @@ public void Spawn( int def, float x, float y ) {
         board.pawnDef[hx] = pawn.def[z];
         Log( $"Placing a structure on the grid." );
     }
+    return true;
 }
 
 public void Kill( int z ) {
@@ -100,6 +101,15 @@ public void Kill( int z ) {
         Log( $"Removing a structure from the grid." );
     }
     pawn.Destroy( z );
+}
+
+public void SetTeam( int z, int team ) {
+    pawn.team[z] = ( byte )team;
+    if ( pawn.IsStructure( z ) ) {
+        int hx = VToHex( pawn.pos0[z] );
+        board.pawnTeam[hx] = pawn.team[z];
+        Log( $"Setting team on {z} to {team}." );
+    }
 }
 
 public void SetTerrain( int x, int y, int terrain ) {

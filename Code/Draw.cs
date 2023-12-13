@@ -137,6 +137,19 @@ public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
         QGL.LateBlit( Hexes.hexSpriteRegular, vpos, vsz, color: color );
     }
 
+    void healthbar( int z, Vector2Int vpos, Vector2Int vsz ) {
+        vpos.x += vsz.x / 2;
+        vsz = new Vector2Int( vsz.x * 4 / 5, 4 * pixelSize );
+        vpos.x -= vsz.x / 2;
+        vpos.y -= vsz.y + pixelSize;
+        QGL.LateBlit( null, vpos, vsz, color: Color.black * 0.5f );
+        vsz.x -= pixelSize * 2;
+        vsz.y -= pixelSize * 2;
+        vpos += Vector2Int.one * pixelSize;
+        Color c = pawn.team[z] == 0 ? new Color( 0, 0.35f, 1f ) : Color.red;
+        QGL.LateBlit( null, vpos, vsz, color: c );
+    }
+
     void print( int z, Vector2Int vpos ) {
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Vector2Int v = vpos + szHalf + offPrn;
@@ -150,13 +163,27 @@ public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
         topLeft = new Vector2Int( ( int )pos.x, ( int )pos.y );
     }
 
-    foreach ( var z in pawn.filter.no_flying ) {
+    foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
         blit( pos, sz, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( pos - offShad, sz, color: c );
         print( z, pos - offShad );
+        healthbar( z, pos - offShad, sz );
+    }
+
+    sz = size * 6 / 5;
+    szHalf = sz / 2;
+
+    foreach ( var z in pawn.filter.structures ) {
+        getScreenPos( z, out Vector2Int pos );
+        blit( pos, sz, color: Color.black * 0.3f );
+        Pawn.Def def = Pawn.defs[pawn.def[z]];
+        Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
+        blit( pos - offShad, sz, color: c );
+        print( z, pos - offShad );
+        healthbar( z, pos - offShad, sz );
     }
 
     offShad = offShadow * 7;
@@ -174,6 +201,7 @@ public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( pos - offShad, sz, color: c );
         print( z, pos - offShad );
+        healthbar( z, pos - offShad, sz );
     }
 }
 

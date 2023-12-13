@@ -15,14 +15,14 @@ partial class Pawn {
 
 public static Def Archer = Register( new Def {
     range = 4,
-    maxHP = 20,
+    maxHP = 500,
     speed = 120,
     damage = 1,
     color = Color.red,
 } );
 
 public static Def Brute = Register( new Def {
-    maxHP = 20,
+    maxHP = 500,
     speed = 60,
     damage = 1,
     color = Color.green,
@@ -30,7 +30,7 @@ public static Def Brute = Register( new Def {
 
 public static Def Flyer = Register( new Def {
     flags = Flying,
-    maxHP = 20,
+    maxHP = 500,
     speed = 60,
     damage = 1,
     color = new Color( 0f, 0.4f, 1f ),
@@ -39,7 +39,7 @@ public static Def Flyer = Register( new Def {
 public static Def Tower = Register( new Def {
     flags = Structure,
     range = 10,
-    maxHP = 200,
+    maxHP = 5000,
     damage = 2,
     color = Color.magenta,
 } );

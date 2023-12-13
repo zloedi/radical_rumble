@@ -22,9 +22,13 @@ public static void Tick() {
         Vector2 a = pawn.pos0[z];
         Vector2 b = pawn.pos1[z];
         float d = ( b - a ).magnitude;
-        float s = pawn.GetDef( z ).speed / d;
-        Draw.model.pos[z] = Vector2.Lerp( a, b, model.t[z] );
-        Draw.model.t[z] += s * dt;
+        if ( d > 0.000001f ) {
+            float s = pawn.GetDef( z ).speed / d;
+            Draw.model.pos[z] = Vector2.Lerp( a, b, model.t[z] );
+            Draw.model.t[z] += s * dt;
+        } else {
+            Draw.model.pos[z] = a;
+        }
     }
 
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );

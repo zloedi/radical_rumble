@@ -31,23 +31,25 @@ public Game() {
     syncedRows = new Array [] {
         pawn.def,
         pawn.hp,
+        pawn.team,
         pawn.pos0_tx,
         pawn.pos1_tx,
 
         board.size,
         board.terrain,
-        board.pawnDef,
     };
 
     persistentRows = new Array [] {
         board.size,
         board.terrain,
         board.pawnDef,
+        board.pawnTeam,
     };
 
     gridRows = new Array [] {
         board.terrain,
         board.pawnDef,
+        board.pawnTeam,
     };
 }
 
@@ -165,6 +167,15 @@ public void RegisterIntoGrids() {
         }
         l.Add( ( byte )z );
     }
+}
+
+public bool GetFirstPawnOnHex( int hx, out int z ) {
+    if ( GetPawnsOnHex( hx, out List<byte> l ) ) {
+        z = l[0];
+        return true;
+    }
+    z = 0;
+    return false;
 }
 
 public bool GetPawnsOnHex( int hx, out List<byte> l ) {

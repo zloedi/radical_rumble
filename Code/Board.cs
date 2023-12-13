@@ -19,9 +19,13 @@ public class Board {
     public byte [] size = new byte[2];
 
     public byte [] terrain = new byte[MAX_GRID];
-    public byte [] pawnDef = new byte[MAX_GRID];
 
+    public byte [] pawnDef = new byte[MAX_GRID];
+    public byte [] pawnTeam = new byte[MAX_GRID];
+
+    // FIXME: not sure it's place is here
     public byte [] navMap = new byte[MAX_GRID];
+
     public HexPather.Context patherCTX = HexPather.CreateContext( MAX_GRID );
     public List<int> path = new List<int>();
     public List<int> strippedPath = new List<int>();
