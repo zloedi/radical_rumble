@@ -62,7 +62,10 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
     if ( pawnsAlpha > 0.0001f ) {
         pawn.UpdateFilters();
         game.RegisterIntoGrids();
-        Draw.PawnSprites( skipModels: true, alpha: pawnsAlpha );
+        foreach ( var z in pawn.filter.no_garbage ) {
+            pawn.mvPos[z] = pawn.mvEnd[z];
+        }
+        Draw.PawnSprites( alpha: pawnsAlpha );
     }
 }
 

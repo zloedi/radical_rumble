@@ -15,6 +15,7 @@ public static string ClServerIpAddress_kvar = "89.190.193.149";
 
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;
+public static bool ClLogClocks_kvar = false;
 
 [Description("Print incoming packets: 1 -- some; 2 -- all")]
 static int ClPrintIncomingPackets_kvar = 0;
@@ -273,7 +274,6 @@ static void UpdateTraceLevel() {
 
 static void OnConnected() {
     game.Reset();
-    Draw.model.Clear();
 }
 
 static void OnServerPacket( List<byte> packet ) {
@@ -311,10 +311,14 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // apply server game state on the client
-    game.UndeltaState( argv, out bool updateBoard );
+    game.UndeltaState( argv, ( int )clock, out bool updateBoard );
 
-    if ( ClPrintIncomingPackets_kvar == 1 ) {
+    if ( ClPrintIncomingPackets_kvar > 1 ) {
         Log( $"incoming packet: '{packetStr}'" );
+    } else if ( ClPrintIncomingPackets_kvar == 1 ) {
+        if ( deltaCmd.Length > 0 ) {
+            Log( $"incoming packet: '{packetStr}'" );
+        }
     }
 
     // maybe there are some trailing commands after the delta, try to execute them here
@@ -347,9 +351,11 @@ static void Clk_kmd( string [] argv ) {
     int.TryParse( argv[1], out int svClk );
     int delta = svClk - clClk;
 
-    Qonsole.Log( $"{argv[0]}: cl clock: {clClk}" );
-    Qonsole.Log( $"{argv[0]}: sv clock: {svClk}" );
-    Qonsole.Log( $"{argv[0]}: delta: {delta}" );
+    if ( ClLogClocks_kvar ) {
+        Log( $"{argv[0]}: cl clock: {clClk}" );
+        Log( $"{argv[0]}: sv clock: {svClk}" );
+        Log( $"{argv[0]}: delta: {delta}" );
+    }
 
     if ( delta > 0 ) {
         if ( delta > 100 ) {

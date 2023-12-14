@@ -94,16 +94,6 @@ public static Vector2Int ScreenToAxial( Vector2 xy ) {
     return Hexes.ScreenToHex( xy - _pan, hexPixelSize );
 }
 
-public static class model {
-    public static Vector2 [] pos = new Vector2[Pawn.MAX_PAWN];
-    public static float [] t = new float[Pawn.MAX_PAWN];
-
-    public static void Clear() {
-        Array.Clear( pos, 0, pos.Length );
-        Array.Clear( t, 0, t.Length );
-    }
-}
-
 public static void TerrainTile( int x, int y, Color? c = null, float sz = 1 ) {
     Vector2 scr = AxialToScreen( x, y );
     int w = ( int )( Hexes.hexSpriteRegularWidth * Draw.pixelSize * sz );
@@ -120,7 +110,7 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
-public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
+public static void PawnSprites( float alpha = 1 ) {
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
     Vector2Int size = dsprite * Draw.pixelSize;
     Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
@@ -129,8 +119,6 @@ public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
     var offShad = offShadow;
     var sz = new Vector2Int( ( int )( size.x * 0.8f ), ( int )( size.y * 0.8f ) );
     var szHalf = sz / 2;
-
-    Vector2 [] posRow = skipModels ? pawn.pos0 : model.pos;
 
     void blit( Vector2Int vpos, Vector2Int vsz, Color color ) {
         color.a *= alpha;
@@ -159,7 +147,7 @@ public static void PawnSprites( bool skipModels = false, float alpha = 1 ) {
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {
-        Vector2 pos = _pan + posRow[z] * Draw.hexPixelSize - szHalf;
+        Vector2 pos = _pan + pawn.mvPos[z] * Draw.hexPixelSize - szHalf;
         topLeft = new Vector2Int( ( int )pos.x, ( int )pos.y );
     }
 

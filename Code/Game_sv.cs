@@ -13,66 +13,47 @@ using Sv = RRServer;
 
 partial class Game {
 
-//static bool SvShowPaths_kvar = false;
+static bool SvShowPaths_kvar = false;
 
 public void TickServer() {
     pawn.UpdateFilters();
     RegisterIntoGrids();
-    foreach ( var z in pawn.filter.no_garbage ) {
-        pawn.pos0_tx[z] = ToTx( pawn.pos0[z] );
-        pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
-    }
-}
 
-#if false
-public void TickServer_( int deltaTimeMS ) {
-    float dtSecs = deltaTimeMS / 1000f;
-
-    pawn.UpdateFilters();
-    RegisterIntoGrids();
-
-    int newMovers = 0;
-    foreach ( var z in pawn.filter.no_moving ) {
-        int dest = 176;
-
-        GetCachedPath( VToHex( pawn.pos0[z] ), dest, out List<int> path );
-        if ( path.Count > 1 ) {
-            pawn.pos1[z] = HexToV( path[1] );
-            int segmentDist = ToTx( ( pawn.pos1[z] - pawn.pos0[z] ).magnitude );
-            int duration = ( 60 * segmentDist / pawn.GetDef( z ).speed * 1000 ) >> FRAC_BITS;
-            newMovers++;
-        }
-
-        if ( SvShowPaths_kvar ) {
-#if UNITY_STANDALONE
-            List<Vector2> pathLine = new List<Vector2>();
-            pathLine.Clear();
-            foreach ( var hx in path ) {
-                pathLine.Add( Draw.HexToScreen( hx ) );
+    foreach ( var zIdle in pawn.filter.idling ) {
+        var enemies = pawn.filter.enemies[pawn.team[zIdle]];
+        foreach ( var zEnemy in enemies ) {
+            int hxA = VToHex( pawn.mvPos[zIdle] );
+            int hxB = VToHex( pawn.mvPos[zEnemy] );
+            GetCachedPath( hxA, hxB, out List<int> path );
+            if ( path.Count > 1 ) {
+                // trigger movement both on the server and the client
+                // by setting movement target and arrival time
+                pawn.mvPawn[zIdle] = zEnemy;
+                pawn.mvEnd[zIdle] = HexToV( path[1] );
+                int segmentDist = ToTx( ( pawn.mvEnd[zIdle] - pawn.mvPos[zIdle] ).magnitude );
+                int speed = pawn.Speed( zIdle );
+                int duration = ( 60 * segmentDist / speed * 1000 ) >> FRAC_BITS;
+                pawn.mvEndTime[zIdle] = ZServer.clock + duration;
+                DebugDrawPath( path );
+                break;
             }
-            SingleShot.Add( dt => {
-                QGL.LateDrawLine( pathLine );
-            } );
-#endif
         }
     }
 
-    if ( newMovers > 0 ) {
-        pawn.UpdateFilters_moving();
-    }
-
-    foreach ( var z in pawn.filter.moving ) {
-        //pawn.posT[z] += dtSecs * pawn.GetDef( z ).speed;
-        //pawn.posT[z] = Mathf.Min( pawn.posT[z], 1 );
-        //pawn.pos[z] = Vector2.Lerp( pawn.pos0[z], pawn.pos1[z], pawn.posT[z] );
-    }
+    //foreach ( var z in pawn.filter.no_idling ) {
+    //    int hxA = VToHex( pawn.mvPos[z] );
+    //    int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
+    //    GetCachedPath( hxA, hxB, out List<int> path );
+    //    if ( path.Count > 1 ) {
+    //        pawn.mvEnd[z] = HexToV( path[1] );
+    //        break;
+    //    }
+    //}
 
     foreach ( var z in pawn.filter.no_garbage ) {
-        pawn.pos0_tx[z] = ToTx( pawn.pos0[z] );
-        pawn.pos1_tx[z] = ToTx( pawn.pos1[z] );
+        pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
     }
 }
-#endif
 
 public bool Spawn( int def, float x, float y, out int z ) {
     z = pawn.Create( def );
@@ -80,10 +61,10 @@ public bool Spawn( int def, float x, float y, out int z ) {
         Error( "Out of pawns, can't create." );
         return false;
     }
-    Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.pos0[z]}" );
-    pawn.pos1[z] = pawn.pos0[z] = new Vector2( x, y );
+    pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
+    Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
     if ( pawn.IsStructure( z ) ) {
-        int hx = VToHex( pawn.pos0[z] );
+        int hx = VToHex( pawn.mvPos[z] );
         board.pawnDef[hx] = pawn.def[z];
         Log( $"Placing a structure on the grid." );
     }
@@ -96,7 +77,7 @@ public void Kill( int z ) {
         return;
     }
     if ( pawn.IsStructure( z ) ) {
-        int hx = VToHex( pawn.pos0[z] );
+        int hx = VToHex( pawn.mvPos[z] );
         board.pawnDef[hx] = 0;
         Log( $"Removing a structure from the grid." );
     }
@@ -106,7 +87,7 @@ public void Kill( int z ) {
 public void SetTeam( int z, int team ) {
     pawn.team[z] = ( byte )team;
     if ( pawn.IsStructure( z ) ) {
-        int hx = VToHex( pawn.pos0[z] );
+        int hx = VToHex( pawn.mvPos[z] );
         board.pawnTeam[hx] = pawn.team[z];
         Log( $"Setting team on {z} to {team}." );
     }
@@ -292,6 +273,22 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
     int key1 = ( hxB << 16 ) | hxA;
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
+}
+
+void DebugDrawPath( List<int> path ) {
+#if UNITY_STANDALONE
+    if ( ! SvShowPaths_kvar ) {
+        return;
+    }
+    List<Vector2> pathLine = new List<Vector2>();
+    pathLine.Clear();
+    foreach ( var hx in path ) {
+        pathLine.Add( Draw.HexToScreen( hx ) );
+    }
+    SingleShot.Add( dt => {
+        QGL.LateDrawLine( pathLine );
+    } );
+#endif
 }
 
 

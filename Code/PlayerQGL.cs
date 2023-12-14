@@ -4,7 +4,6 @@ using System.ComponentModel;
 using UnityEngine;
 
 using Cl = RRClient;
-using model = Draw.model;
 
 public static class PlayerQGL {
 
@@ -13,22 +12,32 @@ static Pawn pawn => Cl.game.pawn;
 static Game game => Cl.game;
 
 public static void Tick() {
+    int clock = ( int )Cl.clock;
+
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
 
-    float dt = Cl.clockDelta / 1000f;
+    void snapPos( int z ) {
+        pawn.mvPos[z] = pawn.mvEnd[z];
+        pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+    }
 
-    foreach ( var z in pawn.filter.no_garbage ) {
-        Vector2 a = pawn.pos0[z];
-        Vector2 b = pawn.pos1[z];
-        float d = ( b - a ).magnitude;
-        if ( d > 0.000001f ) {
-            float s = pawn.GetDef( z ).speed / d;
-            Draw.model.pos[z] = Vector2.Lerp( a, b, model.t[z] );
-            Draw.model.t[z] += s * dt;
-        } else {
-            Draw.model.pos[z] = a;
+    void updatePos( int z ) {
+        if ( pawn.UpdateMovementPosition( z, clock ) ) {
+            snapPos( z );
         }
+    }
+
+    foreach ( var z in pawn.filter.structures ) {
+        snapPos( z );
+    }
+
+    foreach ( var z in pawn.filter.no_structures ) {
+        updatePos( z );
+    }
+
+    foreach ( var z in pawn.filter.flying ) {
+        updatePos( z );
     }
 
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );

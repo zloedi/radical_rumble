@@ -354,7 +354,7 @@ static void SvUndelta_kmd( string [] argv ) {
 
     string [] cpargv = new string[argv.Length - 1];
     Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
-    if ( game.UndeltaState( cpargv, out bool updateBoard ) && updateBoard ) {
+    if ( game.UndeltaState( cpargv, 0, out bool updateBoard ) && updateBoard ) {
         foreach ( var hx in game.board.filter.spawners ) {
             Vector2 v = game.HexToV( hx );
             if ( game.Spawn( game.board.pawnDef[hx], v.x, v.y, out int z ) ) {

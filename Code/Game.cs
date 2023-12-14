@@ -32,8 +32,8 @@ public Game() {
         pawn.def,
         pawn.hp,
         pawn.team,
-        pawn.pos0_tx,
-        pawn.pos1_tx,
+        pawn.mvEndTime,
+        pawn.mvEnd_tx,
 
         board.size,
         board.terrain,
@@ -74,7 +74,7 @@ public void Reset() {
 
 List<ushort> deltaChange = new List<ushort>();
 List<int> deltaNumbers = new List<int>();
-public bool UndeltaState( string [] argv, out bool updateBoard ) {
+public bool UndeltaState( string [] argv, int clock, out bool updateBoard ) {
     updateBoard = false;
 
     if ( argv.Length < 1 ) {
@@ -113,13 +113,12 @@ public bool UndeltaState( string [] argv, out bool updateBoard ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
                 }
-                if ( row == pawn.pos0_tx ) {
+                if ( row == pawn.mvEnd_tx ) {
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
-                        pawn.pos0[deltaChange[i]] = TxToV( deltaNumbers[i] );
+                        pawn.mvEnd[deltaChange[i]] = TxToV( deltaNumbers[i] );
                     }
-                } else if ( row == pawn.pos1_tx ) {
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
-                        pawn.pos1[deltaChange[i]] = TxToV( deltaNumbers[i] );
+                        pawn.mvStartTime[deltaChange[i]] = clock;
                     }
                 }
             }
@@ -160,7 +159,7 @@ public void RegisterIntoGrids() {
         l.Clear();
     }
     foreach ( int z in pawn.filter.no_garbage ) {
-        ushort hex = ( ushort )VToHex( pawn.pos0[z] );
+        ushort hex = ( ushort )VToHex( pawn.mvPos[z] );
         List<byte> l;
         if ( ! gridPawn.TryGetValue( hex, out l ) ) {
             l = gridPawn[hex] = new List<byte>();

@@ -20,6 +20,10 @@ public class Filter {
     public List<byte> flying = null, no_flying = null;
     public List<byte> structures = null, no_structures = null;
 
+    public List<byte> idling = null, no_idling = null;
+    public List<byte> [] enemies = new List<byte>[2];
+    public List<byte> [] team = new List<byte>[2];
+
     public Filter() {
         FilterUtil.CreateAll( this, out all );
     }
@@ -41,11 +45,18 @@ public const int MAX_PAWN = 256;
 public ushort [] hp = null;
 public byte [] team = null;
 public byte [] def = null;
-public Vector2 [] pos0 = null;
-public Vector2 [] pos1 = null;
 
-public int [] pos0_tx = null;
-public int [] pos1_tx = null;
+// lerped movement position
+public Vector2 [] mvPos = null;
+// target movement position
+public Vector2 [] mvEnd = null;
+public byte [] mvPawn = null;
+public int [] mvStartTime = null;
+
+// these are synced
+// transmitted fixed point version of end position
+public int [] mvEnd_tx = null;
+public int [] mvEndTime = null;
 
 public Filter filter = new Filter();
 
@@ -81,6 +92,10 @@ public void Destroy( int z ) {
     _lastFree = z;
 }
 
+public int Speed( int z ) {
+    return GetDef( z ).speed;
+}
+
 public int MaxHP( int z ) {
     return defs[def[z]].maxHP;
 }
@@ -90,23 +105,55 @@ public Def GetDef( int z ) {
 }
 
 public bool IsFlying( int z ) {
-    return ( GetDef( z ).flags & Flags.Flying ) != 0;
+    return ( GetDef( z ).flags & Pawn.Def.Flags.Flying ) != 0;
 }
 
 public bool IsStructure( int z ) {
-    return ( GetDef( z ).flags & Flags.Structure ) != 0;
-}
-
-public bool IsMoving( int z ) {
-    return ( pos0[z] - pos1[z] ).sqrMagnitude > 0.00001f;
+    return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
 }
 
 public bool IsIdling( int z ) {
-    return pos0[z] == pos1[z];
+    // if we haven't transmitted any positions yet, don't try to interpolate paths
+    if ( mvEnd_tx[z] == 0 ) {
+        return false;
+    }
+
+    return mvPawn[z] == 0;
 }
 
 public bool IsGarbage( int z ) {
     return def[z] == 0;
+}
+
+public bool UpdateMovementPosition( int z, int clock ) {
+    int duration = mvEndTime[z] - mvStartTime[z];
+    if ( duration <= 0 ) {
+        return true;
+    }
+
+    int ti = mvEndTime[z] - clock;
+    if ( ti <= 0 ) {
+        return true;
+    }
+
+    if ( mvPos[z] == Vector2.zero ) {
+        mvPos[z] = mvEnd[z];
+        return true;
+    }
+
+    Vector2 d = mvEnd[z] - mvPos[z];
+    float sq = d.sqrMagnitude;
+    if ( sq < 0.00001f ) {
+        return true;
+    }
+
+    float speed = Speed( z ) / 60f;
+
+    d /= Mathf.Sqrt( sq );
+    d *= speed * ti / 1000f;
+
+    mvPos[z] = mvEnd[z] - d;
+    return false;
 }
 
 public void UpdateFilters() {
@@ -117,11 +164,27 @@ public void UpdateFilters() {
     }
 
     foreach ( int z in filter.no_garbage ) {
+        filter.Assign( z, team[z] == 0, filter.team[0], filter.team[1] );
+    }
+
+    foreach ( int z in filter.no_garbage ) {
+        filter.Assign( z, team[z] == 0, filter.enemies[1], filter.enemies[0] );
+    }
+
+    foreach ( int z in filter.no_garbage ) {
         filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
     }
 
     foreach ( int z in filter.no_flying ) {
         filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
+    }
+    
+    foreach ( int z in filter.flying ) {
+        filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
+    }
+
+    foreach ( int z in filter.no_structures ) {
+        filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
     }
 }
 
