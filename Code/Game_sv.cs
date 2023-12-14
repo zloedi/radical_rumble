@@ -25,6 +25,38 @@ public void TickServer() {
             int hxA = VToHex( pawn.mvPos[zIdle] );
             int hxB = VToHex( pawn.mvPos[zEnemy] );
             GetCachedPath( hxA, hxB, out List<int> path );
+
+            // push the source position on the side
+            // so the path is properly split in the same hex
+#if true
+            if ( path.Count > 2 ) {
+                Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[zIdle] ) );
+                Vector2 snapB = AxialToV( VToAxial( pawn.mvPos[zEnemy] ) );
+
+                float dx = snapA.x - snapB.x;
+                if ( dx * dx < 0.0001f ) {
+                    snapA.x += Mathf.Sign( pawn.mvPos[zIdle].x - snapA.x );
+                    SingleShot.Add( dt => {
+                        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
+                                                            Draw.hexPixelSize / 2, Color.white );
+                    } );
+                }
+
+                float dy = snapA.y - snapB.y;
+                if ( dy * dy < 0.0001f ) {
+                    snapA.y += Mathf.Sign( pawn.mvPos[zIdle].y - snapA.y );
+                    SingleShot.Add( dt => {
+                        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
+                                                            Draw.hexPixelSize / 2, Color.white );
+                    } );
+                }
+
+                hxA = VToHex( snapA );
+                hxB = VToHex( pawn.mvPos[zEnemy] );
+                GetCachedPath( hxA, hxB, out path );
+            }
+#endif
+
             if ( path.Count > 1 ) {
                 // trigger movement both on the server and the client
                 // by setting movement target and arrival time
@@ -233,10 +265,9 @@ void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
         return;
     }
 
-    Qonsole.Log( $"[ffc000]Casting the real pather. Num paths in cache: {_pathCache.Count}[-]" );
+    Log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}. Num paths in cache: {_pathCache.Count}[-]" );
     board.GetPath( hxSrc, hxTarget );
 
-    // each segment is a valid path in both ways
     CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
 
     path = _pathCache[key];

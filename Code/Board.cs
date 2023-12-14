@@ -88,23 +88,27 @@ public class Board {
         foreach ( var hx in filter.no_solid ) {
             navMap[hx] = 1;
         }
-        navMap[hxTarget] = 0;
+        navMap[hxSrc] = 0;
 
         // flood the map with score
         int axialDist = Distance( hxSrc, hxTarget );
-        HexPather.FloodMap( hxTarget, axialDist + 1, width, navMap, numItems, patherCTX );
+        HexPather.FloodMap( hxSrc, axialDist + 1, width, navMap, numItems, patherCTX );
 
         // put the geometrical distance in the score
         foreach ( var hx in filter.solid ) {
-            Vector3Int a = Hexes.AxialToCubeInt( Axial( hxTarget ) );
+            Vector3Int a = Hexes.AxialToCubeInt( Axial( hxSrc ) );
             Vector3Int b = Hexes.AxialToCubeInt( Axial( hx ) );
             int dist = ( b - a ).sqrMagnitude;
             patherCTX.floodMap[hx] = ( patherCTX.floodMap[hx] << 16 ) | dist;
         }
 
         // trace and strip the path
-        HexPather.TracePath( hxSrc, width, patherCTX, path );
+        HexPather.TracePath( hxTarget, width, patherCTX, path );
         StripPath();
+
+        // the flood is inversed because couldn't make 'simmetrical' paths otherwise
+        path.Reverse();
+        strippedPath.Reverse();
     }
 
     public void StripPath() {

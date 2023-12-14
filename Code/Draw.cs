@@ -68,6 +68,10 @@ public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     return xy - origin;
 }
 
+public static Vector2 GameToScreenPosition( Vector2 gamePos ) {
+    return _pan + gamePos * Draw.hexPixelSize;
+}
+
 public static Vector2Int AxialToScreenNoPan( int x, int y ) {
     Vector2 v = Hexes.HexToScreen( x, y, hexPixelSize );
     return new Vector2Int( ( int )v.x, ( int )v.y );

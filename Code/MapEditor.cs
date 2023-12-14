@@ -196,9 +196,7 @@ static void PatherTest_tck() {
         HexPather.FloodMap( _hxA, 256, board.width, _navMap, board.numItems, _patherCTX );
         foreach ( var hx in board.filter.solid ) {
 #if false
-            Vector2Int a = board.Axial( _hxA );
-            Vector2Int b = board.Axial( hx );
-            _patherCTX.floodMap[hx] |= Hexes.AxialDistance( a, b ) << 8;
+            _patherCTX.floodMap[hx] <<= 16;
 #else
             Vector3Int a = Hexes.AxialToCubeInt( board.Axial( _hxA ) );
             Vector3Int b = Hexes.AxialToCubeInt( board.Axial( hx ) );
@@ -210,9 +208,11 @@ static void PatherTest_tck() {
 
 #if false
     foreach ( var hx in board.filter.solid ) {
-        Vector2 spos = Draw.HexToScreen( hx );
-        int dist = _patherCTX.floodMap[hx] >> 8;
-        QGL.LatePrint( dist, spos );
+        Vector3Int a = Hexes.AxialToCubeInt( board.Axial( _hxB ) );
+        Vector3Int b = Hexes.AxialToCubeInt( board.Axial( hx ) );
+        int dist = ( b - a ).sqrMagnitude;
+        _patherCTX.floodMap[hx] = ( int )( _patherCTX.floodMap[hx] & 0xffff0000 );
+        _patherCTX.floodMap[hx] |= dist;
     }
 #endif
 
@@ -232,40 +232,6 @@ static void PatherTest_tck() {
 
     Draw.TerrainTile( _hxA, c: Color.cyan, sz: 0.75f );
     Draw.TerrainTile( _hxB, c: Color.yellow, sz: 0.75f );
-
-#if false
-    var pth = new List<int>();
-
-    if ( _path.Count > 2 ) {
-        pth.Add( _path[0] );
-        if ( CanReach( _path[0], _path[_path.Count - 1], _navMap ) ) {
-            pth.Add( _path[_path.Count - 1] );
-        } else {
-            int start = 0;
-
-            while ( true ) {
-                int reach = 0;
-                for ( int i = start + 1; i < _path.Count; i++ ) {
-                    if ( CanReach( _path[start], _path[i], _navMap ) ) {
-                        if ( CanReach( _path[i], _path[_path.Count - 1], _navMap ) ) {
-                            pth.Add( _path[i] );
-                            reach = _path.Count - 1;
-                            break;
-                        }
-                        reach = i;
-                    }
-                }
-                if ( reach > 0 ) {
-                    pth.Add( _path[reach] );
-                    start = reach;
-                    if ( start == _path.Count - 1 ) {
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#endif
 
     board.StripPath();
 
