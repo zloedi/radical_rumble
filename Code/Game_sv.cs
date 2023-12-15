@@ -72,15 +72,31 @@ public void TickServer() {
         }
     }
 
-    //foreach ( var z in pawn.filter.no_idling ) {
-    //    int hxA = VToHex( pawn.mvPos[z] );
-    //    int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
-    //    GetCachedPath( hxA, hxB, out List<int> path );
-    //    if ( path.Count > 1 ) {
-    //        pawn.mvEnd[z] = HexToV( path[1] );
-    //        break;
-    //    }
-    //}
+#if true
+    foreach ( var z in pawn.filter.no_idling ) {
+        if ( pawn.UpdateMovementPosition( z, ZServer.clock ) ) {
+            pawn.mvStart[z] = pawn.mvPos[z];
+            pawn.mvStartTime[z] = ZServer.clock;
+            int hxA = VToHex( pawn.mvPos[z] );
+            int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
+            GetCachedPath( hxA, hxB, out List<int> path );
+
+            if ( path.Count > 1 ) {
+                pawn.mvEnd[z] = HexToV( path[1] );
+                int segmentDist = ToTx( ( pawn.mvEnd[z] - pawn.mvPos[z] ).magnitude );
+                int speed = pawn.Speed( z );
+                int duration = ( 60 * segmentDist / speed * 1000 ) >> FRAC_BITS;
+                pawn.mvEndTime[z] = ZServer.clock + duration;
+                DebugDrawPath( path );
+            }
+        } else {
+            SingleShot.Add( dt => {
+                Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ),
+                                                            Draw.hexPixelSize / 2, Color.white );
+            } );
+        }
+    }
+#endif
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
@@ -93,7 +109,7 @@ public bool Spawn( int def, float x, float y, out int z ) {
         Error( "Out of pawns, can't create." );
         return false;
     }
-    pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
+    pawn.mvPos[z] = pawn.mvStart[z] = pawn.mvEnd[z] = new Vector2( x, y );
     Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
     if ( pawn.IsStructure( z ) ) {
         int hx = VToHex( pawn.mvPos[z] );

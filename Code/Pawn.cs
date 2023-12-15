@@ -48,8 +48,8 @@ public byte [] def = null;
 
 // lerped movement position
 public Vector2 [] mvPos = null;
-// target movement position
 public Vector2 [] mvEnd = null;
+public Vector2 [] mvStart = null;
 public byte [] mvPawn = null;
 public int [] mvStartTime = null;
 
@@ -126,33 +126,25 @@ public bool IsGarbage( int z ) {
 }
 
 public bool UpdateMovementPosition( int z, int clock ) {
+    if ( mvPos[z] == Vector2.zero ) {
+        mvPos[z] = mvStart[z] = mvEnd[z];
+        return true;
+    }
+
     int duration = mvEndTime[z] - mvStartTime[z];
     if ( duration <= 0 ) {
         return true;
     }
 
-    int ti = mvEndTime[z] - clock;
-    if ( ti <= 0 ) {
+    if ( clock >= mvEndTime[z] ) {
         return true;
     }
 
-    if ( mvPos[z] == Vector2.zero ) {
-        mvPos[z] = mvEnd[z];
-        return true;
-    }
+    int ti = clock - mvStartTime[z];
+    float t = ( float )ti / duration;
 
-    Vector2 d = mvEnd[z] - mvPos[z];
-    float sq = d.sqrMagnitude;
-    if ( sq < 0.00001f ) {
-        return true;
-    }
+    mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
 
-    float speed = Speed( z ) / 60f;
-
-    d /= Mathf.Sqrt( sq );
-    d *= speed * ti / 1000f;
-
-    mvPos[z] = mvEnd[z] - d;
     return false;
 }
 

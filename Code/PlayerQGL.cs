@@ -23,8 +23,12 @@ public static void Tick() {
     }
 
     void updatePos( int z ) {
-        if ( pawn.UpdateMovementPosition( z, clock ) ) {
-            snapPos( z );
+        if ( pawn.mvPos[z] == Vector2.zero ) {
+            pawn.mvPos[z] = pawn.mvEnd[z];
+            pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+        } else if ( pawn.UpdateMovementPosition( z, clock ) ) {
+            //pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+            //snapPos( z );
         }
     }
 
