@@ -72,6 +72,10 @@ public void Reset() {
     ArrayUtil.Clear( _allRows );
 }
 
+public void Clear( int z ) {
+    ArrayUtil.ClearColumn( _allRows, z );
+}
+
 int _lastFree;
 public int Create( int pawnDef ) {
     int z;
@@ -80,7 +84,7 @@ public int Create( int pawnDef ) {
         return 0;
     }
 
-    ArrayUtil.ClearColumn( _allRows, z );
+    Clear( z );
 
     def[z] = ( byte )pawnDef;
     hp[z] = ( byte )MaxHP( z );
@@ -89,7 +93,7 @@ public int Create( int pawnDef ) {
 }
 
 public void Destroy( int z ) {
-    def[z] = 0;
+    Clear( z );
     _lastFree = z;
 }
 
@@ -119,6 +123,7 @@ public bool IsStructure( int z ) {
 
 public bool IsIdling( int z ) {
     // if we haven't transmitted any positions yet, don't try to interpolate paths
+    // FIXME: this is a temp solution
     if ( mvEnd_tx[z] == 0 ) {
         return false;
     }

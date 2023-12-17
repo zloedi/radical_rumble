@@ -66,25 +66,34 @@ public void TickServer() {
     }
 
     foreach ( var z in pawn.filter.no_idling ) {
-        if ( pawn.UpdateMovementPosition( z, ZServer.clock ) ) {
 
+        if ( pawn.UpdateMovementPosition( z, ZServer.clock ) ) {
             // check if arrived at destination
             if ( pawn.mvEnd_tx[z] != 0 && pawn.mvEnd_tx[z] == pawn.mvEnd_tx[pawn.mvPawn[z]] ) {
                 pawn.mvStart[z] = pawn.mvPos[z] = pawn.mvEnd[z];
                 pawn.mvStartTime[z] = pawn.mvEndTime[z];
+                Kill( z );
                 continue;
             }
 
-            pawn.mvStart[z] = pawn.mvPos[z];
+            pawn.mvStart[z] = pawn.mvEnd[z];
             pawn.mvStartTime[z] = ZServer.clock;
-            int hxA = VToHex( pawn.mvPos[z] );
+            
+            // FIXME: make a filter for all 'currently navigating' pawns
+            if ( pawn.mvEnd_tx[z] == 0 ) {
+                continue;
+            }
+
+            int hxA = VToHex( pawn.mvStart[z] );
             int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
+
             GetCachedPath( hxA, hxB, out List<int> path );
             if ( path.Count > 1 ) {
                 pawn.mvEnd[z] = HexToV( path[1] );
-                int segmentDist = ToTx( ( pawn.mvEnd[z] - pawn.mvPos[z] ).magnitude );
+                float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
+                int segTx = ToTx( segmentDist );
                 int speed = pawn.Speed( z );
-                int duration = ( 60 * segmentDist / speed * 1000 ) >> FRAC_BITS;
+                int duration = ( 60 * segTx / speed * 1000 ) >> FRAC_BITS;
                 pawn.mvEndTime[z] = ZServer.clock + duration;
                 DebugDrawPath( path );
             }
@@ -270,7 +279,14 @@ public void SetTerrain( int x, int y, int terrain ) {
 
 // target can be a void hex bordering the solids
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
+List<int> _pathError = new List<int>();
 void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
+    if ( hxSrc == 0 || hxTarget == 0 ) {
+        Error( "Trying to find path to/from 0" );
+        path = _pathError;
+        return;
+    }
+
     int key = ( hxSrc << 16 ) | hxTarget;
     if ( _pathCache.TryGetValue( key, out path ) ) {
         return;
@@ -282,6 +298,8 @@ void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
     CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
 
     path = _pathCache[key];
+
+    Log( $"[ffc000]Path len: {path.Count}[-]" );
 }
 
 void CachePathSubpaths( int hxA, int hxB, List<int> path ) {

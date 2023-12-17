@@ -91,8 +91,7 @@ public class Board {
         navMap[hxSrc] = 0;
 
         // flood the map with score
-        int axialDist = Distance( hxSrc, hxTarget );
-        HexPather.FloodMap( hxSrc, axialDist + 1, width, navMap, numItems, patherCTX );
+        HexPather.FloodMap( hxSrc, 256, width, navMap, numItems, patherCTX );
 
         // put the geometrical distance in the score
         foreach ( var hx in filter.solid ) {
