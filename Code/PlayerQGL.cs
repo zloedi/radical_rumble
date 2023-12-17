@@ -13,6 +13,7 @@ static Game game => Cl.game;
 
 public static void Tick() {
     int clock = ( int )Cl.clock;
+    int clockDelta = ( int )Cl.clockDelta;
 
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
@@ -26,10 +27,8 @@ public static void Tick() {
         if ( pawn.mvPos[z] == Vector2.zero ) {
             pawn.mvPos[z] = pawn.mvEnd[z];
             pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
-        } else if ( pawn.UpdateMovementPosition( z, clock ) ) {
-            //pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
-            //snapPos( z );
         }
+        pawn.SpeculateMovementPosition( z, clock, clockDelta );
     }
 
     foreach ( var z in pawn.filter.structures ) {

@@ -13,7 +13,9 @@ using Sv = RRServer;
 
 partial class Game {
 
+#if UNITY_STANDALONE
 static bool SvShowPaths_kvar = false;
+#endif
 
 public void TickServer() {
     pawn.UpdateFilters();
@@ -28,7 +30,7 @@ public void TickServer() {
 
             // push the source position on the side
             // so the path is properly split in the same hex
-#if true
+
             if ( path.Count > 2 ) {
                 Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[zIdle] ) );
                 Vector2 snapB = AxialToV( VToAxial( pawn.mvPos[zEnemy] ) );
@@ -36,26 +38,17 @@ public void TickServer() {
                 float dx = snapA.x - snapB.x;
                 if ( dx * dx < 0.0001f ) {
                     snapA.x += Mathf.Sign( pawn.mvPos[zIdle].x - snapA.x );
-                    SingleShot.Add( dt => {
-                        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
-                                                            Draw.hexPixelSize / 2, Color.white );
-                    } );
                 }
 
                 float dy = snapA.y - snapB.y;
                 if ( dy * dy < 0.0001f ) {
                     snapA.y += Mathf.Sign( pawn.mvPos[zIdle].y - snapA.y );
-                    SingleShot.Add( dt => {
-                        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
-                                                            Draw.hexPixelSize / 2, Color.white );
-                    } );
                 }
 
                 hxA = VToHex( snapA );
                 hxB = VToHex( pawn.mvPos[zEnemy] );
                 GetCachedPath( hxA, hxB, out path );
             }
-#endif
 
             if ( path.Count > 1 ) {
                 // trigger movement both on the server and the client
@@ -72,15 +65,21 @@ public void TickServer() {
         }
     }
 
-#if true
     foreach ( var z in pawn.filter.no_idling ) {
         if ( pawn.UpdateMovementPosition( z, ZServer.clock ) ) {
+
+            // check if arrived at destination
+            if ( pawn.mvEnd_tx[z] != 0 && pawn.mvEnd_tx[z] == pawn.mvEnd_tx[pawn.mvPawn[z]] ) {
+                pawn.mvStart[z] = pawn.mvPos[z] = pawn.mvEnd[z];
+                pawn.mvStartTime[z] = pawn.mvEndTime[z];
+                continue;
+            }
+
             pawn.mvStart[z] = pawn.mvPos[z];
             pawn.mvStartTime[z] = ZServer.clock;
             int hxA = VToHex( pawn.mvPos[z] );
             int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
             GetCachedPath( hxA, hxB, out List<int> path );
-
             if ( path.Count > 1 ) {
                 pawn.mvEnd[z] = HexToV( path[1] );
                 int segmentDist = ToTx( ( pawn.mvEnd[z] - pawn.mvPos[z] ).magnitude );
@@ -89,14 +88,10 @@ public void TickServer() {
                 pawn.mvEndTime[z] = ZServer.clock + duration;
                 DebugDrawPath( path );
             }
-        } else {
-            SingleShot.Add( dt => {
-                Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ),
-                                                            Draw.hexPixelSize / 2, Color.white );
-            } );
         }
     }
-#endif
+
+    DebugDrawOrigins();
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
@@ -335,6 +330,20 @@ void DebugDrawPath( List<int> path ) {
     SingleShot.Add( dt => {
         QGL.LateDrawLine( pathLine );
     } );
+#endif
+}
+
+void DebugDrawOrigins() {
+#if UNITY_STANDALONE
+    if ( ! SvShowPaths_kvar ) {
+        return;
+    }
+    foreach ( var z in pawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ),
+                                                            Draw.hexPixelSize / 2, Color.white );
+        }, duration: 1 );
+    }
 #endif
 }
 

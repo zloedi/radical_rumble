@@ -53,7 +53,8 @@ public Vector2 [] mvStart = null;
 public byte [] mvPawn = null;
 public int [] mvStartTime = null;
 
-// these are synced
+// these should be synced
+
 // transmitted fixed point version of end position
 public int [] mvEnd_tx = null;
 public int [] mvEndTime = null;
@@ -92,6 +93,10 @@ public void Destroy( int z ) {
     _lastFree = z;
 }
 
+public float SpeedSec( int z ) {
+    return Speed( z ) / 60f;
+}
+
 public int Speed( int z ) {
     return GetDef( z ).speed;
 }
@@ -126,8 +131,25 @@ public bool IsGarbage( int z ) {
 }
 
 public bool UpdateMovementPosition( int z, int clock ) {
+    int duration = mvEndTime[z] - mvStartTime[z];
+    if ( duration <= 0 ) {
+        return true;
+    }
+
+    if ( clock >= mvEndTime[z] ) {
+        return true;
+    }
+
+    int ti = clock - mvStartTime[z];
+    float t = ( float )ti / duration;
+    mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+    return false;
+}
+
+public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
     if ( mvPos[z] == Vector2.zero ) {
         mvPos[z] = mvStart[z] = mvEnd[z];
+        mvStartTime[z] = mvEndTime[z] = clock;
         return true;
     }
 
@@ -136,8 +158,25 @@ public bool UpdateMovementPosition( int z, int clock ) {
         return true;
     }
 
+    duration = mvEndTime[z] - mvStartTime[z];
+
     if ( clock >= mvEndTime[z] ) {
-        return true;
+        Vector2 v = mvEnd[z] - mvStart[z];
+        float sq = v.sqrMagnitude;
+        if ( sq < 0.0001f ) {
+            return true;
+        }
+
+        // keep moving in the same general direction until the server correction arrives
+        v /= Mathf.Sqrt( sq );
+        Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime / 1000f;
+        if ( ( newPos - mvEnd[z] ).sqrMagnitude > 1 ) {
+            // stop if too far from the destination
+            return true;
+        }
+
+        mvPos[z] = newPos;
+        return false;
     }
 
     int ti = clock - mvStartTime[z];

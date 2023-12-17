@@ -113,16 +113,8 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
                 }
-
-                if ( row == pawn.mvEndTime ) {
-                    // attempt to stay behind the server when next movement segment arrives
-                    // prevents stopping around corners
-                    for ( int i = 0; i < deltaChange.Count; i++ ) {
-                        pawn.mvEndTime[deltaChange[i]] += 100;
-                    }
-                }
                 
-                else if ( row == pawn.mvEnd_tx ) {
+                if ( row == pawn.mvEnd_tx ) {
                     // new movement segment arrives, trigger movement on the client
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
                         pawn.mvStart[deltaChange[i]] = pawn.mvPos[deltaChange[i]];

@@ -373,7 +373,6 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
         Error( $"{argv[0]} Can't find def named {argv[1]}" );
         return;
     }
-
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
     game.Spawn( def, x, y, out int z );

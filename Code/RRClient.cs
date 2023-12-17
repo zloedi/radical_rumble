@@ -15,7 +15,8 @@ public static string ClServerIpAddress_kvar = "89.190.193.149";
 
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;
-public static bool ClLogClocks_kvar = false;
+[Description( "0 -- no clock cmd logging, 1 -- log only pathologic clocks, 2 -- log all clocks" )]
+public static int ClLogClocks_kvar = 0;
 
 [Description("Print incoming packets: 1 -- some; 2 -- all")]
 static int ClPrintIncomingPackets_kvar = 0;
@@ -351,21 +352,29 @@ static void Clk_kmd( string [] argv ) {
     int.TryParse( argv[1], out int svClk );
     int delta = svClk - clClk;
 
-    if ( ClLogClocks_kvar ) {
+    const int pathologic = 250;
+
+    if ( ClLogClocks_kvar >= 2 ) {
         Log( $"{argv[0]}: cl clock: {clClk}" );
         Log( $"{argv[0]}: sv clock: {svClk}" );
         Log( $"{argv[0]}: delta: {delta}" );
+    } else if ( ClLogClocks_kvar >= 1 ) {
+        if ( Mathf.Abs( delta ) > pathologic ) {
+            Log( $"[ffc000]{argv[0]}: cl clock: {clClk}[-]" );
+            Log( $"[ffc000]{argv[0]}: sv clock: {svClk}[-]" );
+            Log( $"[ffc000]{argv[0]}: delta: {delta}[-]" );
+        }
     }
 
     if ( delta > 0 ) {
-        if ( delta > 100 ) {
+        if ( delta > pathologic ) {
             // the server clock is too far ahead, snap client to this time
             clockPrev = clock = svClk;
         } else {
             // this will increase the delta next tick
             clock = svClk;
         }
-    } else if ( delta < -100 ) {
+    } else if ( delta < -pathologic ) {
         // the server clock is too far behind, snap client to this time
         clockPrev = clock = svClk;
     }
