@@ -21,6 +21,11 @@ public void TickServer() {
     pawn.UpdateFilters();
     RegisterIntoGrids();
 
+    int getDuration( int z ) {
+        float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
+        return ( 60 * ToTx( segmentDist ) / pawn.Speed( z ) * 1000 ) >> FRAC_BITS;
+    }
+
     foreach ( var zIdle in pawn.filter.idling ) {
         var enemies = pawn.filter.enemies[pawn.team[zIdle]];
         foreach ( var zEnemy in enemies ) {
@@ -30,6 +35,7 @@ public void TickServer() {
 
             // push the source position on the side
             // so the path is properly split in the same hex
+            // FIXME: the proper solution is to have waypoints/lanes
 
             if ( path.Count > 2 ) {
                 Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[zIdle] ) );
@@ -51,14 +57,16 @@ public void TickServer() {
             }
 
             if ( path.Count > 1 ) {
+
                 // trigger movement both on the server and the client
                 // by setting movement target and arrival time
+
                 pawn.mvPawn[zIdle] = zEnemy;
+
+                pawn.mvStart[zIdle] = pawn.mvPos[zIdle];
                 pawn.mvEnd[zIdle] = HexToV( path[1] );
-                int segmentDist = ToTx( ( pawn.mvEnd[zIdle] - pawn.mvPos[zIdle] ).magnitude );
-                int speed = pawn.Speed( zIdle );
-                int duration = ( 60 * segmentDist / speed * 1000 ) >> FRAC_BITS;
-                pawn.mvEndTime[zIdle] = ZServer.clock + duration;
+                pawn.mvStartTime[zIdle] = ZServer.clock;
+                pawn.mvEndTime[zIdle] = ZServer.clock + getDuration( zIdle );
                 DebugDrawPath( path );
                 break;
             }
@@ -67,7 +75,8 @@ public void TickServer() {
 
     foreach ( var z in pawn.filter.no_idling ) {
 
-        if ( pawn.UpdateMovementPosition( z, ZServer.clock ) ) {
+        if ( pawn.LerpMovePosition( z, ZServer.clock ) ) {
+
             // check if arrived at destination
             if ( pawn.mvEnd_tx[z] != 0 && pawn.mvEnd_tx[z] == pawn.mvEnd_tx[pawn.mvPawn[z]] ) {
                 pawn.mvStart[z] = pawn.mvPos[z] = pawn.mvEnd[z];
@@ -76,25 +85,30 @@ public void TickServer() {
                 continue;
             }
 
-            pawn.mvStart[z] = pawn.mvEnd[z];
-            pawn.mvStartTime[z] = ZServer.clock;
-            
             // FIXME: make a filter for all 'currently navigating' pawns
             if ( pawn.mvEnd_tx[z] == 0 ) {
                 continue;
             }
 
-            int hxA = VToHex( pawn.mvStart[z] );
+            int hxA = VToHex( pawn.mvEnd[z] );
             int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
-
             GetCachedPath( hxA, hxB, out List<int> path );
             if ( path.Count > 1 ) {
+                pawn.mvStart[z] = pawn.mvEnd[z];
                 pawn.mvEnd[z] = HexToV( path[1] );
-                float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
-                int segTx = ToTx( segmentDist );
-                int speed = pawn.Speed( z );
-                int duration = ( 60 * segTx / speed * 1000 ) >> FRAC_BITS;
-                pawn.mvEndTime[z] = ZServer.clock + duration;
+
+                int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEndTime[z] );
+                pawn.mvStartTime[z] = ZServer.clock;
+                pawn.mvEndTime[z] = pawn.mvStartTime[z] + getDuration( z );
+
+                if ( leftover > 0 ) {
+                    // advance on the next segment if there is time left from the tick
+                    if ( ! pawn.LerpMovePosition( z, pawn.mvStartTime[z] + leftover ) ) {
+                        pawn.mvStart[z] = pawn.mvPos[z];
+                        pawn.mvEndTime[z] -= leftover;
+                    }
+                }
+
                 DebugDrawPath( path );
             }
         }

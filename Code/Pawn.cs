@@ -135,7 +135,7 @@ public bool IsGarbage( int z ) {
     return def[z] == 0;
 }
 
-public bool UpdateMovementPosition( int z, int clock ) {
+public bool LerpMovePosition( int z, int clock ) {
     int duration = mvEndTime[z] - mvStartTime[z];
     if ( duration <= 0 ) {
         return true;
@@ -173,10 +173,12 @@ public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
         }
 
         // keep moving in the same general direction until the server correction arrives
+        // this really craps-up for faster pawns, but it is ok for almost everything
         v /= Mathf.Sqrt( sq );
         Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime / 1000f;
-        if ( ( newPos - mvEnd[z] ).sqrMagnitude > 1 ) {
+        if ( ( newPos - mvEnd[z] ).sqrMagnitude > SpeedSec( z ) ) {
             // stop if too far from the destination
+            mvPos[z] = mvEnd[z];
             return true;
         }
 

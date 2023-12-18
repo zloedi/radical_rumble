@@ -28,7 +28,8 @@ public static void Tick() {
             pawn.mvPos[z] = pawn.mvEnd[z];
             pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
         }
-        pawn.SpeculateMovementPosition( z, clock, clockDelta );
+        // use the unity clock here to keep moving even on crappy synced clock delta
+        pawn.SpeculateMovementPosition( z, clock, ( int )( Time.deltaTime * 1000 ) );
     }
 
     foreach ( var z in pawn.filter.structures ) {

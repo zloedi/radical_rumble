@@ -17,9 +17,10 @@ public static string ClServerIpAddress_kvar = "89.190.193.149";
 public static int ClTraceLevel_kvar = 1;
 [Description( "0 -- no clock cmd logging, 1 -- log only pathologic clocks, 2 -- log all clocks" )]
 public static int ClLogClocks_kvar = 0;
-
 [Description("Print incoming packets: 1 -- some; 2 -- all")]
 static int ClPrintIncomingPackets_kvar = 0;
+[Description("Sleep each frame in milliseconds.")]
+public static int ClFrameSleep_kvar = 0;
 
 static bool ShowBoardBounds_kvar = false;
 
@@ -88,6 +89,10 @@ public static void Done() {
 }
 
 public static void Tick( double timeDeltaDbl ) {
+    if ( ClFrameSleep_kvar > 0 ) {
+        System.Threading.Thread.Sleep( Mathf.Min( 33, ClFrameSleep_kvar ) );
+    }
+
     clockDeltaDbl = clock - clockPrev;
     clockPrev = clock;
     clock += timeDeltaDbl;
