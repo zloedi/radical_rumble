@@ -71,7 +71,7 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
 
 static void TickEnd() {
     var wbox = Draw.wboxScreen.TopCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
-    var text = $"Editor State: {_stateName}";
+    var text = $"'{LastSavedMap_cvar}' {_stateName}";
     int size = Draw.pixelSize * 2 / 3;
     WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: size );
 }
