@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 #if UNITY_STANDALONE
 using UnityEngine;
@@ -14,59 +15,133 @@ using Sv = RRServer;
 partial class Game {
 
 #if UNITY_STANDALONE
+[Description( "Show pather lines." )]
 static bool SvShowPaths_kvar = false;
+[Description( "Show structure avoidance debug." )]
+static bool SvShowAvoidance_kvar = false;
 #endif
 
 public void TickServer() {
-    pawn.UpdateFilters();
-    RegisterIntoGrids();
-
     int getDuration( int z ) {
         float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
         return ( 60 * ToTx( segmentDist ) / pawn.Speed( z ) * 1000 ) >> FRAC_BITS;
     }
 
-    foreach ( var zIdle in pawn.filter.idling ) {
-        var enemies = pawn.filter.enemies[pawn.team[zIdle]];
+    Vector2 avoidStructure( int team, Vector2 v0, Vector2 v1 ) {
+        Vector2 ab = v1 - v0;
+        float sq = ab.sqrMagnitude;
+        if ( sq < 0.5f ) {
+            return v1;
+        }
+
+        float dvLen = Mathf.Sqrt( sq );
+        Vector2 abn = ab / dvLen;
+
+        float min = 9999999;
+
+        foreach ( var z in pawn.filter.structures ) {
+            // enemy structures are not avoided, get attacked instead
+            if ( pawn.team[z] != team ) {
+                continue;
+            }
+
+            Vector2 c = pawn.mvPos[z];
+            Vector2 ac = c - v0;
+            Vector2 bc = c - v1;
+
+            float acac = Vector2.Dot( ac, ac );
+
+            // only care about the closest structure intersecting the path
+            if ( acac >= min ) {
+                continue;
+            }
+
+            float sqDist;
+
+            float e = Vector2.Dot( ac, ab );
+            if ( e <= 0 ) {
+                sqDist = Vector2.Dot( ac, ac );
+            } else {
+                float f = Vector2.Dot( ab, ab );
+                if ( e >= f ) {
+                    sqDist = Vector2.Dot( bc, bc );
+                } else {
+                    sqDist = acac - e * e / f;
+                }
+            }
+
+            const float avoidRadius = 1;
+
+            // this structure doesn't intersect the path
+            if ( sqDist > avoidRadius * avoidRadius ) {
+                continue;
+            }
+
+            Vector2 p = Vector2.Perpendicular( abn );
+
+            float sign = Vector2.Dot( ac, p ) >= 0 ? -1 : 1;
+            v1 = c + sign * p * avoidRadius * 1.25f;
+            min = acac;
+
+#if UNITY_STANDALONE
+            if ( SvShowAvoidance_kvar ) {
+                SingleShot.Add( dt => {
+                    float sz = Draw.hexPixelSize / 4;
+                    Hexes.DrawHexWithLines( Draw.GTS( c ), sz, Color.green );
+                    Hexes.DrawHexWithLines( Draw.GTS( v1 ), sz, Color.white );
+                    QGL.LateDrawLine( Draw.GTS( v0 ), Draw.GTS( v1 ), color: Color.green );
+                }, duration: 3 );
+            }
+#endif
+        }
+
+        return v1;
+    }
+
+    pawn.UpdateFilters();
+    RegisterIntoGrids();
+
+    foreach ( var z in pawn.filter.idling ) {
+        List<byte> enemies = pawn.filter.enemies[pawn.team[z]];
         foreach ( var zEnemy in enemies ) {
-            int hxA = VToHex( pawn.mvPos[zIdle] );
-            int hxB = VToHex( pawn.mvPos[zEnemy] );
-            GetCachedPath( hxA, hxB, out List<int> path );
 
-            // push the source position on the side
-            // so the path is properly split in the same hex
-            // FIXME: the proper solution is to have waypoints/lanes
+            GetCachedPathEndPos( z, zEnemy, out List<int> path );
 
-            if ( path.Count > 2 ) {
-                Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[zIdle] ) );
+            if ( path.Count > 2 && pawn.mvEnd_tx[z] == 0 ) {
+                // push the source position on the side
+                // so the path is properly split in the same hex when spawning units
+
+                // FIXME: check if spawned on a hex split by a zone delimiter
+                // FIXME: and pick a hex on the proper side
+
+                Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[z] ) );
                 Vector2 snapB = AxialToV( VToAxial( pawn.mvPos[zEnemy] ) );
 
                 float dx = snapA.x - snapB.x;
                 if ( dx * dx < 0.0001f ) {
-                    snapA.x += Mathf.Sign( pawn.mvPos[zIdle].x - snapA.x );
+                    snapA.x += Mathf.Sign( pawn.mvPos[z].x - snapA.x );
                 }
 
                 float dy = snapA.y - snapB.y;
                 if ( dy * dy < 0.0001f ) {
-                    snapA.y += Mathf.Sign( pawn.mvPos[zIdle].y - snapA.y );
+                    snapA.y += Mathf.Sign( pawn.mvPos[z].y - snapA.y );
                 }
 
-                hxA = VToHex( snapA );
-                hxB = VToHex( pawn.mvPos[zEnemy] );
-                GetCachedPath( hxA, hxB, out path );
+                GetCachedPathVec( snapA, pawn.mvPos[zEnemy], out path );
             }
 
             if ( path.Count > 1 ) {
 
                 // trigger movement both on the server and the client
                 // by setting movement target and arrival time
+                pawn.mvPawn[z] = zEnemy;
 
-                pawn.mvPawn[zIdle] = zEnemy;
+                // FIXME: is this redundant?
+                pawn.mvStart[z] = pawn.mvPos[z];
+                pawn.mvEnd[z] = avoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
+                pawn.mvStartTime[z] = ZServer.clock;
+                pawn.mvEndTime[z] = ZServer.clock + getDuration( z );
 
-                pawn.mvStart[zIdle] = pawn.mvPos[zIdle];
-                pawn.mvEnd[zIdle] = HexToV( path[1] );
-                pawn.mvStartTime[zIdle] = ZServer.clock;
-                pawn.mvEndTime[zIdle] = ZServer.clock + getDuration( zIdle );
                 DebugDrawPath( path );
                 break;
             }
@@ -75,43 +150,42 @@ public void TickServer() {
 
     foreach ( var z in pawn.filter.no_idling ) {
 
-        if ( pawn.LerpMovePosition( z, ZServer.clock ) ) {
+        if ( ! pawn.LerpMovePosition( z, ZServer.clock ) ) {
+            // still lerping
+            //SingleShot.Add( dt => {
+            //    Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ) + Vector2.one,
+            //                                                Draw.hexPixelSize * 1.25f, Color.white );
+            //}, duration: 1 );
+            continue;
+        }
 
-            // check if arrived at destination
-            if ( pawn.mvEnd_tx[z] != 0 && pawn.mvEnd_tx[z] == pawn.mvEnd_tx[pawn.mvPawn[z]] ) {
-                pawn.mvStart[z] = pawn.mvPos[z] = pawn.mvEnd[z];
-                pawn.mvStartTime[z] = pawn.mvEndTime[z];
-                Kill( z );
-                continue;
-            }
+        // FIXME: make a filter for all 'currently navigating' pawns
+        if ( pawn.mvEnd_tx[z] == 0 ) {
+            continue;
+        }
 
-            // FIXME: make a filter for all 'currently navigating' pawns
-            if ( pawn.mvEnd_tx[z] == 0 ) {
-                continue;
-            }
+        if ( GetCachedPathEndPos( z, pawn.mvPawn[z], out List<int> path ) <= 1 ) {
+            // no path to target or target reached
+            Kill( z );
+            continue;
+        }
 
-            int hxA = VToHex( pawn.mvEnd[z] );
-            int hxB = VToHex( pawn.mvPos[pawn.mvPawn[z]] );
-            GetCachedPath( hxA, hxB, out List<int> path );
-            if ( path.Count > 1 ) {
-                pawn.mvStart[z] = pawn.mvEnd[z];
-                pawn.mvEnd[z] = HexToV( path[1] );
+        pawn.mvStart[z] = pawn.mvEnd[z];
+        pawn.mvEnd[z] = avoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
 
-                int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEndTime[z] );
-                pawn.mvStartTime[z] = ZServer.clock;
-                pawn.mvEndTime[z] = pawn.mvStartTime[z] + getDuration( z );
+        int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEndTime[z] );
+        pawn.mvStartTime[z] = ZServer.clock;
+        pawn.mvEndTime[z] = pawn.mvStartTime[z] + getDuration( z );
 
-                if ( leftover > 0 ) {
-                    // advance on the next segment if there is time left from the tick
-                    if ( ! pawn.LerpMovePosition( z, pawn.mvStartTime[z] + leftover ) ) {
-                        pawn.mvStart[z] = pawn.mvPos[z];
-                        pawn.mvEndTime[z] -= leftover;
-                    }
-                }
-
-                DebugDrawPath( path );
+        if ( leftover > 0 ) {
+            // advance on the next segment if there is time left from the tick
+            if ( ! pawn.LerpMovePosition( z, pawn.mvStartTime[z] + leftover ) ) {
+                pawn.mvStart[z] = pawn.mvPos[z];
+                pawn.mvEndTime[z] -= leftover;
             }
         }
+
+        DebugDrawPath( path );
     }
 
     DebugDrawOrigins();
@@ -291,19 +365,27 @@ public void SetTerrain( int x, int y, int terrain ) {
     }
 }
 
+int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
+    return GetCachedPathVec( pawn.mvEnd[zSrc], pawn.mvEnd[zTarget], out path );
+}
+
+int GetCachedPathVec( Vector2 vSrc, Vector2 vTarget, out List<int> path ) {
+    return GetCachedPathHex( VToHex( vSrc ), VToHex( vTarget ), out path );
+}
+
 // target can be a void hex bordering the solids
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
 List<int> _pathError = new List<int>();
-void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
+int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
     if ( hxSrc == 0 || hxTarget == 0 ) {
         Error( "Trying to find path to/from 0" );
         path = _pathError;
-        return;
+        return path.Count;
     }
 
     int key = ( hxSrc << 16 ) | hxTarget;
     if ( _pathCache.TryGetValue( key, out path ) ) {
-        return;
+        return path.Count;
     }
 
     Log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}. Num paths in cache: {_pathCache.Count}[-]" );
@@ -314,6 +396,8 @@ void GetCachedPath( int hxSrc, int hxTarget, out List<int> path ) {
     path = _pathCache[key];
 
     Log( $"[ffc000]Path len: {path.Count}[-]" );
+
+    return path.Count;
 }
 
 void CachePathSubpaths( int hxA, int hxB, List<int> path ) {

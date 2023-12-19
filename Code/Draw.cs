@@ -68,6 +68,10 @@ public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     return xy - origin;
 }
 
+public static Vector2 GTS( Vector2 gamePos ) {
+    return GameToScreenPosition( gamePos );
+}
+
 public static Vector2 GameToScreenPosition( Vector2 gamePos ) {
     return _pan + gamePos * Draw.hexPixelSize;
 }
@@ -167,8 +171,8 @@ public static void PawnSprites( float alpha = 1 ) {
     const int flyShOff = 7;
     const float structSize = 1.2f;
 
-    setParams( spriteSize: landSize );
-    foreach ( var z in pawn.filter.no_structures ) {
+    setParams( spriteSize: structSize );
+    foreach ( var z in pawn.filter.structures ) {
         getScreenPos( z, out Vector2Int pos );
         blit( pos, sz, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
@@ -177,8 +181,8 @@ public static void PawnSprites( float alpha = 1 ) {
         print( z, pos - offShad );
     }
 
-    setParams( spriteSize: structSize );
-    foreach ( var z in pawn.filter.structures ) {
+    setParams( spriteSize: landSize );
+    foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
         blit( pos, sz, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
@@ -201,14 +205,16 @@ public static void PawnSprites( float alpha = 1 ) {
         print( z, pos - offShad );
     }
 
-    setParams( spriteSize: landSize );
-    foreach ( var z in pawn.filter.no_structures ) {
+    // == healthbars ==
+
+    setParams( spriteSize: structSize );
+    foreach ( var z in pawn.filter.structures ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
     }
 
-    setParams( spriteSize: structSize );
-    foreach ( var z in pawn.filter.structures ) {
+    setParams( spriteSize: landSize );
+    foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
     }
