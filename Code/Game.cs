@@ -68,6 +68,7 @@ public bool Init( bool skipShadowClones = false ) {
 public void Reset() {
     Log( "[ffc000]RESETTING THE GAME STATE[-]" );
     pawn.Reset();
+    board.Reset();
     _pathCache.Clear();
     gridPawn.Clear();
 }

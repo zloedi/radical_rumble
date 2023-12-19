@@ -18,17 +18,31 @@ public class Board {
 
     public byte [] size = new byte[2];
 
-    public byte [] terrain = new byte[MAX_GRID];
+    public byte [] terrain = null;
 
-    public byte [] pawnDef = new byte[MAX_GRID];
-    public byte [] pawnTeam = new byte[MAX_GRID];
+    public byte [] pawnDef = null;
+    public byte [] pawnTeam = null;
 
     // FIXME: not sure it's place is here
-    public byte [] navMap = new byte[MAX_GRID];
+    public byte [] navMap = null;
 
     public HexPather.Context patherCTX = HexPather.CreateContext( MAX_GRID );
     public List<int> path = new List<int>();
     public List<int> strippedPath = new List<int>();
+
+    List<Array> _allRows = new List<Array>();
+
+    public Board() {
+        ArrayUtil.CreateNulls( this, MAX_GRID, out _allRows );
+    }
+
+    public void Reset() {
+        ArrayUtil.Clear( _allRows );
+    }
+
+    public void Clear( int hx ) {
+        ArrayUtil.ClearColumn( _allRows, hx );
+    }
 
     //public bool HasFlags( int hx, Flags f ) {
     //    return ( ( Flags )flags[hx] & f ) != 0;

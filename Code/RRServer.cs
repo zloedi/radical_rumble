@@ -237,10 +237,10 @@ static void LoadLastMap() {
     string path = Path.Combine( MapsDir(), SvLastLoadedMap_kvar );
     string cmd = "";
     try {
+        // sv_undelta will do game reset
         cmd = File.ReadAllText( path );
-        game.shadow.ClearShadowRows();
+        game.Reset();
         Cellophane.TryExecuteString( cmd );
-        RegisterTrail( "cl_center_board" );
         Log( $"Loaded '{path}'" );
     } catch ( Exception ) {
         Error( $"Failed to read file '{path}'" );
@@ -349,8 +349,6 @@ static void SvUndelta_kmd( string [] argv ) {
         Log( "Nothing to undelta." );
         return;
     }
-
-    game.Reset();
 
     string [] cpargv = new string[argv.Length - 1];
     Array.Copy( argv, 1, cpargv, 0, cpargv.Length );

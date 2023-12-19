@@ -6,6 +6,19 @@ using System.Reflection;
 public static class ArrayUtil {
 
 
+// create arrays only at null fields
+public static void CreateNulls( object o, int numElements, out List<Array> all ) {
+    all = new List<Array>();
+    FieldInfo [] fields = o.GetType().GetFields();
+    foreach ( FieldInfo fi in fields ) {
+        if ( fi.FieldType.IsArray && fi.GetValue( o ) == null ) {
+            Array row = Array.CreateInstance( fi.FieldType.GetElementType(), numElements );
+            fi.SetValue( o, row );
+            all.Add( row );
+        }
+    }
+}
+
 // use reflection to create and collect all arrays
 public static void CreateAll( object o, int numElements, out List<Array> all ) {
     all = new List<Array>();
