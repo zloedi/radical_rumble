@@ -61,6 +61,10 @@ public static void OutlinedTextCenter( int x, int y, string text, Color? color =
     QGL.LatePrintNokia( text, x, y, color: color, scale: scale );
 }
 
+public static Vector2 STG( Vector2 xy ) {
+    return ScreenToGamePosition( xy );
+}
+
 public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     Vector2 origin = Hexes.HexToScreen( Vector2Int.zero, hexPixelSize );
     xy -= _pan;

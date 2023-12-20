@@ -17,6 +17,17 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind Alpha1 ""cl_spawn Brute"";
         bind Alpha2 ""cl_spawn Archer"";
         bind Alpha3 ""cl_spawn Flyer"";
+
+        bind Alpha4 ""cl_spawn Brute 1"";
+        bind Alpha5 ""cl_spawn Archer 1"";
+        bind Alpha6 ""cl_spawn Flyer 1"";
+
+        bind F1 ""cl_set_state play"";
+        bind F2 ""cl_set_state edit ; map_editor_set_state place_towers"";
+        bind F3 ""cl_set_state edit ; map_editor_set_state pather_test"";
+
+        bind K cl_kill;
+
         //bind A +client_pan_left;
         //bind D +client_pan_right;
         //bind S +client_pan_down;

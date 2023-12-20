@@ -21,6 +21,27 @@ static bool SvShowPaths_kvar = false;
 static bool SvShowAvoidance_kvar = false;
 #endif
 
+public void PostLoadMap() {
+    // precache some paths (i.e. between structures)
+    // making sure the paths are consistent between map modifications
+    pawn.UpdateFilters();
+    foreach ( var zA in pawn.filter.team[0] ) {
+        foreach ( var zB in pawn.filter.team[1] ) {
+            GetCachedPathEndPos( zA, zB, out List<int> p );
+        }
+    }
+    foreach ( var zA in pawn.filter.team[0] ) {
+        foreach ( var zB in pawn.filter.team[0] ) {
+            GetCachedPathEndPos( zA, zB, out List<int> p );
+        }
+    }
+    foreach ( var zA in pawn.filter.team[1] ) {
+        foreach ( var zB in pawn.filter.team[1] ) {
+            GetCachedPathEndPos( zA, zB, out List<int> p );
+        }
+    }
+}
+
 public void TickServer() {
     int getDuration( int z ) {
         float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
@@ -104,10 +125,13 @@ public void TickServer() {
     foreach ( var z in pawn.filter.idling ) {
         List<byte> enemies = pawn.filter.enemies[pawn.team[z]];
         foreach ( var zEnemy in enemies ) {
+            if ( ! pawn.IsStructure( zEnemy ) ) {
+                continue;
+            }
 
             GetCachedPathEndPos( z, zEnemy, out List<int> path );
 
-            if ( path.Count > 2 && pawn.mvEnd_tx[z] == 0 ) {
+            if ( path.Count > 2 ) {
                 // push the source position on the side
                 // so the path is properly split in the same hex when spawning units
 
@@ -126,6 +150,11 @@ public void TickServer() {
                 if ( dy * dy < 0.0001f ) {
                     snapA.y += Mathf.Sign( pawn.mvPos[z].y - snapA.y );
                 }
+
+                //SingleShot.Add( dt => {
+                //    Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
+                //                                            Draw.hexPixelSize / 4, Color.white );
+                //}, duration: 3 );
 
                 GetCachedPathVec( snapA, pawn.mvPos[zEnemy], out path );
             }
@@ -380,7 +409,12 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
     if ( hxSrc == 0 || hxTarget == 0 ) {
         Error( "Trying to find path to/from 0" );
         path = _pathError;
-        return path.Count;
+        return 0;
+    }
+
+    if ( hxSrc == hxTarget ) {
+        path = _pathError;
+        return 0;
     }
 
     int key = ( hxSrc << 16 ) | hxTarget;
@@ -388,7 +422,7 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
         return path.Count;
     }
 
-    Log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}. Num paths in cache: {_pathCache.Count}[-]" );
+    Log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
     board.GetPath( hxSrc, hxTarget );
 
     CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
@@ -396,19 +430,27 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
     path = _pathCache[key];
 
     Log( $"[ffc000]Path len: {path.Count}[-]" );
+    Log( $"[ffc000]Num paths in cache: {_pathCache.Count}[-]" );
 
     return path.Count;
 }
 
 void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
+    // make sure we use as much as possible of existing paths
+    // when navigating i.e. from the opposite side
+    for ( int i = 1; i < path.Count; i++ ) {
+        int key = ( path[i] << 16 ) | hxB;
+        if ( _pathCache.TryGetValue( key, out List<int> tmp ) ) {
+            Log( $"[ffc000]Patching {tmp.Count} nodes out of {path.Count}[-]" );
+            path.RemoveRange( i, path.Count - i );
+            path.AddRange( tmp );
+            break;
+        }
+    }
+
     CachePathBothWays( hxA, hxB, path );
     
-    for ( int i = 0; i < path.Count - 1; i++ ) {
-        int i0 = i + 0;
-        int i1 = i + 1;
-        var seg = new List<int>() { path[i0], path[i1] };
-        CachePathBothWays( seg[0], seg[1], seg );
-    }
+    // both way mock traversal of the path
 
     var p = new List<int>( path );
     for ( int i = p.Count - 1; i >= 3; i-- ) {
@@ -416,7 +458,8 @@ void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
         CachePathBothWays( p[0], p[p.Count-1], p );
     }
 
-    p = new List<int>( path );
+    p.Clear();
+    p.AddRange( path );
     p.Reverse();
     for ( int i = p.Count - 1; i >= 3; i-- ) {
         p.RemoveAt( i );
@@ -425,12 +468,25 @@ void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
 }
 
 void CachePathBothWays( int hxA, int hxB, List<int> path ) {
+    if ( hxA == hxB ) {
+        Error( "Trying to cache zero path" );
+        return;
+    }
+    
     int key0 = ( hxA << 16 ) | hxB;
+    if ( _pathCache.TryGetValue( key0, out List<int> p ) ) {
+        return;
+    }
     _pathCache[key0] = new List<int>( path );
+    //Log( $"[ffc000]Stored {path.Count} nodes at {key0}[-]" );
 
     int key1 = ( hxB << 16 ) | hxA;
+    if ( _pathCache.TryGetValue( key1, out p ) ) {
+        return;
+    }
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
+    //Log( $"[ffc000]Stored inverted {path.Count} nodes at {key1}[-]" );
 }
 
 void DebugDrawPath( List<int> path ) {

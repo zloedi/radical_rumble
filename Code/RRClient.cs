@@ -386,7 +386,7 @@ static void Clk_kmd( string [] argv ) {
 }
 
 static void PrintHex_kmd( string [] argv ) { 
-    Qonsole.Log( Draw.ScreenToHex( mousePosition ) );
+    Qonsole.Log( $"hx: {Draw.ScreenToHex( mousePosition )} axial: {Draw.ScreenToAxial( mousePosition )} game: {Draw.ScreenToGamePosition( mousePosition )}" );
 }
 
 static DateTime _pingStart;
@@ -428,7 +428,7 @@ static void ClCenterBoard_kmd( string [] argv ) {
 
 static void ClSpawn_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
-        Error( $"{argv[0]} <def_name>" );
+        Error( $"{argv[0]} <def_name> [team]" );
         return;
     }
 
@@ -437,7 +437,21 @@ static void ClSpawn_kmd( string [] argv ) {
         return;
     }
     Vector2 gamePos = Draw.ScreenToGamePosition( mousePosition );
-    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( gamePos.x )} {Cellophane.FtoA( gamePos.y )}" );
+    int team = 0;
+    if ( argv.Length > 2 ) {
+        int.TryParse( argv[2], out team );
+    }
+    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( gamePos.x )} {Cellophane.FtoA( gamePos.y )} {team}" );
+}
+
+static void ClKill_kmd( string [] argv ) {
+    Vector2 pos = Draw.STG( mousePosition );
+    foreach ( var z in game.pawn.filter.no_garbage ) {
+        if ( ( game.pawn.mvPos[z] - pos ).sqrMagnitude <= 1 ) {
+            SvCmd( $"sv_kill {z}" );
+            break;
+        }
+    }
 }
 
 static void ClPrintPawns_kmd( string [] argv ) {

@@ -218,8 +218,9 @@ static void PatherTest_tck() {
 
     foreach ( var hx in board.filter.solid ) {
         Vector2 spos = Draw.HexToScreen( hx );
+        int score = _patherCTX.floodMap[hx] >> 16;
         int dist = _patherCTX.floodMap[hx] & 0xffff;
-        QGL.LatePrint( dist, spos );
+        QGL.LatePrint( $"{score}\n{dist}", spos, color: Color.white );
     }
 
     HexPather.TracePath( _hxB, board.width, _patherCTX, _path );

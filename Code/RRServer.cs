@@ -241,6 +241,7 @@ static void LoadLastMap() {
         cmd = File.ReadAllText( path );
         game.Reset();
         Cellophane.TryExecuteString( cmd );
+        game.PostLoadMap();
         Log( $"Loaded '{path}'" );
     } catch ( Exception ) {
         Error( $"Failed to read file '{path}'" );
@@ -364,7 +365,7 @@ static void SvUndelta_kmd( string [] argv ) {
 
 static void SvSpawn_kmd( string [] argv, int zport ) {
     if ( argv.Length < 4 ) {
-        Error( $"{argv[0]} <def_name> <x> <y>" );
+        Error( $"{argv[0]} <def_name> <x> <y> [team]" );
         return;
     }
     if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
@@ -374,6 +375,10 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
     game.Spawn( def, x, y, out int z );
+    if ( argv.Length > 4 ) {
+        int.TryParse( argv[4], out int team );
+        game.SetTeam( z, team );
+    }
 }
 
 static void SvKill_kmd( string [] argv, int zport ) {
