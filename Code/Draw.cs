@@ -129,22 +129,27 @@ public static void PawnSprites( float alpha = 1 ) {
     Vector2Int offShadow = new Vector2Int( Draw.pixelSize, Draw.pixelSize );
 
     Vector2Int offShad;
-    Vector2Int sz;
-    Vector2Int szHalf;
 
-    void setParams( float spriteSize, int shadowBump = 1 ) {
-        offShad = offShadow * shadowBump;
-        sz = new Vector2Int( ( int )( size.x * spriteSize ), ( int )( size.y * spriteSize ) );
-        szHalf = sz / 2;
+    Vector2Int sz( int z ) {
+        float d = pawn.GetDef( z ).radius * 2;
+        return new Vector2Int( ( int )( size.x * d ), ( int )( size.y * d ) );
     }
 
-    void blit( Vector2Int vpos, Vector2Int vsz, Color color ) {
+    Vector2Int szHalf( int z ) {
+        return sz( z ) / 2;
+    }
+
+    void setParams( int shadowBump = 1 ) {
+        offShad = offShadow * shadowBump;
+    }
+
+    void blit( int z, Vector2Int vpos, Color color ) {
         color.a *= alpha;
-        QGL.LateBlit( Hexes.hexSpriteRegular, vpos, vsz, color: color );
+        QGL.LateBlit( Hexes.hexSpriteRegular, vpos, sz( z ), color: color );
     }
 
     void healthbar( int z, Vector2Int vpos ) {
-        Vector2Int vsz = sz;
+        Vector2Int vsz = sz( z );
         vpos.x += vsz.x / 2;
         vsz = new Vector2Int( vsz.x * 4 / 5, 4 * pixelSize );
         vpos.x -= vsz.x / 2;
@@ -159,71 +164,68 @@ public static void PawnSprites( float alpha = 1 ) {
 
     void print( int z, Vector2Int vpos ) {
         Pawn.Def def = Pawn.defs[pawn.def[z]];
-        Vector2Int v = vpos + szHalf + offPrn;
+        Vector2Int v = vpos + szHalf( z ) + offPrn;
         var c = def.color;
         c.a = alpha;
-        QGL.LatePrint( def.name[0], v, color: c, scale: Draw.pixelSize );
+        QGL.LatePrint( def.debugName, v, color: c, scale: Draw.pixelSize );
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {
-        Vector2 pos = _pan + pawn.mvPos[z] * Draw.hexPixelSize - szHalf;
+        Vector2 pos = _pan + pawn.mvPos[z] * Draw.hexPixelSize - szHalf( z );
         topLeft = new Vector2Int( ( int )pos.x, ( int )pos.y );
     }
 
-    const float landSize = 0.8f;
-    const float flySize = 1;
     const int flyShOff = 7;
-    const float structSize = 1.2f;
 
-    setParams( spriteSize: structSize );
+    setParams();
     foreach ( var z in pawn.filter.structures ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( pos, sz, color: Color.black * 0.3f );
+        blit( z, pos, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        blit( pos - offShad, sz, color: c );
+        blit( z, pos - offShad, color: c );
         print( z, pos - offShad );
     }
 
-    setParams( spriteSize: landSize );
+    setParams();
     foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( pos, sz, color: Color.black * 0.3f );
+        blit( z, pos, color: Color.black * 0.3f );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        blit( pos - offShad, sz, color: c );
+        blit( z, pos - offShad, color: c );
         print( z, pos - offShad );
     }
 
-    setParams( spriteSize: flySize, shadowBump: flyShOff );
+    setParams( shadowBump: flyShOff );
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( pos, sz, color: Color.black * 0.3f );
+        blit( z, pos, color: Color.black * 0.3f );
     }
 
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
         Pawn.Def def = pawn.GetDef( z );
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        blit( pos - offShad, sz, color: c );
+        blit( z, pos - offShad, color: c );
         print( z, pos - offShad );
     }
 
     // == healthbars ==
 
-    setParams( spriteSize: structSize );
+    setParams();
     foreach ( var z in pawn.filter.structures ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
     }
 
-    setParams( spriteSize: landSize );
+    setParams();
     foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
     }
 
-    setParams( spriteSize: flySize, shadowBump: flyShOff );
+    setParams( shadowBump: flyShOff );
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
