@@ -13,11 +13,31 @@ using static Pawn.Def.Flags;
 
 partial class Pawn {
 
+public static Def Tower = Register( new Def {
+    flags = Structure,
+    range = 10,
+    maxHP = 5000,
+    damage = 2,
+    radius = 0.6f,
+    color = Color.magenta,
+} );
+
+public static Def Turret = Register( new Def {
+    flags = Structure,
+    range = 10,
+    maxHP = 5000,
+    damage = 2,
+    radius = 0.5f,
+    color = new Color( 1f, 0.8f, 0 ),
+    debugName = "U",
+} );
+
 public static Def Archer = Register( new Def {
     range = 4,
     maxHP = 500,
     speed = 120,
     damage = 1,
+    radius = 0.4f,
     color = Color.red,
 } );
 
@@ -25,6 +45,7 @@ public static Def Brute = Register( new Def {
     maxHP = 500,
     speed = 60,
     damage = 1,
+    radius = 0.4f,
     color = Color.green,
 } );
 
@@ -33,15 +54,8 @@ public static Def Flyer = Register( new Def {
     maxHP = 500,
     speed = 60,
     damage = 1,
+    radius = 0.5f,
     color = new Color( 0f, 0.4f, 1f ),
-} );
-
-public static Def Tower = Register( new Def {
-    flags = Structure,
-    range = 10,
-    maxHP = 5000,
-    damage = 2,
-    color = Color.magenta,
 } );
 
 // =============================
@@ -55,11 +69,13 @@ public class Def {
     }
 
     public string name;
+    public string debugName;
     public Flags flags;
     public int maxHP;
-    public int speed;
+    public int speed = 60;
     public float range;
     public float damage;
+    public float radius = 0.5f;
     public Color color;
 }
 
@@ -71,6 +87,7 @@ void FillDefNames() {
         if ( fi.FieldType == typeof( Def ) ) {
             var def = fi.GetValue( null ) as Def;
             def.name = fi.Name;
+            def.debugName = def.debugName == null ? "" + def.name[0] : def.debugName;
         }
     }
 }
