@@ -17,6 +17,7 @@ static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tick
     None_tck,
     PlaceTerrain_tck,
     PlaceTowers_tck,
+    PlaceTurrets_tck,
     PatherTest_tck,
     HexTracing_tck
 );
@@ -100,6 +101,14 @@ static void PlaceTerrain_tck() {
 }
 
 static void PlaceTowers_tck() {
+    PlaceStructTick( "tower" );
+}
+
+static void PlaceTurrets_tck() {
+    PlaceStructTick( "turret" );
+}
+
+static void PlaceStructTick( string structName ) {
     TickBegin();
 
     if ( ! CanClick ) {
@@ -108,10 +117,10 @@ static void PlaceTowers_tck() {
 
     if ( Cl.mouse0Down ) {
         if ( game.GetFirstPawnOnHex( _mouseHex, out int z ) ) {
-            Qonsole.OneShotCmd( $"map_editor_tower_set_team {z} 0;" );
+            Qonsole.OneShotCmd( $"map_editor_set_team {z} 0;" );
         } else {
             Vector2 v = game.HexToV( _mouseHex );
-            Cl.SvCmd( $"sv_spawn tower {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
+            Cl.SvCmd( $"sv_spawn {structName} {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
         }
     }
 
@@ -326,7 +335,7 @@ static void HexTracing_tck() {
     TickEnd();
 }
 
-static void TowerSetTeam_cmd( string [] argv ) {
+static void SetTeam_cmd( string [] argv ) {
     if ( argv.Length < 3 ) {
         Cl.Log( $"{argv[0]} <z> <team>" );
         return;
