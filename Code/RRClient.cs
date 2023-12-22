@@ -40,6 +40,9 @@ public static bool mouse1Down;
 public static double clock, clockPrev, clockDeltaDbl;
 public static int clockDelta;
 
+// last received clock in Clk_kmd
+public static int serverClock;
+
 public static bool isPaused = false;
 
 public static Board board => game.board;
@@ -98,9 +101,6 @@ public static void Tick( double timeDeltaDbl ) {
     clock += timeDeltaDbl;
 
     clockDelta = ( int )clockDeltaDbl;
-
-    // might change the clock
-    ZClient.Tick( clockDelta );
 
     WrapBox.DisableCanvasScale();
 
@@ -168,6 +168,9 @@ public static void Tick( double timeDeltaDbl ) {
     Draw.centralBigRedMessage = null;
 
     _ticks[ClState_kvar % _ticks.Length]();
+
+    // might change the clock
+    ZClient.Tick( clockDelta );
 
     //if ( ! mouse0Down && ! mouse1Down && AllowSpam() ) {
     //    // ! make sure we update the same set (i.e. selected) on the server too !
@@ -354,19 +357,19 @@ static void Clk_kmd( string [] argv ) {
     }
 
     int clClk = ( int )clock;
-    int.TryParse( argv[1], out int svClk );
-    int delta = svClk - clClk;
+    int.TryParse( argv[1], out serverClock );
+    int delta = serverClock - clClk;
 
     const int pathologic = 250;
 
     if ( ClLogClocks_kvar >= 2 ) {
         Log( $"{argv[0]}: cl clock: {clClk}" );
-        Log( $"{argv[0]}: sv clock: {svClk}" );
+        Log( $"{argv[0]}: sv clock: {serverClock}" );
         Log( $"{argv[0]}: delta: {delta}" );
     } else if ( ClLogClocks_kvar >= 1 ) {
         if ( Mathf.Abs( delta ) > pathologic ) {
             Log( $"[ffc000]{argv[0]}: cl clock: {clClk}[-]" );
-            Log( $"[ffc000]{argv[0]}: sv clock: {svClk}[-]" );
+            Log( $"[ffc000]{argv[0]}: sv clock: {serverClock}[-]" );
             Log( $"[ffc000]{argv[0]}: delta: {delta}[-]" );
         }
     }
@@ -374,14 +377,14 @@ static void Clk_kmd( string [] argv ) {
     if ( delta > 0 ) {
         if ( delta > pathologic ) {
             // the server clock is too far ahead, snap client to this time
-            clockPrev = clock = svClk;
+            clockPrev = clock = serverClock;
         } else {
             // this will increase the delta next tick
-            clock = svClk;
+            clock = serverClock;
         }
     } else if ( delta < -pathologic ) {
         // the server clock is too far behind, snap client to this time
-        clockPrev = clock = svClk;
+        clockPrev = clock = serverClock;
     }
 }
 

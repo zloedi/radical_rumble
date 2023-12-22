@@ -33,6 +33,10 @@ public bool CreateShadows( object obj, int maxRow = 0, bool skipClone = false,
     FieldInfo [] fields = obj.GetType().GetFields();
 
     foreach ( FieldInfo fi in fields ) {
+        if ( fi.IsInitOnly ) {
+            continue;
+        }
+
         Array row = fi.GetValue( obj ) as Array;
 
         if ( row == null ) {
@@ -98,5 +102,30 @@ public void ClearShadowRows() {
     }
 }
 
+public void InvertShadowRows() {
+    foreach ( var kv in nameToArray ) {
+        Row row = arrayToShadow[kv.Value];
+        Array arr = row.array;
+        
+        Log( $"Invert shadow row on {kv.Key}" );
+
+        if ( row.type == Shadow.DeltaType.Uint8 ) {
+            byte [] a = ( byte[] )arr;
+            for ( int i = 0; i < a.Length; i++ ) {
+                a[i] = ( byte )( ~a[i] );
+            }
+        } else if ( row.type == Shadow.DeltaType.Uint16 ) {
+            ushort [] a = ( ushort[] )arr;
+            for ( int i = 0; i < a.Length; i++ ) {
+                a[i] = ( ushort )( ~a[i] );
+            }
+        } else if ( row.type == Shadow.DeltaType.Int32 ) {
+            int [] a = ( int[] )arr;
+            for ( int i = 0; i < a.Length; i++ ) {
+                a[i] = ~a[i];
+            }
+        }
+    }
+}
 
 }

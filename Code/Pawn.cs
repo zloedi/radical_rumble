@@ -13,32 +13,17 @@ using static Pawn.Def;
 
 partial class Pawn {
 
-public class Filter {
-    public List<IList> all;
-
-    public List<byte> garbage = null, no_garbage = null;
-    public List<byte> flying = null, no_flying = null;
-    public List<byte> structures = null, no_structures = null;
-
-    public List<byte> idling = null, no_idling = null;
-    public List<byte> [] enemies = new List<byte>[2];
-    public List<byte> [] team = new List<byte>[2];
-
-    public Filter() {
-        FilterUtil.CreateAll( this, out all );
-    }
-
-    public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
-        var l = condition ? la : lb;
-        l.Add( ( byte )z );
-    }
-
-    public void Clear() {
-        foreach ( var l in all ) {
-            l.Clear();
-        }
-    }
+public enum State {
+    None,
+    Spawning,
+    Idle,
+    NavigateToEnemyTower,
+    ChargeEnemy,
+    Attack,
+    Dead,
 }
+
+public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
 
 public const int MAX_PAWN = 256;
 
@@ -50,14 +35,23 @@ public byte [] def = null;
 public Vector2 [] mvPos = null;
 public Vector2 [] mvEnd = null;
 public Vector2 [] mvStart = null;
-public byte [] mvPawn = null;
 public int [] mvStartTime = null;
 
-// these should be synced
+public float [] atkPos = null;
+public int [] atkStartTime = null;
+
+// a pawn of interest for navigation
+public byte [] navFocus = null;
+// a pawn of interest for attack
+public byte [] atkFocus = null;
+public byte [] state = null;
+
+// == these should be synced ==
 
 // transmitted fixed point version of end position
 public int [] mvEnd_tx = null;
 public int [] mvEndTime = null;
+public int [] atkEndTime = null;
 
 public Filter filter = new Filter();
 
@@ -74,6 +68,14 @@ public void Reset() {
 
 public void Clear( int z ) {
     ArrayUtil.ClearColumn( _allRows, z );
+}
+
+public byte SB( State s ) {
+    return ( byte )s;
+}
+
+public void SetState( int z, State s ) {
+    state[z] = SB( s );
 }
 
 int _lastFree;
@@ -105,12 +107,24 @@ public int Speed( int z ) {
     return GetDef( z ).speed;
 }
 
+public float Radius( int z ) {
+    return defs[def[z]].radius;
+}
+
 public int MaxHP( int z ) {
     return defs[def[z]].maxHP;
 }
 
 public Def GetDef( int z ) {
     return defs[def[z]];
+}
+
+public string DN( int z ) {
+    return DebugName( z );
+}
+
+public string DebugName( int z ) {
+    return $"{GetDef( z ).name} {z}";
 }
 
 public bool IsFlying( int z ) {
@@ -121,6 +135,11 @@ public bool IsStructure( int z ) {
     return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
 }
 
+public bool IsNavFocus( int z ) {
+    return ( GetDef( z ).flags & Pawn.Def.Flags.NavFocus ) != 0;
+}
+
+// FIXME: no longer valid
 public bool IsIdling( int z ) {
     // if we haven't transmitted any positions yet, don't try to interpolate paths
     // FIXME: this is a temp solution
@@ -128,14 +147,38 @@ public bool IsIdling( int z ) {
         return false;
     }
 
-    return mvPawn[z] == 0;
+    return navFocus[z] == 0;
+}
+
+public bool IsEnemy( int z, int zEnemy ) {
+    return team[z] != team[zEnemy];
 }
 
 public bool IsGarbage( int z ) {
     return def[z] == 0;
 }
 
-public bool LerpMovePosition( int z, int clock ) {
+public float SqDist( int zA, int zB ) {
+    return ( mvPos[zB] - mvPos[zA] ).sqrMagnitude;
+}
+
+public void MvClamp( int z ) {
+    mvStart[z] = mvPos[z] = mvEnd[z];
+}
+
+// this will generate a delta (clock change)
+public void MvSnapToEnd( int z, int clock ) {
+    mvStartTime[z] = mvEndTime[z] = clock;
+    MvClamp( z );
+}
+
+// this will generate a delta (clock change)
+public void MvInterrupt( int z, int clock ) {
+    mvStartTime[z] = mvEndTime[z] = clock;
+    mvStart[z] = mvEnd[z] = mvPos[z];
+}
+
+public bool MvLerp( int z, int clock ) {
     int duration = mvEndTime[z] - mvStartTime[z];
     if ( duration <= 0 ) {
         return true;
@@ -151,6 +194,22 @@ public bool LerpMovePosition( int z, int clock ) {
     return false;
 }
 
+public bool AtkLerp( int z, int clock ) {
+    int duration = atkEndTime[z] - atkStartTime[z];
+    if ( duration <= 0 ) {
+        return true;
+    }
+
+    if ( clock >= atkEndTime[z] ) {
+        return true;
+    }
+
+    int ti = clock - atkStartTime[z];
+    atkPos[z] = ( float )ti / duration;
+
+    return false;
+}
+
 public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
     if ( mvPos[z] == Vector2.zero ) {
         mvPos[z] = mvStart[z] = mvEnd[z];
@@ -160,10 +219,9 @@ public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
 
     int duration = mvEndTime[z] - mvStartTime[z];
     if ( duration <= 0 ) {
+        // FIXME: lerp mvpos to end if they differ
         return true;
     }
-
-    duration = mvEndTime[z] - mvStartTime[z];
 
     if ( clock >= mvEndTime[z] ) {
         Vector2 v = mvEnd[z] - mvStart[z];
@@ -192,6 +250,40 @@ public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
     mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
 
     return false;
+}
+
+public class Filter {
+    public List<IList> all;
+
+    public List<byte> garbage = null, no_garbage = null;
+    public List<byte> flying = null, no_flying = null;
+    public List<byte> structures = null, no_structures = null;
+
+    // FIXME: obsolete
+    public List<byte> idling = null, no_idling = null;
+    public List<byte> [] enemies = new List<byte>[2];
+    public List<byte> [] team = new List<byte>[2];
+    public List<byte> [] byState = new List<byte>[AllStates.Length];
+    public List<byte> [] no_byState = new List<byte>[AllStates.Length];
+
+    public Filter() {
+        FilterUtil.CreateAll( this, out all );
+    }
+
+    public List<byte> ByState( State state ) {
+        return byState[( int )state];
+    }
+
+    public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
+        var l = condition ? la : lb;
+        l.Add( ( byte )z );
+    }
+
+    public void Clear() {
+        foreach ( var l in all ) {
+            l.Clear();
+        }
+    }
 }
 
 public void UpdateFilters() {
@@ -223,6 +315,18 @@ public void UpdateFilters() {
 
     foreach ( int z in filter.no_structures ) {
         filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
+    }
+
+    foreach ( int z in filter.structures ) {
+        filter.Assign( z, true, filter.byState[SB( State.None )],
+                                                            filter.no_byState[SB( State.None )] );
+    }
+
+    foreach ( int z in filter.no_structures ) {
+        foreach ( var s in Pawn.AllStates ) {
+            int sb = SB( s );
+            filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+        }
     }
 }
 

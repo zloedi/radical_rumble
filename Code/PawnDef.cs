@@ -14,7 +14,7 @@ using static Pawn.Def.Flags;
 partial class Pawn {
 
 public static Def Tower = Register( new Def {
-    flags = Structure,
+    flags = Structure | NavFocus,
     range = 10,
     maxHP = 5000,
     damage = 2,
@@ -66,6 +66,7 @@ public class Def {
         None,
         Structure = 1 << 0,
         Flying    = 1 << 1,
+        NavFocus  = 1 << 2,
     }
 
     public string name;

@@ -26,8 +26,17 @@ public static void Tick() {
     void updatePos( int z ) {
         if ( pawn.mvPos[z] == Vector2.zero ) {
             pawn.mvPos[z] = pawn.mvEnd[z];
-            pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+            pawn.MvInterrupt( z, clock );
         }
+
+        // zero delta move means stop
+        // FIXME: remove if the pawn state is sent over the network
+        if ( pawn.mvEndTime[z] == Cl.serverClock ) {
+            // FIXME: should lerp to actual end pos
+            pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+            return;
+        }
+
         // use the unity clock here to keep moving even on crappy synced clock delta
         pawn.SpeculateMovementPosition( z, clock, ( int )( Time.deltaTime * 1000 ) );
     }
