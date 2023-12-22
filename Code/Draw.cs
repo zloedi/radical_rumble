@@ -7,6 +7,8 @@ using Cl = RRClient;
 static class Draw {
 
 
+static bool SkipPawns_cvar = false;
+
 public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 300 );
 public static int hexPixelSize => 12 * pixelSize;
 
@@ -123,6 +125,10 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
 }
 
 public static void PawnSprites( float alpha = 1 ) {
+    if ( SkipPawns_cvar ) {
+        return;
+    }
+
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
     Vector2Int size = dsprite * Draw.pixelSize;
     Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
