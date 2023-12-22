@@ -23,8 +23,9 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind Alpha6 ""cl_spawn Flyer 1"";
 
         bind F1 ""cl_set_state play"";
-        bind F2 ""cl_set_state edit ; map_editor_set_state place_towers"";
-        bind F3 ""cl_set_state edit ; map_editor_set_state pather_test"";
+        bind F2 ""cl_set_state edit ; map_editor_set_state pather_test"";
+        bind F3 ""cl_set_state edit ; map_editor_set_state place_towers"";
+        bind F4 ""cl_set_state edit ; map_editor_set_state place_turrets"";
 
         bind K cl_kill;
 
