@@ -11,6 +11,7 @@ using GalliumMath;
 using static Pawn.Def;
 
 using Sv = RRServer;
+using PS = Pawn.State;
 
 partial class Game {
 
@@ -19,7 +20,11 @@ partial class Game {
 static bool SvShowPaths_kvar = false;
 [Description( "Show structure avoidance debug." )]
 static bool SvShowAvoidance_kvar = false;
+[Description( "Show charge lines." )]
+static bool SvShowCharge_kvar = false;
 #endif
+
+static bool ChickenBit_kvar = false;
 
 public void PostLoadMap() {
     // precache some paths (i.e. between structures)
@@ -42,7 +47,110 @@ public void PostLoadMap() {
     }
 }
 
+public void TickServerExperimental() {
+    void charge( int z, int zEnemy ) {
+        pawn.atkFocus[z] = ( byte )zEnemy;
+        MvUpdateChargeRoute( z, zEnemy );
+        pawn.SetState( z, PS.ChargeEnemy );
+    }
+
+    pawn.UpdateFilters();
+    RegisterIntoGrids();
+
+    foreach ( var z in pawn.filter.ByState( PS.None ) ) {
+        pawn.MvClamp( z );
+        pawn.SetState( z, PS.Spawning );
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.Spawning ) ) {
+        pawn.MvClamp( z );
+        pawn.SetState( z, PS.Idle );
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.Idle ) ) {
+
+        if ( HasReachableEnemy( z, out int zEnemy ) ) {
+            MvInterrupt( z );
+            charge( z, zEnemy );
+            Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
+            continue;
+        }
+
+        if ( NavGetFocusPawn( z, out int zFocus ) ) {
+            Log( $"{pawn.DN( z )} navigates to tower." );
+            MvInterrupt( z );
+            pawn.SetState( z, PS.NavigateToEnemyTower );
+        }
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.NavigateToEnemyTower ) ) {
+        if ( pawn.MvLerp( z, ZServer.clock ) ) {
+            // path inflection point, get more path
+            if ( ! NavUpdate( z ) ) {
+                // nothing to focus on for navigation
+                pawn.SetState( z, PS.Idle );
+            }
+        }
+
+        if ( HasReachableEnemy( z, out int zEnemy ) ) {
+            // change route segment before next movement lerp so we have the proper position
+            charge( z, zEnemy );
+            continue;
+        }
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
+        int zEnemy = pawn.atkFocus[z];
+
+        if ( pawn.IsGarbage( pawn.atkFocus[z] ) || ! CanReach( z, zEnemy ) ) {
+            // enemy is dead or out of sight, chase something else instead
+            MvInterrupt( z );
+            pawn.atkFocus[z] = 0;
+            pawn.SetState( z, PS.NavigateToEnemyTower );
+            continue;
+        }
+
+        if ( pawn.MvLerp( z, ZServer.clock ) ) {
+            // reached attack position, transition to attack
+            pawn.MvSnapToEnd( z, ZServer.clock );
+            Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
+            pawn.SetState( z, PS.Attack );
+            continue;
+        }
+
+        MvUpdateChargeRoute( z, zEnemy );
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
+        if ( pawn.IsGarbage( pawn.atkFocus[z] ) || pawn.hp[pawn.atkFocus[z]] <= 0 ) {
+            pawn.atkFocus[z] = 0;
+            pawn.SetState( pawn.atkFocus[z], PS.Dead );
+            pawn.SetState( z, PS.Idle );
+            continue;
+        }
+
+        if ( pawn.AtkLerp( z, ZServer.clock ) ) {
+            pawn.atkStartTime[z] = ZServer.clock;
+            pawn.atkEndTime[z] = pawn.atkStartTime[z] + AtkDuration( z );
+        }
+    }
+
+    foreach ( var z in pawn.filter.ByState( PS.Dead ) ) {
+        Kill( z );
+    }
+
+    DebugDrawOrigins();
+    foreach ( var z in pawn.filter.no_garbage ) {
+        pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
+    }
+}
+
 public void TickServer() {
+    if ( ChickenBit_kvar ) {
+        TickServerExperimental();
+        return;
+    }
+
     int getDuration( int z ) {
         float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
         return ( 60 * ToTx( segmentDist ) / pawn.Speed( z ) * 1000 ) >> FRAC_BITS;
@@ -163,7 +271,7 @@ public void TickServer() {
 
                 // trigger movement both on the server and the client
                 // by setting movement target and arrival time
-                pawn.mvPawn[z] = zEnemy;
+                pawn.navFocus[z] = zEnemy;
 
                 // FIXME: is this redundant?
                 pawn.mvStart[z] = pawn.mvPos[z];
@@ -179,7 +287,7 @@ public void TickServer() {
 
     foreach ( var z in pawn.filter.no_idling ) {
 
-        if ( ! pawn.LerpMovePosition( z, ZServer.clock ) ) {
+        if ( ! pawn.MvLerp( z, ZServer.clock ) ) {
             // still lerping
             //SingleShot.Add( dt => {
             //    Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ) + Vector2.one,
@@ -193,7 +301,7 @@ public void TickServer() {
             continue;
         }
 
-        if ( GetCachedPathEndPos( z, pawn.mvPawn[z], out List<int> path ) <= 1 ) {
+        if ( GetCachedPathEndPos( z, pawn.navFocus[z], out List<int> path ) <= 1 ) {
             // no path to target or target reached
             Kill( z );
             continue;
@@ -208,7 +316,7 @@ public void TickServer() {
 
         if ( leftover > 0 ) {
             // advance on the next segment if there is time left from the tick
-            if ( ! pawn.LerpMovePosition( z, pawn.mvStartTime[z] + leftover ) ) {
+            if ( ! pawn.MvLerp( z, pawn.mvStartTime[z] + leftover ) ) {
                 pawn.mvStart[z] = pawn.mvPos[z];
                 pawn.mvEndTime[z] -= leftover;
             }
@@ -394,6 +502,29 @@ public void SetTerrain( int x, int y, int terrain ) {
     }
 }
 
+Vector2Int [] _nbrs = new Vector2Int[6];
+bool CanReach( int z, int zTarget ) {
+    if ( zTarget == 0 ) {
+        return false;
+    }
+    Vector2Int axialA = VToAxial( pawn.mvPos[z] );
+    Vector2Int axialB = VToAxial( pawn.mvPos[zTarget] );
+    if ( ! board.CanReach( axialA, axialB ) ) {
+        return false;
+    }
+
+    Hexes.Neighbours( axialB, out _nbrs[0], out _nbrs[1], out _nbrs[2],
+                                out _nbrs[3], out _nbrs[4], out _nbrs[5] );
+
+    foreach ( var n in _nbrs ) {
+        if ( ! board.CanReach( axialA, n ) ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
     return GetCachedPathVec( pawn.mvEnd[zSrc], pawn.mvEnd[zTarget], out path );
 }
@@ -489,6 +620,250 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
     //Log( $"[ffc000]Stored inverted {path.Count} nodes at {key1}[-]" );
 }
 
+int MvDuration( int z ) {
+    float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
+    return ( 60 * ToTx( segmentDist ) / pawn.Speed( z ) * 1000 ) >> FRAC_BITS;
+}
+
+void MvInterrupt( int z ) {
+    pawn.MvInterrupt( z, ZServer.clock );
+}
+
+bool HasReachableEnemy( int z, out int zEnemy ) {
+    zEnemy = 0;
+    float minEnemy = 9999999;
+
+    foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
+        if ( pawn.IsStructure( ze ) ) {
+            continue;
+        }
+
+        float sq = pawn.SqDist( z, ze );
+        if ( sq >= minEnemy ) {
+            continue;
+        }
+        
+        if ( CanReach( z, ze ) ) {
+            Vector2 atk = AtkPointOnEnemy( z, ze );
+            Vector2 asp = AvoidStructure( pawn.team[z], pawn.mvPos[z], atk );
+            if ( atk == asp ) {
+                zEnemy = ze;
+                minEnemy = sq;
+            }
+        }
+    }
+
+    return zEnemy != 0;
+}
+
+int AtkDuration( int z ) {
+    return 1000;
+}
+
+Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
+    return pawn.mvPos[zEnemy];
+}
+
+void MvUpdateChargeRoute( int z, int zEnemy ) {
+    Vector2 chase = AtkPointOnEnemy( z, zEnemy );
+
+    // handle the case where enemies go head-to-head
+    // pick 'random' pawn to stop moving a bit before impact
+    if ( pawn.atkFocus[zEnemy] == z
+        && pawn.mvEnd[zEnemy] != pawn.mvPos[zEnemy]
+        && ( ( z ^ zEnemy ) & 1 ) == pawn.team[z] ) {
+        float sp = Mathf.Max( pawn.SpeedSec( zEnemy ), pawn.SpeedSec( z ) ) / 2;
+        float sq = sp * sp;
+        if ( ( pawn.mvPos[zEnemy] - pawn.mvPos[z] ).sqrMagnitude < sq ) {
+            MvInterrupt( z );
+            return;
+        }
+    }
+
+    if ( pawn.mvEnd[z] == chase ) {
+        // still chasing the same point
+        return;
+    }
+
+    // FIXME: this constant can be multiple of the distance
+    // don't change target point too often and spam the network...
+    if ( ( chase - pawn.mvEnd[z] ).sqrMagnitude < 4f
+            && ( chase - pawn.mvPos[z] ).sqrMagnitude > 4.5f ) {
+        return;
+    }
+
+    pawn.mvStart[z] = pawn.mvPos[z];
+    pawn.mvEnd[z] = chase;
+    pawn.mvStartTime[z] = ZServer.clock;
+    pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
+
+    if ( SvShowCharge_kvar ) {
+        DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+    }
+}
+
+bool NavGetFocusPawn( int z, out int zNavFocus ) {
+    zNavFocus = 0;
+    float minNav = 9999999;
+
+    foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
+        float sq = pawn.SqDist( z, ze );
+        if ( sq >= minNav ) {
+            continue;
+        }
+        if ( pawn.IsNavFocus( ze ) ) {
+            zNavFocus = ze;
+            minNav = sq;
+        }
+    }
+
+    return zNavFocus != 0;
+}
+
+// movement path inflection point handling
+bool NavUpdate( int z ) {
+    List<int> path;
+    int zFocus = pawn.navFocus[z];
+
+    if ( pawn.IsGarbage( zFocus ) ) {
+        zFocus = pawn.navFocus[z] = 0;
+    }
+
+    if ( zFocus == 0 ) {
+        MvInterrupt( z );
+
+        if ( ! NavGetFocusPawn( z, out zFocus ) ) {
+            return false;
+        }
+
+        pawn.navFocus[z] = ( byte )zFocus;
+
+        if ( GetCachedPathEndPos( z, zFocus, out path ) > 2 ) {
+            // push the source position on the side
+            // so the path is properly split in the same hex when spawning units
+
+            // FIXME: check if spawned on a hex split by a zone delimiter
+            // FIXME: and pick a hex on the proper side
+
+            Vector2 snapA = AxialToV( VToAxial( pawn.mvPos[z] ) );
+            Vector2 snapB = AxialToV( VToAxial( pawn.mvPos[zFocus] ) );
+
+            float dx = snapA.x - snapB.x;
+            if ( dx * dx < 0.0001f ) {
+                snapA.x += Mathf.Sign( pawn.mvPos[z].x - snapA.x );
+            }
+
+            float dy = snapA.y - snapB.y;
+            if ( dy * dy < 0.0001f ) {
+                snapA.y += Mathf.Sign( pawn.mvPos[z].y - snapA.y );
+            }
+
+            //SingleShot.Add( dt => {
+            //    Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
+            //                                            Draw.hexPixelSize / 4, Color.white );
+            //}, duration: 3 );
+
+            GetCachedPathVec( snapA, pawn.mvEnd[zFocus], out path );
+        }
+    } else {
+        GetCachedPathEndPos( z, zFocus, out path );
+    }
+
+    if ( path.Count < 2 ) {
+        // no path or error
+        return false;
+    }
+
+    DebugDrawPath( path );
+
+    pawn.mvStart[z] = pawn.mvEnd[z];
+    pawn.mvEnd[z] = AvoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
+
+    int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEndTime[z] );
+    pawn.mvStartTime[z] = ZServer.clock;
+    pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
+
+    if ( leftover > 0 ) {
+        // advance on the next segment if there is time left from the tick
+        if ( ! pawn.MvLerp( z, pawn.mvStartTime[z] + leftover ) ) {
+            pawn.mvStart[z] = pawn.mvPos[z];
+            pawn.mvEndTime[z] -= leftover;
+        }
+    }
+    return true;
+}
+
+Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
+    Vector2 ab = v1 - v0;
+    float sq = ab.sqrMagnitude;
+    if ( sq < 0.5f ) {
+        return v1;
+    }
+
+    float dvLen = Mathf.Sqrt( sq );
+    Vector2 abn = ab / dvLen;
+
+    float min = 9999999;
+
+    foreach ( var z in pawn.filter.structures ) {
+        // enemy structures are not avoided, get attacked instead
+        if ( pawn.team[z] != team ) {
+            continue;
+        }
+
+        Vector2 c = pawn.mvPos[z];
+        Vector2 ac = c - v0;
+        Vector2 bc = c - v1;
+
+        float acac = Vector2.Dot( ac, ac );
+
+        // only care about the closest structure intersecting the path
+        if ( acac >= min ) {
+            continue;
+        }
+
+        float sqDist;
+
+        float e = Vector2.Dot( ac, ab );
+        if ( e <= 0 ) {
+            sqDist = Vector2.Dot( ac, ac );
+        } else {
+            float f = Vector2.Dot( ab, ab );
+            if ( e >= f ) {
+                sqDist = Vector2.Dot( bc, bc );
+            } else {
+                sqDist = acac - e * e / f;
+            }
+        }
+
+        const float avoidRadius = 1;
+
+        // this structure doesn't intersect the path
+        if ( sqDist > avoidRadius * avoidRadius ) {
+            continue;
+        }
+
+        Vector2 p = Vector2.Perpendicular( abn );
+
+        float sign = Vector2.Dot( ac, p ) >= 0 ? -1 : 1;
+        v1 = c + sign * p * avoidRadius * 1.25f;
+        min = acac;
+
+#if UNITY_STANDALONE
+        if ( SvShowAvoidance_kvar ) {
+            SingleShot.Add( dt => {
+                float sz = Draw.hexPixelSize / 4;
+                Hexes.DrawHexWithLines( Draw.GTS( c ), sz, Color.green );
+                Hexes.DrawHexWithLines( Draw.GTS( v1 ), sz, Color.white );
+                QGL.LateDrawLine( Draw.GTS( v0 ), Draw.GTS( v1 ), color: Color.green );
+            }, duration: 3 );
+        }
+#endif
+    }
+
+    return v1;
+}
+
 void DebugDrawPath( List<int> path ) {
 #if UNITY_STANDALONE
     if ( ! SvShowPaths_kvar ) {
@@ -502,6 +877,27 @@ void DebugDrawPath( List<int> path ) {
     SingleShot.Add( dt => {
         QGL.LateDrawLine( pathLine );
     } );
+#endif
+}
+
+void DebugSeg( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
+    DebugLine( a, b, duration, c );
+#if UNITY_STANDALONE
+    SingleShot.Add( dt => {
+        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( a ),
+                                                        Draw.hexPixelSize / 5, Color.white );
+        Hexes.DrawHexWithLines( Draw.GameToScreenPosition( b ),
+                                                        Draw.hexPixelSize / 5, Color.white );
+    }, duration: duration );
+#endif
+}
+
+void DebugLine( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
+#if UNITY_STANDALONE
+    Color col = c != null ? c.Value : Color.cyan;
+    SingleShot.Add( dt => {
+        QGL.LateDrawLine( Draw.GTS( a ), Draw.GTS( b ), color: col );
+    }, duration: duration );
 #endif
 }
 
