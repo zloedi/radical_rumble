@@ -24,6 +24,9 @@ public static void CreateAll( object o, int numElements, out List<Array> all ) {
     all = new List<Array>();
     FieldInfo [] fields = o.GetType().GetFields();
     foreach ( FieldInfo fi in fields ) {
+        if ( fi.IsInitOnly ) {
+            continue;
+        }
         if ( fi.FieldType.IsArray ) {
             Array row = Array.CreateInstance( fi.FieldType.GetElementType(), numElements );
             fi.SetValue( o, row );
