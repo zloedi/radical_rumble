@@ -134,7 +134,7 @@ public class Board {
 
         strippedPath.Add( path[0] );
 
-        if ( CanReach( path[0], path[path.Count - 1], navMap ) ) {
+        if ( CanReach( path[0], path[path.Count - 1] ) ) {
             strippedPath.Add( path[path.Count - 1] );
             return;
         }
@@ -144,8 +144,8 @@ public class Board {
         while ( true ) {
             int reach = 0;
             for ( int i = start + 1; i < path.Count; i++ ) {
-                if ( CanReach( path[start], path[i], navMap ) ) {
-                    if ( CanReach( path[i], path[path.Count - 1], navMap ) ) {
+                if ( CanReach( path[start], path[i] ) ) {
+                    if ( CanReach( path[i], path[path.Count - 1] ) ) {
                         strippedPath.Add( path[i] );
                         reach = path.Count - 1;
                         break;
@@ -198,8 +198,25 @@ public class Board {
         }
     }
 
-    bool CanReach( int hxA, int hxB, byte [] navMap ) {
+    public int PathSqDist( List<int> path ) {
+        int sqDist = 0;
+        for ( int i = 0; i < path.Count - 1; i += 2 ) {
+            Vector3Int a = Hexes.AxialToCubeInt( Axial( path[i + 0] ) );
+            Vector3Int b = Hexes.AxialToCubeInt( Axial( path[i + 1] ) );
+            sqDist += ( b - a ).sqrMagnitude;
+        }
+        return sqDist;
+    }
+
+    public bool CanReach( int hxA, int hxB ) {
         if ( hxA == hxB ) {
+            return true;
+        }
+        return CanReach( Axial( hxA ), Axial( hxB ) );
+    }
+
+    public bool CanReach( Vector2Int axialA, Vector2Int axialB ) {
+        if ( axialA == axialB ) {
             return true;
         }
 
@@ -207,8 +224,9 @@ public class Board {
             return navMap[Hex( axial )] != 0;
         }
 
-        Vector3 cubeA = Hexes.AxialToCube( Axial( hxA ) );
-        Vector3 cubeB = Hexes.AxialToCube( Axial( hxB ) );
+        Vector3 cubeA = Hexes.AxialToCube( axialA );
+        Vector3 cubeB = Hexes.AxialToCube( axialB );
+
         float n = Hexes.CubeDistance( cubeA, cubeB );
         float step = 1f / n;
         for ( float i = 0; i <= n; i++ ) {
