@@ -50,8 +50,10 @@ public void PostLoadMap() {
 public void TickServerExperimental() {
     void charge( int z, int zEnemy ) {
         pawn.atkFocus[z] = ( byte )zEnemy;
+        // change route segment before next movement lerp so we have the proper position
         MvUpdateChargeRoute( z, zEnemy );
         pawn.SetState( z, PS.ChargeEnemy );
+        Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
     }
 
     pawn.UpdateFilters();
@@ -69,7 +71,7 @@ public void TickServerExperimental() {
 
     foreach ( var z in pawn.filter.ByState( PS.Idle ) ) {
 
-        if ( HasReachableEnemy( z, out int zEnemy ) ) {
+        if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
             MvInterrupt( z );
             charge( z, zEnemy );
             Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
@@ -77,9 +79,9 @@ public void TickServerExperimental() {
         }
 
         if ( NavGetFocusPawn( z, out int zFocus ) ) {
-            Log( $"{pawn.DN( z )} navigates to tower." );
             MvInterrupt( z );
             pawn.SetState( z, PS.NavigateToEnemyTower );
+            Log( $"{pawn.DN( z )} navigates to tower." );
         }
     }
 
@@ -89,11 +91,11 @@ public void TickServerExperimental() {
             if ( ! NavUpdate( z ) ) {
                 // nothing to focus on for navigation
                 pawn.SetState( z, PS.Idle );
+                continue;
             }
         }
 
-        if ( HasReachableEnemy( z, out int zEnemy ) ) {
-            // change route segment before next movement lerp so we have the proper position
+        if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
             charge( z, zEnemy );
             continue;
         }
@@ -102,11 +104,12 @@ public void TickServerExperimental() {
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
         int zEnemy = pawn.atkFocus[z];
 
-        if ( pawn.IsGarbage( pawn.atkFocus[z] ) || ! CanReach( z, zEnemy ) ) {
-            // enemy is dead or out of sight, chase something else instead
+        if ( ! IsReachableEnemy( z, zEnemy ) ) {
+            // pawn on focus is dead or out of sight, chase something else instead
             MvInterrupt( z );
             pawn.atkFocus[z] = 0;
             pawn.SetState( z, PS.NavigateToEnemyTower );
+            Log( $"{pawn.DN( z )} fails to charge, navigate to tower." );
             continue;
         }
 
@@ -503,7 +506,7 @@ public void SetTerrain( int x, int y, int terrain ) {
 }
 
 Vector2Int [] _nbrs = new Vector2Int[6];
-bool CanReach( int z, int zTarget ) {
+bool PassableTerrainToTarget( int z, int zTarget ) {
     if ( zTarget == 0 ) {
         return false;
     }
@@ -629,7 +632,24 @@ void MvInterrupt( int z ) {
     pawn.MvInterrupt( z, ZServer.clock );
 }
 
-bool HasReachableEnemy( int z, out int zEnemy ) {
+bool IsReachableEnemy( int z, int zEnemy ) {
+    if ( pawn.IsGarbage( zEnemy ) ) {
+        return false;
+    }
+
+    if ( ! PassableTerrainToTarget( z, zEnemy ) ) {
+        return false;
+    }
+
+    Vector2 atk = AtkPointOnEnemy( z, zEnemy );
+    if ( AvoidStructure( pawn.team[z], pawn.mvPos[z], atk, out Vector2 asp ) ) {
+        return false;
+    }
+
+    return true;
+}
+
+bool AtkGetFocusPawn( int z, out int zEnemy ) {
     zEnemy = 0;
     float minEnemy = 9999999;
 
@@ -643,14 +663,12 @@ bool HasReachableEnemy( int z, out int zEnemy ) {
             continue;
         }
         
-        if ( CanReach( z, ze ) ) {
-            Vector2 atk = AtkPointOnEnemy( z, ze );
-            Vector2 asp = AvoidStructure( pawn.team[z], pawn.mvPos[z], atk );
-            if ( atk == asp ) {
-                zEnemy = ze;
-                minEnemy = sq;
-            }
+        if ( ! IsReachableEnemy( z, ze ) ) {
+            continue;
         }
+        
+        zEnemy = ze;
+        minEnemy = sq;
     }
 
     return zEnemy != 0;
@@ -680,15 +698,15 @@ void MvUpdateChargeRoute( int z, int zEnemy ) {
         }
     }
 
-    if ( pawn.mvEnd[z] == chase ) {
+    if ( ( pawn.mvEnd[z] - chase ).sqrMagnitude < 0.00001f ) {
         // still chasing the same point
         return;
     }
 
-    // FIXME: this constant can be multiple of the distance
     // don't change target point too often and spam the network...
-    if ( ( chase - pawn.mvEnd[z] ).sqrMagnitude < 4f
-            && ( chase - pawn.mvPos[z] ).sqrMagnitude > 4.5f ) {
+    float d = ( chase - pawn.mvPos[z] ).sqrMagnitude;
+    if ( ( pawn.mvEnd[z] - chase ).sqrMagnitude < 0.1f * d
+        && ( pawn.mvPos[z] - chase ).sqrMagnitude > 1 ) {
         return;
     }
 
@@ -791,6 +809,12 @@ bool NavUpdate( int z ) {
         }
     }
     return true;
+}
+
+// returns true if the segment was corrected (avoidance was done)
+bool AvoidStructure( int team, Vector2 v0, Vector2 v1, out Vector2 w ) {
+    w = AvoidStructure( team, v0, v1 );
+    return ( v1 - w ).sqrMagnitude > 0.0001f;
 }
 
 Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
