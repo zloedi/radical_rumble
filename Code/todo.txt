@@ -1,10 +1,12 @@
 Implement a routine to get a proper attack position for given attacker and defender.
-    Defender:
-        Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
-            ] Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
-            ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
-            ] Make a potential-collider-hexes pattern before hand.
-            ] Use that to generate a list of hexes.
-            ] Uset the list to gather the pawns from the game.gridPawn filter
-            ] Checkout the solver in gallium/10min-phisics, use a similar solver to find the best
-                place to position the attacker.
+    Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
+        ] Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
+        ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
+        ] Make a potential-collider-hexes pattern before hand.
+        ] Use that to generate a list of hexes by offsetting it from defender origin.
+        ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
+        
+    Checkout the solver in gallium/10min-phisics, use a similar solver to find the best place to
+        position the attacker.
+
+    Testing the proper-attack-position routine inside the Map Editor.
