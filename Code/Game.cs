@@ -18,6 +18,7 @@ public Shadow shadow = new Shadow();
 public Pawn pawn = new Pawn();
 public Board board = new Board();
 
+// pawns registered into the board for faster queries
 public Dictionary<ushort,List<byte>> gridPawn = new Dictionary<ushort,List<byte>>();
 
 // rows sent over the network

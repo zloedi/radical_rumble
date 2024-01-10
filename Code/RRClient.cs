@@ -43,8 +43,6 @@ public static int clockDelta;
 // last received clock in Clk_kmd
 public static int serverClock;
 
-public static bool isPaused = false;
-
 public static Board board => game.board;
 
 static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
@@ -91,6 +89,28 @@ public static void Done() {
     ZClient.Done();
 }
 
+public static void TickKeybinds( string context = null ) {
+    foreach ( var kc in KeyBinds.keys ) {
+        if ( ! Input.GetKeyDown( kc ) ) {
+            continue;
+        }
+        KeyBinds.TryExecuteBinds( keyDown: kc, context: context );
+        _holdKeys.Add( kc );
+    }
+
+    foreach ( var kc in KeyBinds.keys ) {
+        if ( ! Input.GetKeyUp( kc ) ) {
+            continue;
+        }
+        KeyBinds.TryExecuteBinds( keyUp: kc, context: context );
+        _holdKeys.Remove( kc );
+    } 
+
+    foreach ( var k in _holdKeys ) {
+        KeyBinds.TryExecuteBinds( keyHold: k, context: context );
+    }
+}
+
 public static void Tick( double timeDeltaDbl ) {
     if ( ClFrameSleep_kvar > 0 ) {
         System.Threading.Thread.Sleep( Mathf.Min( 33, ClFrameSleep_kvar ) );
@@ -109,6 +129,7 @@ public static void Tick( double timeDeltaDbl ) {
         game.Reset();
     }
 
+#if false
     mouse0Up = mouse0Down = false;
     mouse1Up = mouse1Down = false;
     mouseDelta = Vector2.zero;
@@ -132,7 +153,7 @@ public static void Tick( double timeDeltaDbl ) {
                     //Draw.bottomError = null;
                 }
 
-                if ( ! isPaused && QUI.hotWidget == 0 && QUI.activeWidget == 0 ) {
+                if ( QUI.hotWidget == 0 && QUI.activeWidget == 0 ) {
                     mouse0Down = kc == KeyCode.Mouse0;
                     mouse1Down = kc == KeyCode.Mouse1;
                     if ( mouse0Down ) mouse0Held = true;
@@ -163,6 +184,9 @@ public static void Tick( double timeDeltaDbl ) {
     }
 
     QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
+#else
+    InputBegin();
+#endif
 
     Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
     Draw.centralBigRedMessage = null;
@@ -172,30 +196,15 @@ public static void Tick( double timeDeltaDbl ) {
     // might change the clock
     ZClient.Tick( clockDelta );
 
-    //if ( ! mouse0Down && ! mouse1Down && AllowSpam() ) {
-    //    // ! make sure we update the same set (i.e. selected) on the server too !
-    //    // ! otherwise this will produce a lot of traffic !
-    //    foreach ( var z in filter.zSelectedLocal ) {
-    //        if ( pawn.Cursor( z ) != mouseHexCoord ) {
-    //            UpdateCursorRemote();
-    //            break;
-    //        }
-    //    }
-    //}
-
     if ( ShowBoardBounds_kvar ) {
         Draw.BoardBounds();
     }
 
+#if false
     QUI.End();
-
-    //if ( mouse0Down || mouse1Down ) {
-    //    UpdateFiltersLocal();
-    //}
-
-    //if ( ! isPaused && QUI.activeWidget != 0 ) {
-    //    UpdateFiltersLocal();
-    //}
+#else
+    InputEnd();
+#endif
 
     if ( Cellophane.VarChanged( nameof( ClState_kvar ) ) ) {
         Color c = Color.white;
@@ -252,6 +261,65 @@ public static void SvCmd( string cmd ) {
         Log( cmd );
     }
     ZClient.RegisterReliableCmd( cmd );
+}
+
+static void InputBegin() {
+    mouse0Up = mouse0Down = false;
+    mouse1Up = mouse1Down = false;
+    mouseDelta = Vector2.zero;
+
+    if ( Qonsole.Active || ! Application.isFocused ) {
+        _holdKeys.Clear();
+        return;
+    }
+
+    Vector2 mp = new Vector2( Input.mousePosition.x, Screen.height - Input.mousePosition.y );
+
+    // don't spill out of the window so we can test with multiple clients on the same screen
+    if ( mp.x >= 0 && mp.x < Screen.width && mp.y >= 0 && mp.y < Screen.height ) {
+        mouseDelta = mp - mousePosition;
+        mousePosition = mp;
+    }
+
+    if ( ! mouse0Held && Input.GetKeyDown( KeyCode.Mouse0 ) ) {
+        QUI.OnMouseButton( true );
+    }
+
+    if ( ! mouse0Held && Input.GetKeyUp( KeyCode.Mouse0 ) ) {
+        QUI.OnMouseButton( false );
+    }
+
+    if ( QUI.hotWidget == 0 && QUI.activeWidget == 0 ) {
+        if ( Input.GetKeyDown( KeyCode.Mouse0 ) ) {
+            mouse0Held = true;
+            mouse0Down = true;
+        }
+        if ( Input.GetKeyDown( KeyCode.Mouse1 ) ) {
+            mouse1Held = true;
+            mouse1Down = true;
+        }
+        if ( Input.GetKeyUp( KeyCode.Mouse0 ) ) {
+            mouse0Held = false;
+            mouse0Up = true;
+        }
+        if ( Input.GetKeyUp( KeyCode.Mouse1 ) ) {
+            mouse1Held = false;
+            mouse1Up = true;
+        }
+    }
+
+    if ( QUI.activeWidget != 0 ) {
+        mouse0Held = false;
+        mouse1Held = false;
+    }
+
+    TickKeybinds();
+
+    QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
+}
+
+static void InputEnd() {
+    QUI.End();
 }
 
 static void UpdateTraceLevel() {

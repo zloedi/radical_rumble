@@ -14,20 +14,27 @@ static bool _initialized = false;
 static void QonsolePreConfig_kmd( string [] argv ) {
     Cellophane.ConfigVersion_kvar = 1;
     Qonsole.TryExecute( @"
-        bind Alpha1 ""cl_spawn Brute"";
-        bind Alpha2 ""cl_spawn Archer"";
-        bind Alpha3 ""cl_spawn Flyer"";
+        bind Alpha1 ""cl_spawn Brute"" play;
+        bind Alpha2 ""cl_spawn Archer"" play;
+        bind Alpha3 ""cl_spawn Flyer"" play;
+        bind Alpha4 ""cl_spawn Brute 1"" play;
+        bind Alpha5 ""cl_spawn Archer 1"" play;
+        bind Alpha6 ""cl_spawn Flyer 1"" play;
+        bind K ""cl_kill play"";
 
-        bind Alpha4 ""cl_spawn Brute 1"";
-        bind Alpha5 ""cl_spawn Archer 1"";
-        bind Alpha6 ""cl_spawn Flyer 1"";
+        bind Alpha1 ""map_editor_nav_test_place 1"" edit_nav_test;
+        bind Alpha2 ""map_editor_nav_test_place 2"" edit_nav_test;
+        bind Alpha3 ""map_editor_nav_test_place 3"" edit_nav_test;
+        bind Alpha4 ""map_editor_nav_test_place 4"" edit_nav_test;
+        bind Alpha5 ""map_editor_nav_test_place 5"" edit_nav_test;
+        bind K ""map_editor_nav_test_remove"" edit_nav_test;
 
         bind F1 ""cl_set_state play"";
         bind F2 ""cl_set_state edit ; map_editor_set_state pather_test"";
         bind F3 ""cl_set_state edit ; map_editor_set_state place_towers"";
         bind F4 ""cl_set_state edit ; map_editor_set_state place_turrets"";
-
-        bind K cl_kill;
+        bind F5 ""cl_set_state edit ; map_editor_set_state nav_test"";
+        bind F6 ""cl_set_state edit ; map_editor_set_state place_terrain"";
 
         //bind A +client_pan_left;
         //bind D +client_pan_right;

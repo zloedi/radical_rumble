@@ -19,7 +19,8 @@ static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tick
     PlaceTowers_tck,
     PlaceTurrets_tck,
     PatherTest_tck,
-    HexTracing_tck
+    HexTracing_tck,
+    NavTest_tck
 );
 
 static string _stateName => _tickNames[State_cvar % _ticks.Length];
@@ -52,7 +53,9 @@ public static void Tick() {
     _mouseHexChanged = ( _mouseAxial - axial ).sqrMagnitude > 0;
     _mouseAxial = axial;
     _mouseHex = board.Hex( axial );
-    _ticks[State_cvar % _ticks.Length]();
+    int t = State_cvar % _ticks.Length;
+    Cl.TickKeybinds( context: $"edit_{_tickNames[t]}" );
+    _ticks[t]();
 }
 
 static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
@@ -333,6 +336,58 @@ static void HexTracing_tck() {
     Draw.TerrainTile( _hxB, c: Color.yellow, sz: 0.75f );
 
     TickEnd();
+}
+
+static List<Vector2> _navOrigin = new List<Vector2>();
+static List<float> _navRadius = new List<float>();
+static List<byte> _navTeam = new List<byte>();
+static Vector2 [] _navCircle = new Vector2[14];
+static void NavTest_tck() {
+    TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
+
+    void draw( int n ) {
+        int max = _navCircle.Length;
+        float step = ( float )( Math.PI * 2f / max );
+        Vector2 origin = Draw.GTS( _navOrigin[n] );
+        float r = _navRadius[n] * Draw.hexPixelSize;
+        for ( int i = 0; i < max; i++ ) {
+            Vector2 v = new Vector2( Mathf.Cos( i * step ), Mathf.Sin( i * step ) );
+            _navCircle[i] = v * r + origin;
+        }
+        QGL.LateDrawLineLoop( _navCircle, color: Color.white );
+    }
+
+    for ( int i = 0; i < _navOrigin.Count; i++ ) {
+        draw( i );
+    }
+
+    TickEnd();
+}
+
+static void NavTestPlace_cmd( string [] argv ) {
+    if ( argv.Length < 2 ) {
+        Cl.Log( $"{argv[0]} <def>" );
+        return;
+    }
+    int.TryParse( argv[1], out int def );
+    def = Mathf.Clamp( def, 1, Pawn.defs.Count - 1 );
+    Vector2 pos = Draw.STG( Cl.mousePosition );
+    _navOrigin.Add( pos );
+    _navRadius.Add( Pawn.defs[def].radius );
+    Qonsole.Log( $"Placed pawn r:{Pawn.defs[def].radius} at {pos.x} {pos.y}" );
+}
+
+static void NavTestRemove_cmd( string [] argv ) {
+    Vector2 pos = Draw.STG( Cl.mousePosition );
+    for ( int i = 0; i < _navOrigin.Count; i++ ) {
+        var o = _navOrigin[i];
+        if ( ( o - pos ).sqrMagnitude <= 0.25f ) {
+            _navOrigin.RemoveAt( i );
+            _navRadius.RemoveAt( i );
+            Qonsole.Log( $"Removed pawn at {o.x} {o.y}" );
+            break;
+        }
+    }
 }
 
 static void SetTeam_cmd( string [] argv ) {

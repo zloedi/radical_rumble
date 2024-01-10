@@ -87,7 +87,7 @@ public void TickServerExperimental() {
 
     foreach ( var z in pawn.filter.ByState( PS.NavigateToEnemyTower ) ) {
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
-            // path inflection point, get more path
+            // path inflection point, get a new segment to lerp on
             if ( ! NavUpdate( z ) ) {
                 // nothing to focus on for navigation
                 pawn.SetState( z, PS.Idle );
@@ -802,7 +802,7 @@ bool NavUpdate( int z ) {
     pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
 
     if ( leftover > 0 ) {
-        // advance on the next segment if there is time left from the tick
+        // advance a bit on the next segment if there is time left from the tick
         if ( ! pawn.MvLerp( z, pawn.mvStartTime[z] + leftover ) ) {
             pawn.mvStart[z] = pawn.mvPos[z];
             pawn.mvEndTime[z] -= leftover;

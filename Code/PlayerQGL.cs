@@ -12,6 +12,8 @@ static Pawn pawn => Cl.game.pawn;
 static Game game => Cl.game;
 
 public static void Tick() {
+    Cl.TickKeybinds( "play" );
+
     int clock = ( int )Cl.clock;
     int clockDelta = ( int )Cl.clockDelta;
 
