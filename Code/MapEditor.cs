@@ -331,7 +331,7 @@ static void HexTracing_tck() {
 
 // phony pawns to test the attack solver
 static List<Vector2> _atkOrigin = new List<Vector2>();
-static List<float> _atkRadius = new List<float>();
+static List<byte> _atkDef = new List<byte>();
 static List<byte> _atkTeam = new List<byte>();
 // the visuals circle
 static Vector2 [] _atkCircle = new Vector2[14];
@@ -342,7 +342,7 @@ static void AtkPosSolver_tck() {
         int max = _atkCircle.Length;
         float step = ( float )( Math.PI * 2f / max );
         Vector2 origin = Draw.GTS( _atkOrigin[n] );
-        float r = _atkRadius[n] * Draw.hexPixelSize;
+        float r = Pawn.defs[_atkDef[n]].radius * Draw.hexPixelSize;
         for ( int i = 0; i < max; i++ ) {
             Vector2 v = new Vector2( Mathf.Cos( i * step ), Mathf.Sin( i * step ) );
             _atkCircle[i] = v * r + origin;
@@ -358,6 +358,59 @@ static void AtkPosSolver_tck() {
     TickEnd();
 }
 
+static void SolveOverlapping( List<Vector2> x, List<float> w, List<float> r,
+                                                    int numSubsteps = 4,
+                                                    float overshoot = 0.001f,
+                                                    float eps = 0.0001f ) {
+    float minrl = Mathf.Max( eps, overshoot * 0.1f );
+
+    for ( int i = 0; i < numSubsteps; i++ ) {
+        for ( int z1 = 0; z1 < x.Count; z1++ ) {
+            for ( int z2 = 0; z2 < x.Count; z2++ ) {
+                Vector2 x1 = x[z1];
+                Vector2 x2 = x[z2];
+
+                float w1 = w[z1];
+                float w2 = w[z2];
+
+                float r1 = r[z1];
+                float r2 = r[z2];
+
+                // the actual distance
+                float l = ( x2 - x1 ).magnitude;
+
+                // too far, don't bother
+                if ( l - ( r1 + r2 ) > minrl ) {
+                    continue;
+                }
+
+                if ( l < eps ) {
+                    continue;
+                }
+
+                // desired (rest) distance, make sure we overshoot
+                float l0 = r1 + r2 + overshoot;
+
+                // inverted masses sum
+                float sw = w1 + w2;
+                if ( sw < eps ) {
+                    continue;
+                }
+
+                // solve
+                Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
+                Vector2 dx1 = +w1 / sw * s;
+                Vector2 dx2 = -w2 / sw * s;
+                x[z1] += dx1;
+                x[z2] += dx2;
+            }
+        }
+    }
+}
+
+static List<Vector2> _atkx = new List<Vector2>();
+static List<float> _atkw = new List<float>();
+static List<float> _atkr = new List<float>();
 static void EdAtkPosSolverPlace_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
         Cl.Log( $"{argv[0]} <def> [team]" );
@@ -366,12 +419,72 @@ static void EdAtkPosSolverPlace_kmd( string [] argv ) {
     int.TryParse( argv[1], out int def );
     def = Mathf.Clamp( def, 1, Pawn.defs.Count - 1 );
     _atkOrigin.Add( Cl.mousePosGame );
-    _atkRadius.Add( Pawn.defs[def].radius );
+    _atkDef.Add( ( byte )def );
     int team = 0;
     if ( argv.Length > 2 ) {
         int.TryParse( argv[2], out team );
     }
     _atkTeam.Add( ( byte )team );
+
+    // push away any clipping pawns
+#if false
+    int numSubsteps = 8;
+    for ( int i = 0; i < numSubsteps; i++ ) {
+        for ( int z1 = 0; z1 < _atkOrigin.Count; z1++ ) {
+            for ( int z2 = 0; z2 < _atkOrigin.Count; z2++ ) {
+                if ( z1 == z2 ) {
+                    continue;
+                }
+
+                Vector2 x1 = _atkOrigin[z1];
+                Vector2 x2 = _atkOrigin[z2];
+
+                Pawn.Def def1 = Pawn.defs[_atkDef[z1]];
+                Pawn.Def def2 = Pawn.defs[_atkDef[z2]];
+
+                float w1 = def1.IsStructure ? 0 : 1;
+                float w2 = def2.IsStructure ? 0 : 1;
+
+                float r1 = def1.radius;
+                float r2 = def2.radius;
+
+                // the desired (rest) distance, make sure we overshoot
+                float l0 = r1 + r2 + 0.01f;
+                // the actual distance
+                float l = ( x2 - x1 ).magnitude;
+
+                if ( l - ( r1 + r2 ) > 0.0001f ) {
+                    continue;
+                }
+
+                if ( w1 + w2 < 0.0001f ) {
+                    continue;
+                }
+
+                Vector2 dx1 = +w1 / ( w1 + w2 ) * ( l - l0 ) * ( x2 - x1 ) / ( x2 - x1 ).magnitude;
+                Vector2 dx2 = -w2 / ( w1 + w2 ) * ( l - l0 ) * ( x2 - x1 ) / ( x2 - x1 ).magnitude;
+
+                _atkOrigin[z1] += dx1;
+                _atkOrigin[z2] += dx2;
+            }
+        }
+    }
+#else
+    _atkx.Clear();
+    _atkw.Clear();
+    _atkr.Clear();
+    for ( int z = 0; z < _atkOrigin.Count; z++ ) {
+        Pawn.Def d = Pawn.defs[_atkDef[z]];
+        _atkx.Add( _atkOrigin[z] );
+        _atkw.Add( d.IsStructure ? 0 : 1 );
+        _atkr.Add( d.radius + 0.05f );
+    }
+    SolveOverlapping( _atkx, _atkw, _atkr );
+    for ( int z = 0; z < _atkOrigin.Count; z++ ) {
+        _atkOrigin[z] = _atkx[z];
+    }
+#endif
+
     Qonsole.Log( $"Placed pawn r:{Pawn.defs[def].radius} at {Cl.mousePosGame.x} {Cl.mousePosGame.y}" );
 }
 
@@ -380,7 +493,7 @@ static void EdAtkPosSolverRemove_kmd( string [] argv ) {
         var o = _atkOrigin[i];
         if ( ( o - Cl.mousePosGame ).sqrMagnitude <= 0.25f ) {
             _atkOrigin.RemoveAt( i );
-            _atkRadius.RemoveAt( i );
+            _atkDef.RemoveAt( i );
             _atkTeam.RemoveAt( i );
             Qonsole.Log( $"Removed pawn at {o.x} {o.y}" );
             break;
