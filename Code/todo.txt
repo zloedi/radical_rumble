@@ -1,13 +1,16 @@
 == Implement a routine to get a proper attack position for given attacker and defender. ==
-    Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
-        ] Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
+
+    Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
+        * Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
         ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
         ] Make a potential-collider-hexes pattern before hand.
         ] Use that to generate a list of hexes by offsetting it from defender origin hex.
         ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
         
-    Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
+    * Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
         position the attacker.
+        * Bump up the editor test pawns on spawn.
+        * Implemented SolveOverlapping routine.
 
     Testing the proper-attack-position routine inside the Map Editor.
         * Use lists for def and origin
@@ -16,12 +19,33 @@
         * Bind these commands to keys
         * Draw the pawns with colors by team
         * Show the keybinds on screen using WBUI
-        ] Glue the attacker to the mouse cursor and solve when the mouse moves:
+        ] Imagine the attacker is at the mouse cursor and solve when the mouse moves:
             Get the defender <- attacker segment.
             Place the attacker at defender-radius distance along the segment.
             Find a nice 'slot' if the direct position is obstructed.
-            
 
-    Integrate the proper-attack-position in the actual multiplayer.
+    Integrate the ground units proper-attack-position in the actual multiplayer.
+        Keep the attack slots (position to attack from) in the moving attacker pawns.
 
-Implement pawn avoidance.
+        To get an attack slot for a paw:
+            Get the defender <- attacker segment.
+            Solve overlapping at point along segment in distance equal to defender radius.
+
+        Attack slot with position 0,0 is considered invalid.
+        These slots are pushed aside by using the SolveOverlapping() routine.
+
+        Once picked, the slots are locked (never overlap-solved) until:
+            defender moves.
+            defender dies.
+            attacker dies.
+            attacker is interested in another target.
+
+== Implement team mates avoidance. ==
+
+Finer state machine
+a pawn is either idling, moving (lerping along its segment), or attacking.
+
+types of movement:
+    pathing
+    charge enemy (attack slot)
+    avoid teammates

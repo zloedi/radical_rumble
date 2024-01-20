@@ -125,7 +125,13 @@ public void TickServerExperimental() {
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
-        if ( pawn.IsGarbage( pawn.atkFocus[z] ) || pawn.hp[pawn.atkFocus[z]] <= 0 ) {
+        if ( pawn.IsGarbage( pawn.atkFocus[z] ) ) {
+            pawn.atkFocus[z] = 0;
+            pawn.SetState( z, PS.Idle );
+            continue;
+        }
+
+        if ( pawn.hp[pawn.atkFocus[z]] <= 0 ) {
             pawn.atkFocus[z] = 0;
             pawn.SetState( pawn.atkFocus[z], PS.Dead );
             pawn.SetState( z, PS.Idle );
@@ -139,7 +145,7 @@ public void TickServerExperimental() {
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Dead ) ) {
-        Kill( z );
+        Destroy( z );
     }
 
     DebugDrawOrigins();
@@ -306,7 +312,7 @@ public void TickServer() {
 
         if ( GetCachedPathEndPos( z, pawn.navFocus[z], out List<int> path ) <= 1 ) {
             // no path to target or target reached
-            Kill( z );
+            Destroy( z );
             continue;
         }
 
@@ -351,7 +357,7 @@ public bool Spawn( int def, float x, float y, out int z ) {
     return true;
 }
 
-public void Kill( int z ) {
+public void Destroy( int z ) {
     if ( ( z < 1 && z >= Pawn.MAX_PAWN ) || pawn.IsGarbage( z ) ) {
         Error( $"Invalid pawn {z}" );
         return;
