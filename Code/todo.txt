@@ -1,23 +1,27 @@
-Implement a routine to get a proper attack position for given attacker and defender.
+== Implement a routine to get a proper attack position for given attacker and defender. ==
     Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
         ] Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
         ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
         ] Make a potential-collider-hexes pattern before hand.
-        ] Use that to generate a list of hexes by offsetting it from defender origin.
+        ] Use that to generate a list of hexes by offsetting it from defender origin hex.
         ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
         
-Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
+    Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
         position the attacker.
 
-Testing the proper-attack-position routine inside the Map Editor.
-    * Use lists for def and origin
-    * Implement command place fake pawns of team
-    * Implement command remove fake pawns of team
-    * Bind these commands to keys
-    * Draw the pawns with colors by team
-    * Show the keybinds on screen using WBUI
-    ] Glue the attacker to the mouse cursor and solve when the mouse moves
+    Testing the proper-attack-position routine inside the Map Editor.
+        * Use lists for def and origin
+        * Implement command place fake pawns of team
+        * Implement command remove fake pawns of team
+        * Bind these commands to keys
+        * Draw the pawns with colors by team
+        * Show the keybinds on screen using WBUI
+        ] Glue the attacker to the mouse cursor and solve when the mouse moves:
+            Get the defender <- attacker segment.
+            Place the attacker at defender-radius distance along the segment.
+            Find a nice 'slot' if the direct position is obstructed.
+            
 
     Integrate the proper-attack-position in the actual multiplayer.
 
-Implement pawn avoidance
+Implement pawn avoidance.

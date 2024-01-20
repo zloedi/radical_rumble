@@ -26,7 +26,11 @@ static bool ShowBoardBounds_kvar = false;
 
 public static Game game = new Game();
 
-public static Vector2 mousePosition = new Vector2( -1, -1 );
+public static Vector2 mousePosScreen = new Vector2( -1, -1 );
+public static Vector2 mousePosGame = new Vector2( -1, -1 );
+public static Vector2Int mousePosAxial = new Vector2Int( -1, -1 );
+public static int mouseHex;
+public static bool mouseHexChanged;
 public static Vector2 mouseDelta;
 
 public static bool mouse0Held;
@@ -140,64 +144,7 @@ public static void Tick( double timeDeltaDbl ) {
         game.Reset();
     }
 
-#if false
-    mouse0Up = mouse0Down = false;
-    mouse1Up = mouse1Down = false;
-    mouseDelta = Vector2.zero;
-
-    if ( Qonsole.Active || ! Application.isFocused ) {
-        _holdKeys.Clear();
-    } else {
-        Vector2 mp = new Vector2( Input.mousePosition.x, Screen.height - Input.mousePosition.y );
-
-        // don't spill out of the window so we can test with multiple clients on the same screen
-        if ( mp.x >= 0 && mp.x < Screen.width && mp.y >= 0 && mp.y < Screen.height ) {
-            mouseDelta = mp - mousePosition;
-            mousePosition = mp;
-        }
-
-        foreach ( var kc in KeyBinds.keys ) {
-            if ( Input.GetKeyDown( kc ) ) {
-
-                if ( kc == KeyCode.Mouse0 ) {
-                    QUI.OnMouseButton( true );
-                    //Draw.bottomError = null;
-                }
-
-                if ( QUI.hotWidget == 0 && QUI.activeWidget == 0 ) {
-                    mouse0Down = kc == KeyCode.Mouse0;
-                    mouse1Down = kc == KeyCode.Mouse1;
-                    if ( mouse0Down ) mouse0Held = true;
-                    if ( mouse1Down ) mouse1Held = true;
-                } else {
-                    mouse0Held = false;
-                    mouse1Held = false;
-                }
-                KeyBinds.TryExecuteBinds( keyDown: kc );
-                _holdKeys.Add( kc );
-            }
-
-            if ( Input.GetKeyUp( kc ) ) {
-                if ( kc == KeyCode.Mouse0 ) QUI.OnMouseButton( false );
-
-                mouse0Up = kc == KeyCode.Mouse0;
-                mouse1Up = kc == KeyCode.Mouse1;
-                if ( mouse0Up ) mouse0Held = false;
-                if ( mouse1Up ) mouse1Held = false;
-                KeyBinds.TryExecuteBinds( keyUp: kc );
-                _holdKeys.Remove( kc );
-            }
-        } 
-
-        foreach ( var k in _holdKeys ) {
-            KeyBinds.TryExecuteBinds( keyHold: k );
-        }
-    }
-
-    QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
-#else
     InputBegin();
-#endif
 
     _ticks[ClState_kvar % _ticks.Length]();
 
@@ -288,8 +235,13 @@ static void InputBegin() {
 
     // don't spill out of the window so we can test with multiple clients on the same screen
     if ( mp.x >= 0 && mp.x < Screen.width && mp.y >= 0 && mp.y < Screen.height ) {
-        mouseDelta = mp - mousePosition;
-        mousePosition = mp;
+        mouseDelta = mp - mousePosScreen;
+        mousePosScreen = mp;
+        mousePosGame = Draw.ScreenToGamePosition( mp );
+        mousePosAxial = Draw.ScreenToAxial( mp );
+        int hx = board.Hex( mousePosAxial );
+        mouseHexChanged = hx - mouseHex != 0;
+        mouseHex = hx;
     }
 
     if ( ! mouse0Held && Input.GetKeyDown( KeyCode.Mouse0 ) ) {
@@ -326,7 +278,7 @@ static void InputBegin() {
 
     TickKeybinds();
 
-    QUI.Begin( ( int )mousePosition.x, ( int )mousePosition.y );
+    QUI.Begin( ( int )mousePosScreen.x, ( int )mousePosScreen.y );
 }
 
 static void InputEnd() {
@@ -468,7 +420,7 @@ static void Clk_kmd( string [] argv ) {
 }
 
 static void PrintHex_kmd( string [] argv ) { 
-    Qonsole.Log( $"hx: {Draw.ScreenToHex( mousePosition )} axial: {Draw.ScreenToAxial( mousePosition )} game: {Draw.ScreenToGamePosition( mousePosition )}" );
+    Qonsole.Log( $"hx: {mouseHex} axial: {mousePosAxial} game: {mousePosGame}" );
 }
 
 static DateTime _pingStart;
@@ -518,18 +470,16 @@ static void ClSpawn_kmd( string [] argv ) {
         Log( $"{argv[0]} Can't find def named {argv[1]}" );
         return;
     }
-    Vector2 gamePos = Draw.ScreenToGamePosition( mousePosition );
     int team = 0;
     if ( argv.Length > 2 ) {
         int.TryParse( argv[2], out team );
     }
-    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( gamePos.x )} {Cellophane.FtoA( gamePos.y )} {team}" );
+    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
 }
 
 static void ClKill_kmd( string [] argv ) {
-    Vector2 pos = Draw.STG( mousePosition );
     foreach ( var z in game.pawn.filter.no_garbage ) {
-        if ( ( game.pawn.mvPos[z] - pos ).sqrMagnitude <= 1 ) {
+        if ( ( game.pawn.mvPos[z] - mousePosGame ).sqrMagnitude <= 1 ) {
             SvCmd( $"sv_kill {z}" );
             break;
         }

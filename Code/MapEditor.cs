@@ -26,9 +26,6 @@ static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tick
 );
 
 static string _stateName => _tickNames[EdState_kvar % _ticks.Length];
-static Vector2Int _mouseAxial;
-static int _mouseHex;
-static bool _mouseHexChanged;
 
 static Board board => Cl.game.board;
 static Pawn pawn => Cl.game.pawn;
@@ -51,10 +48,6 @@ static MapEditor() {
 }
 
 public static void Tick() {
-    Vector2Int axial = Draw.ScreenToAxial( Cl.mousePosition );
-    _mouseHexChanged = ( _mouseAxial - axial ).sqrMagnitude > 0;
-    _mouseAxial = axial;
-    _mouseHex = board.Hex( axial );
     int t = EdState_kvar % _ticks.Length;
     Cl.TickKeybinds( context: $"ed_{_tickNames[t]}" );
     _ticks[t]();
@@ -91,14 +84,12 @@ static void PlaceTerrain_tck() {
         return;
     }
 
-    if ( Cl.mouse0Down || ( Cl.mouse0Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int axial = Draw.ScreenToAxial( Cl.mousePosition );
-        Cl.SvCmd( $"sv_set_terrain {axial.x} {axial.y} 128" );
+    if ( Cl.mouse0Down || ( Cl.mouse0Held && Cl.mouseHexChanged && Cl.AllowSpam() ) ) {
+        Cl.SvCmd( $"sv_set_terrain {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 128" );
     }
 
-    if ( Cl.mouse1Down || ( Cl.mouse1Held && _mouseHexChanged && Cl.AllowSpam() ) ) {
-        Vector2Int axial = Draw.ScreenToAxial( Cl.mousePosition );
-        Cl.SvCmd( $"sv_set_terrain {axial.x} {axial.y} 0" );
+    if ( Cl.mouse1Down || ( Cl.mouse1Held && Cl.mouseHexChanged && Cl.AllowSpam() ) ) {
+        Cl.SvCmd( $"sv_set_terrain {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 0" );
     }
 
     TickEnd();
@@ -120,16 +111,16 @@ static void PlaceStructTick( string structName ) {
     }
 
     if ( Cl.mouse0Down ) {
-        if ( game.GetFirstPawnOnHex( _mouseHex, out int z ) ) {
+        if ( game.GetFirstPawnOnHex( Cl.mouseHex, out int z ) ) {
             Qonsole.OneShotCmd( $"map_editor_set_team {z} 0;" );
         } else {
-            Vector2 v = game.HexToV( _mouseHex );
+            Vector2 v = game.HexToV( Cl.mouseHex );
             Cl.SvCmd( $"sv_spawn {structName} {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
         }
     }
 
     if ( Cl.mouse1Down ) {
-        if ( game.GetPawnsOnHex( _mouseHex, out List<byte> l ) ) {
+        if ( game.GetPawnsOnHex( Cl.mouseHex, out List<byte> l ) ) {
             foreach ( var z in l ) {
                 if ( pawn.IsStructure( z ) ) {
                     Cl.SvCmd( $"sv_kill {z}" );
@@ -198,9 +189,9 @@ static List<Vector2> _pathLine = new List<Vector2>();
 static void PatherTest_tck() {
     TickBegin( pawnsAlpha: 0 );
 
-    _hxB = Draw.ScreenToHex( Cl.mousePosition );
+    _hxB = Cl.mouseHex;
     if ( Cl.mouse0Down ) {
-        _hxA = Draw.ScreenToHex( Cl.mousePosition );
+        _hxA = Cl.mouseHex;
         Array.Clear( _navMap, 0, board.numItems );
         foreach ( var hx in board.filter.no_solid ) {
             _navMap[hx] = 1;
@@ -261,11 +252,11 @@ static void PatherTest_tck() {
 static void HexTracing_tck() {
     TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
 
-    _hxB = Draw.ScreenToHex( Cl.mousePosition );
+    _hxB = Cl.mouseHex;
 
     if ( _hxA == 0 ) {
         if ( Cl.mouse0Down ) {
-            _hxA = Draw.ScreenToHex( Cl.mousePosition );
+            _hxA = Cl.mouseHex;
         }
     }
 
@@ -338,9 +329,11 @@ static void HexTracing_tck() {
     TickEnd();
 }
 
+// phony pawns to test the attack solver
 static List<Vector2> _atkOrigin = new List<Vector2>();
 static List<float> _atkRadius = new List<float>();
 static List<byte> _atkTeam = new List<byte>();
+// the visuals circle
 static Vector2 [] _atkCircle = new Vector2[14];
 static void AtkPosSolver_tck() {
     TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
@@ -372,22 +365,20 @@ static void EdAtkPosSolverPlace_kmd( string [] argv ) {
     }
     int.TryParse( argv[1], out int def );
     def = Mathf.Clamp( def, 1, Pawn.defs.Count - 1 );
-    Vector2 pos = Draw.STG( Cl.mousePosition );
-    _atkOrigin.Add( pos );
+    _atkOrigin.Add( Cl.mousePosGame );
     _atkRadius.Add( Pawn.defs[def].radius );
     int team = 0;
     if ( argv.Length > 2 ) {
         int.TryParse( argv[2], out team );
     }
     _atkTeam.Add( ( byte )team );
-    Qonsole.Log( $"Placed pawn r:{Pawn.defs[def].radius} at {pos.x} {pos.y}" );
+    Qonsole.Log( $"Placed pawn r:{Pawn.defs[def].radius} at {Cl.mousePosGame.x} {Cl.mousePosGame.y}" );
 }
 
 static void EdAtkPosSolverRemove_kmd( string [] argv ) {
-    Vector2 pos = Draw.STG( Cl.mousePosition );
     for ( int i = 0; i < _atkOrigin.Count; i++ ) {
         var o = _atkOrigin[i];
-        if ( ( o - pos ).sqrMagnitude <= 0.25f ) {
+        if ( ( o - Cl.mousePosGame ).sqrMagnitude <= 0.25f ) {
             _atkOrigin.RemoveAt( i );
             _atkRadius.RemoveAt( i );
             _atkTeam.RemoveAt( i );
