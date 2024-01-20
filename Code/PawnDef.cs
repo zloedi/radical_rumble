@@ -69,6 +69,8 @@ public class Def {
         NavFocus  = 1 << 2,
     }
 
+    public static float MaxRadius;
+
     public string name;
     public string debugName;
     public Flags flags;
@@ -120,6 +122,7 @@ static Def Register( Def def ) {
         defs = new List<Def>{ new Def() };
     }
     defs.Add( def );
+    Def.MaxRadius = Mathf.Max( Def.MaxRadius, def.radius );
     return def;
 }
 
@@ -132,6 +135,7 @@ static void PrintDefs_kmd( string [] argv ) {
         }
         Qonsole.Log( "\n" );
     }
+    Qonsole.Log( $"MaxRadius: {Def.MaxRadius}" );
 }
 
 
