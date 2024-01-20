@@ -387,7 +387,7 @@ static void SvKill_kmd( string [] argv, int zport ) {
         return;
     }
     int.TryParse( argv[1], out int z );
-    game.Kill( z );
+    game.Destroy( z );
 }
 
 static void SvSetTeam_kmd( string [] argv, int zport ) {
