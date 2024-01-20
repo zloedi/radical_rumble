@@ -89,6 +89,7 @@ public static void Done() {
     ZClient.Done();
 }
 
+static string _bindsText = "";
 public static void TickKeybinds( string context = null ) {
     foreach ( var kc in KeyBinds.keys ) {
         if ( ! Input.GetKeyDown( kc ) ) {
@@ -109,6 +110,13 @@ public static void TickKeybinds( string context = null ) {
     foreach ( var k in _holdKeys ) {
         KeyBinds.TryExecuteBinds( keyHold: k, context: context );
     }
+
+    _bindsText += $"\ncontext: '{context}'\n";
+    foreach ( var kc in KeyBinds.keys ) {
+        if ( KeyBinds.GetCmd( kc, context, out string cmd ) ) {
+            _bindsText += $"{kc} -- {cmd}\n";
+        }
+    }
 }
 
 public static void Tick( double timeDeltaDbl ) {
@@ -123,6 +131,9 @@ public static void Tick( double timeDeltaDbl ) {
     clockDelta = ( int )clockDeltaDbl;
 
     WrapBox.DisableCanvasScale();
+
+    Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
+    Draw.centralBigRedMessage = null;
 
     if ( Cellophane.VarChanged( nameof( ClServerIpAddress_kvar ) ) ) {
         ZClient.Reset( ClServerIpAddress_kvar );
@@ -188,14 +199,12 @@ public static void Tick( double timeDeltaDbl ) {
     InputBegin();
 #endif
 
-    Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
-    Draw.centralBigRedMessage = null;
-
     _ticks[ClState_kvar % _ticks.Length]();
 
     // might change the clock
     ZClient.Tick( clockDelta );
 
+    WBUI.QGLTextOutlined( _bindsText, Draw.wboxScreen, align: 2, color: Color.white, fontSize: 1 );
     if ( ShowBoardBounds_kvar ) {
         Draw.BoardBounds();
     }
@@ -264,6 +273,8 @@ public static void SvCmd( string cmd ) {
 }
 
 static void InputBegin() {
+    _bindsText = "";
+
     mouse0Up = mouse0Down = false;
     mouse1Up = mouse1Down = false;
     mouseDelta = Vector2.zero;

@@ -9,9 +9,11 @@ using Cl = RRClient;
 static class MapEditor {
 
 
-static string LastSavedMap_cvar = "unnamed";
+static string EdLastSavedMap_kvar = "unnamed";
 
-static int State_cvar = 1;
+static int EdState_kvar = 1;
+static bool EdHexTracingVariant_kvar = false;
+
 static string [] _tickNames;
 static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tickNames,
     None_tck,
@@ -20,10 +22,10 @@ static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tick
     PlaceTurrets_tck,
     PatherTest_tck,
     HexTracing_tck,
-    NavTest_tck
+    AtkPosSolver_tck
 );
 
-static string _stateName => _tickNames[State_cvar % _ticks.Length];
+static string _stateName => _tickNames[EdState_kvar % _ticks.Length];
 static Vector2Int _mouseAxial;
 static int _mouseHex;
 static bool _mouseHexChanged;
@@ -53,8 +55,8 @@ public static void Tick() {
     _mouseHexChanged = ( _mouseAxial - axial ).sqrMagnitude > 0;
     _mouseAxial = axial;
     _mouseHex = board.Hex( axial );
-    int t = State_cvar % _ticks.Length;
-    Cl.TickKeybinds( context: $"edit_{_tickNames[t]}" );
+    int t = EdState_kvar % _ticks.Length;
+    Cl.TickKeybinds( context: $"ed_{_tickNames[t]}" );
     _ticks[t]();
 }
 
@@ -74,10 +76,9 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
 }
 
 static void TickEnd() {
-    var wbox = Draw.wboxScreen.TopCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
-    var text = $"'{LastSavedMap_cvar}' {_stateName}";
-    int size = Draw.pixelSize * 2 / 3;
-    WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: size );
+    var wbox = Draw.wboxScreen.BottomCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
+    var text = $"'{EdLastSavedMap_kvar}' {_stateName}";
+    WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: Draw.textSize );
 }
 
 static void None_tck() {
@@ -257,7 +258,6 @@ static void PatherTest_tck() {
     TickEnd();
 }
 
-static bool HexTracingVariant_cvar = false;
 static void HexTracing_tck() {
     TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
 
@@ -275,7 +275,7 @@ static void HexTracing_tck() {
 
     if ( _hxA != 0 ) {
         Color col = Color.green;
-        if ( HexTracingVariant_cvar ) {
+        if ( EdHexTracingVariant_kvar ) {
             Vector3 cubeA = Hexes.AxialToCube( board.Axial( _hxA ) );
             Vector3 cubeB = Hexes.AxialToCube( board.Axial( _hxB ) );
             float n = Hexes.CubeDistance( cubeA, cubeB );
@@ -338,59 +338,66 @@ static void HexTracing_tck() {
     TickEnd();
 }
 
-static List<Vector2> _navOrigin = new List<Vector2>();
-static List<float> _navRadius = new List<float>();
-static List<byte> _navTeam = new List<byte>();
-static Vector2 [] _navCircle = new Vector2[14];
-static void NavTest_tck() {
+static List<Vector2> _atkOrigin = new List<Vector2>();
+static List<float> _atkRadius = new List<float>();
+static List<byte> _atkTeam = new List<byte>();
+static Vector2 [] _atkCircle = new Vector2[14];
+static void AtkPosSolver_tck() {
     TickBegin( pawnsAlpha: 0, skipVoidHexes: true );
 
     void draw( int n ) {
-        int max = _navCircle.Length;
+        int max = _atkCircle.Length;
         float step = ( float )( Math.PI * 2f / max );
-        Vector2 origin = Draw.GTS( _navOrigin[n] );
-        float r = _navRadius[n] * Draw.hexPixelSize;
+        Vector2 origin = Draw.GTS( _atkOrigin[n] );
+        float r = _atkRadius[n] * Draw.hexPixelSize;
         for ( int i = 0; i < max; i++ ) {
             Vector2 v = new Vector2( Mathf.Cos( i * step ), Mathf.Sin( i * step ) );
-            _navCircle[i] = v * r + origin;
+            _atkCircle[i] = v * r + origin;
         }
-        QGL.LateDrawLineLoop( _navCircle, color: Color.white );
+        var c = _atkTeam[n] == 0 ? Color.cyan : Color.red;
+        QGL.LateDrawLineLoop( _atkCircle, color: c );
     }
 
-    for ( int i = 0; i < _navOrigin.Count; i++ ) {
+    for ( int i = 0; i < _atkOrigin.Count; i++ ) {
         draw( i );
     }
 
     TickEnd();
 }
 
-static void NavTestPlace_cmd( string [] argv ) {
+static void EdAtkPosSolverPlace_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
-        Cl.Log( $"{argv[0]} <def>" );
+        Cl.Log( $"{argv[0]} <def> [team]" );
         return;
     }
     int.TryParse( argv[1], out int def );
     def = Mathf.Clamp( def, 1, Pawn.defs.Count - 1 );
     Vector2 pos = Draw.STG( Cl.mousePosition );
-    _navOrigin.Add( pos );
-    _navRadius.Add( Pawn.defs[def].radius );
+    _atkOrigin.Add( pos );
+    _atkRadius.Add( Pawn.defs[def].radius );
+    int team = 0;
+    if ( argv.Length > 2 ) {
+        int.TryParse( argv[2], out team );
+    }
+    _atkTeam.Add( ( byte )team );
     Qonsole.Log( $"Placed pawn r:{Pawn.defs[def].radius} at {pos.x} {pos.y}" );
 }
 
-static void NavTestRemove_cmd( string [] argv ) {
+static void EdAtkPosSolverRemove_kmd( string [] argv ) {
     Vector2 pos = Draw.STG( Cl.mousePosition );
-    for ( int i = 0; i < _navOrigin.Count; i++ ) {
-        var o = _navOrigin[i];
+    for ( int i = 0; i < _atkOrigin.Count; i++ ) {
+        var o = _atkOrigin[i];
         if ( ( o - pos ).sqrMagnitude <= 0.25f ) {
-            _navOrigin.RemoveAt( i );
-            _navRadius.RemoveAt( i );
+            _atkOrigin.RemoveAt( i );
+            _atkRadius.RemoveAt( i );
+            _atkTeam.RemoveAt( i );
             Qonsole.Log( $"Removed pawn at {o.x} {o.y}" );
             break;
         }
     }
 }
 
-static void SetTeam_cmd( string [] argv ) {
+static void EdSetTeam_kmd( string [] argv ) {
     if ( argv.Length < 3 ) {
         Cl.Log( $"{argv[0]} <z> <team>" );
         return;
@@ -401,28 +408,28 @@ static void SetTeam_cmd( string [] argv ) {
     Cl.SvCmd( $"sv_set_team {z} {team}" );
 }
 
-static void SetState_cmd( string [] argv ) {
-    TickUtil.SetState( argv, _ticks, _tickNames, ref State_cvar );
+static void EdSetState_kmd( string [] argv ) {
+    TickUtil.SetState( argv, _ticks, _tickNames, ref EdState_kvar );
 }
 
-static void Save_cmd( string [] argv ) {
+static void EdSave_kmd( string [] argv ) {
     if ( argv.Length >= 2 ) {
-        LastSavedMap_cvar = argv[1];
-        if ( ! LastSavedMap_cvar.EndsWith( ".map" ) ) {
-            LastSavedMap_cvar += ".map";
+        EdLastSavedMap_kvar = argv[1];
+        if ( ! EdLastSavedMap_kvar.EndsWith( ".map" ) ) {
+            EdLastSavedMap_kvar += ".map";
         }
     }
-    Cl.SvCmd( $"sv_save_map {LastSavedMap_cvar}" );
+    Cl.SvCmd( $"sv_save_map {EdLastSavedMap_kvar}" );
 }
 
-static void Load_cmd( string [] argv ) {
+static void EdLoad_kmd( string [] argv ) {
     if ( argv.Length >= 2 ) {
-        LastSavedMap_cvar = argv[1];
-        if ( ! LastSavedMap_cvar.EndsWith( ".map" ) ) {
-            LastSavedMap_cvar += ".map";
+        EdLastSavedMap_kvar = argv[1];
+        if ( ! EdLastSavedMap_kvar.EndsWith( ".map" ) ) {
+            EdLastSavedMap_kvar += ".map";
         }
     }
-    Cl.SvCmd( $"sv_load_map {LastSavedMap_cvar}" );
+    Cl.SvCmd( $"sv_load_map {EdLastSavedMap_kvar}" );
 }
 
 

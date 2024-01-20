@@ -10,6 +10,7 @@ static class Draw {
 static bool SkipPawns_cvar = false;
 
 public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 300 );
+public static int textSize => Mathf.Max( 1, pixelSize * 2 / 3 );
 public static int hexPixelSize => 12 * pixelSize;
 
 public static WrapBox wboxScreen;

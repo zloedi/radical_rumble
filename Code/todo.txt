@@ -6,7 +6,18 @@ Implement a routine to get a proper attack position for given attacker and defen
         ] Use that to generate a list of hexes by offsetting it from defender origin.
         ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
         
-    Checkout the solver in gallium/10min-phisics, use a similar solver to find the best place to
+Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
         position the attacker.
 
-    Testing the proper-attack-position routine inside the Map Editor.
+Testing the proper-attack-position routine inside the Map Editor.
+    * Use lists for def and origin
+    * Implement command place fake pawns of team
+    * Implement command remove fake pawns of team
+    * Bind these commands to keys
+    * Draw the pawns with colors by team
+    * Show the keybinds on screen using WBUI
+    ] Glue the attacker to the mouse cursor and solve when the mouse moves
+
+    Integrate the proper-attack-position in the actual multiplayer.
+
+Implement pawn avoidance
