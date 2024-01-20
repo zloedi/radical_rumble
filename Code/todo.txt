@@ -1,15 +1,14 @@
 == Implement a routine to get a proper attack position for given attacker and defender. ==
 
-    Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
+    ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
         * Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
         ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
         ] Make a potential-collider-hexes pattern before hand.
         ] Use that to generate a list of hexes by offsetting it from defender origin hex.
         ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
         
-    * Check the solver in gallium/10min-phisics, use a similar solver to find the best place to
-        position the attacker.
-        * Bump up the editor test pawns on spawn.
+    * Check the solver in gallium/10min-phisics. Later use that, to pick a nice spot for attack.
+        * Distribute the editor test pawns on spawn.
         * Implemented SolveOverlapping routine.
 
     Testing the proper-attack-position routine inside the Map Editor.
@@ -19,33 +18,40 @@
         * Bind these commands to keys
         * Draw the pawns with colors by team
         * Show the keybinds on screen using WBUI
-        ] Imagine the attacker is at the mouse cursor and solve when the mouse moves:
-            Get the defender <- attacker segment.
-            Place the attacker at defender-radius distance along the segment.
-            Find a nice 'slot' if the direct position is obstructed.
+        ] Imagine the moving attacker is at the mouse cursor and solve when the mouse moves.
 
     Integrate the ground units proper-attack-position in the actual multiplayer.
-        Keep the attack slots (position to attack from) in the moving attacker pawns.
+        ] Implement filter 'groundUnits'
+        ] Keep the attack slots (position to attack from) in the moving attacker pawns.
+        ] Implement filter 'groundUnits/focusedOnMe' -- moving pawns focused on me.
+        ] focusedOnMe being sorted by distance is a good idea.
+        ] Implement filter 'groundUnits/attackingMe' -- pawns currently attacking me
 
-        To get an attack slot for a paw:
-            Get the defender <- attacker segment.
-            Solve overlapping at point along segment in distance equal to defender radius.
+        ] Attack slot with position 0,0 is considered invalid and need to be picked again.
+            To get an attack slot for a pawn:
+                ] Get the defender -> moving attacker segment.
+                ] Place the moving attacker slot at defender-radius distance along the segment.
+                ] SolveOverlapping() for all slots on defender (inv mass 1) combined with all
+                  active (non-moving/arrived) attackers (inv mass 0 -- inert).
 
-        Attack slot with position 0,0 is considered invalid.
-        These slots are pushed aside by using the SolveOverlapping() routine.
-
-        Once picked, the slots are locked (never overlap-solved) until:
+        Once picked (valid != 0,0), the slots are kept until:
             defender moves.
             defender dies.
-            attacker dies.
-            attacker is interested in another target.
+            moving attacker dies.
+            moving attacker is interrupted / interested in another target.
+        ] If any of these is false -- go through the defender's 'moving attackers' filter and erase
+          the moving attackers attack slots, forcing them to be eventually redistributed.
 
 == Implement team mates avoidance. ==
 
+] ...
+
+== Thoughts and prayers ==
+
 Finer state machine
-a pawn is either idling, moving (lerping along its segment), or attacking.
+a pawn is either idling, moving (has a valid attack target, lerping along its segment), or attacking.
 
 types of movement:
     pathing
-    charge enemy (attack slot)
+    charge enemy (has directly 'visible' enemy in aggro range)
     avoid teammates
