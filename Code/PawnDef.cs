@@ -80,6 +80,8 @@ public class Def {
     public float damage;
     public float radius = 0.5f;
     public Color color;
+
+    public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }
 
 public static List<Def> defs;
