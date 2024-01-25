@@ -51,12 +51,11 @@ public static Board board => game.board;
 
 static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 
-[Description( "0 -- play; 1 -- map editor" )]
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
 static string [] _tickNames;
 static Action [] _ticks = TickUtil.RegisterTicks( typeof( RRClient ), out _tickNames,
-                                                                Play_tck, Edit_tck );
+                                                                Play_tck, Edit_tck, Gym_tck );
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -95,6 +94,10 @@ public static void Done() {
 
 static string _bindsText = "";
 public static void TickKeybinds( string context = null ) {
+    if ( Qonsole.Active || ! Application.isFocused ) {
+        return;
+    }
+
     foreach ( var kc in KeyBinds.keys ) {
         if ( ! Input.GetKeyDown( kc ) ) {
             continue;
@@ -276,6 +279,7 @@ static void InputBegin() {
         mouse1Held = false;
     }
 
+    // tick the global (no context) keybinds
     TickKeybinds();
 
     QUI.Begin( ( int )mousePosScreen.x, ( int )mousePosScreen.y );
@@ -377,6 +381,10 @@ static void Play_tck() {
 
 static void Edit_tck() {
     MapEditor.Tick();
+}
+
+static void Gym_tck() {
+    Gym.Tick();
 }
 
 // == commands ==

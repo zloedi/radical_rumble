@@ -80,7 +80,9 @@
     <Compile Include="ArrayUtil.cs" />
     <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
+    <Compile Include="GameGym.cs" />
     <Compile Include="Game_sv.cs" />
+    <Compile Include="Gym.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="MapEditor.cs" />
     <Compile Include="Board.cs" />

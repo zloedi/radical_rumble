@@ -1,5 +1,4 @@
 == Implement a routine to get a proper attack position for given attacker and defender. ==
-
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
         * Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
         ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
@@ -18,14 +17,15 @@
         * Bind these commands to keys
         * Draw the pawns with colors by team
         * Show the keybinds on screen using WBUI
-        ] Imagine the moving attacker is at the mouse cursor and solve when the mouse moves.
+        -> Imagine the moving attacker is at the mouse cursor and solve when the mouse moves.
 
     Integrate the ground units proper-attack-position in the actual multiplayer.
         ] Implement filter 'groundUnits'
         ] Keep the attack slots (position to attack from) in the moving attacker pawns.
         ] Implement filter 'groundUnits/focusedOnMe' -- moving pawns focused on me.
+        ] Implement filter 'groundUnits/avoidingMe' -- moving pawns on my team trying to avoid me
         ] focusedOnMe being sorted by distance is a good idea.
-        ] Implement filter 'groundUnits/attackingMe' -- pawns currently attacking me
+        ] ? Implement filter 'groundUnits/attackingMe' -- pawns currently attacking me
 
         ] Attack slot with position 0,0 is considered invalid and need to be picked again.
             To get an attack slot for a pawn:
@@ -39,7 +39,7 @@
             defender dies.
             moving attacker dies.
             moving attacker is interrupted / interested in another target.
-        ] If any of these is false -- go through the defender's 'moving attackers' filter and erase
+        ] If any of these is false -- go through the defender's 'focusedOnMe' filter and erase
           the moving attackers attack slots, forcing them to be eventually redistributed.
 
 == Implement team mates avoidance. ==
@@ -55,3 +55,19 @@ types of movement:
     pathing
     charge enemy (has directly 'visible' enemy in aggro range)
     avoid teammates
+
+don't use PassableTerrainToTarget while navigating.
+instead
+    always use the pather
+    replace the last segment if actually on the last segment (path has only 2 nodes)
+
+don't use PassableTerrainToTarget while checking opponent for visibility.
+    use the pather
+    if path is only 2 nodes, you can reach by straight line
+
+SOA:
+    easy copy
+    easy delta
+    pass around and manipulate only fields with no dependencies
+        i.e. overlapping solver can get positions, no need to introduce deps or copy
+

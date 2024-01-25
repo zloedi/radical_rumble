@@ -36,12 +36,20 @@ static void QonsolePreConfig_kmd( string [] argv ) {
 
         bind K ""ed_atk_pos_solver_remove"" ed_atk_pos_solver;
 
+        bind Alpha1  ""gym_steer_place 1"" gym_steer;
+        bind Alpha2  ""gym_steer_place 2"" gym_steer;
+        bind Alpha3  ""gym_steer_place 3"" gym_steer;
+        bind Alpha0  ""gym_steer_place 0"" gym_steer;
+        bind K  ""gym_steer_kill"" gym_steer;
+
         bind F1 ""cl_set_state play"";
         bind F2 ""cl_set_state edit ; ed_set_state pather_test"";
         bind F3 ""cl_set_state edit ; ed_set_state place_towers"";
         bind F4 ""cl_set_state edit ; ed_set_state place_turrets"";
         bind F5 ""cl_set_state edit ; ed_set_state atk_pos_solver"";
         bind F6 ""cl_set_state edit ; ed_set_state place_terrain"";
+
+        bind F7 ""cl_set_state gym ; gym_set_state steer"";
 
         //bind A +client_pan_left;
         //bind D +client_pan_right;

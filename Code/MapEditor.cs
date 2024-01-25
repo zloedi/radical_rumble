@@ -358,56 +358,6 @@ static void AtkPosSolver_tck() {
     TickEnd();
 }
 
-static void SolveOverlapping( List<Vector2> x, List<float> w, List<float> r,
-                                                    int numSubsteps = 4,
-                                                    float overshoot = 0.001f,
-                                                    float eps = 0.0001f ) {
-    float minrl = Mathf.Max( eps, overshoot * 0.1f );
-
-    for ( int i = 0; i < numSubsteps; i++ ) {
-        for ( int z1 = 0; z1 < x.Count; z1++ ) {
-            for ( int z2 = 0; z2 < x.Count; z2++ ) {
-                Vector2 x1 = x[z1];
-                Vector2 x2 = x[z2];
-
-                float w1 = w[z1];
-                float w2 = w[z2];
-
-                float r1 = r[z1];
-                float r2 = r[z2];
-
-                // the actual distance
-                float l = ( x2 - x1 ).magnitude;
-
-                // too far, don't bother
-                if ( l - ( r1 + r2 ) > minrl ) {
-                    continue;
-                }
-
-                if ( l < eps ) {
-                    continue;
-                }
-
-                // desired (rest) distance, make sure we overshoot
-                float l0 = r1 + r2 + overshoot;
-
-                // inverted masses sum
-                float sw = w1 + w2;
-                if ( sw < eps ) {
-                    continue;
-                }
-
-                // solve
-                Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
-                Vector2 dx1 = +w1 / sw * s;
-                Vector2 dx2 = -w2 / sw * s;
-                x[z1] += dx1;
-                x[z2] += dx2;
-            }
-        }
-    }
-}
-
 static List<Vector2> _atkx = new List<Vector2>();
 static List<float> _atkw = new List<float>();
 static List<float> _atkr = new List<float>();
@@ -479,7 +429,7 @@ static void EdAtkPosSolverPlace_kmd( string [] argv ) {
         _atkw.Add( d.IsStructure ? 0 : 1 );
         _atkr.Add( d.radius + 0.05f );
     }
-    SolveOverlapping( _atkx, _atkw, _atkr );
+    Gym.SolveOverlapping( _atkx, _atkw, _atkr );
     for ( int z = 0; z < _atkOrigin.Count; z++ ) {
         _atkOrigin[z] = _atkx[z];
     }
