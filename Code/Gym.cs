@@ -83,6 +83,7 @@ public static void SolveOverlapping( List<Vector2> x, List<float> w, List<float>
 // == STEERING TESTS == 
 
 static Vector2 [] _strCircle = new Vector2[14];
+static List<int> _strColliding = new List<int>();
 
 class Steer {
     public Vector2 origin = Vector2.zero;
@@ -90,7 +91,9 @@ class Steer {
     public float radius = 0;
     public byte team = 0;
     public int chase = 0;
-    public int chain = 0;
+    public int lump = 0;
+    public int lnext = 0;
+    public int lprev = 0;
 }
 
 static List<Steer> _str = new List<Steer>() { new Steer() };
@@ -131,10 +134,10 @@ static void Steer_tck() {
             return;
         }
 
-        if ( _str[n].chase == -1 ) {
+        if ( _str[n].chase == 0 ) {
             _str[n].chase = pickChase( n );
 
-            if ( _str[n].chase == -1 ) {
+            if ( _str[n].chase == 0 ) {
                 return;
             }
 
@@ -147,7 +150,7 @@ static void Steer_tck() {
 
         float sq = ab.sqrMagnitude;
         if ( sq < 0.05f ) {
-            _str[n].chase = -1;
+            _str[n].chase = 0;
             return;
         }
 
@@ -167,6 +170,14 @@ static void Steer_tck() {
     for ( int i = 1; i < _str.Count; i++ ) {
         draw( i );
     }
+
+    for ( int i = 1; i < _str.Count; i++ ) {
+        int lump = _str[i].lump;
+        if ( lump != 0 ) {
+            var pos = Draw.GTS( _str[i].origin );
+            QGL.LatePrint( _str[i].lump, pos, color: Color.yellow );
+        }
+    }
 }
 
 static void GymSteerPlace_kmd( string [] argv ) {
@@ -180,7 +191,87 @@ static void GymSteerPlace_kmd( string [] argv ) {
         s.target = s.origin = Cl.mousePosGame;
         s.radius = radius;
         s.team = ( byte )team;
+        int n = _str.Count;
         _str.Add( s );
+
+        if ( team == 0 ) {
+            return;
+        }
+
+        s.lprev = s.lnext = n;
+        s.lump = n;
+
+        _strColliding.Clear();
+        for ( int i = 1; i < n; i++ ) {
+            if ( _str[i].team == 0 ) {
+                continue;
+            }
+            float r = _str[i].radius + _str[n].radius + 0.3f;
+            if ( ( _str[i].origin - _str[n].origin ).sqrMagnitude < r * r ) {
+                _strColliding.Add( i );
+            }
+        }
+
+        if ( _strColliding.Count == 0 ) {
+            return;
+        }
+
+        // merge colliding lumps into one
+
+        for ( int c = 0; c < _strColliding.Count - 1; c++ ) {
+            int c0 = _strColliding[c + 0];
+            int c1 = _strColliding[c + 1];
+
+            if ( _str[c0].lump == _str[c1].lump ) {
+                continue;
+            }
+
+            int n0 = c0;
+            int n1 = _str[c0].lnext;
+
+            int n2 = c1;
+            int n3 = _str[c1].lnext;
+
+            _str[n0].lnext = n3;
+            _str[n2].lnext = n1;
+
+            _str[n3].lprev = n0;
+            _str[n1].lprev = n2;
+        }
+
+        // set lump id
+
+#if false
+        int next = _strColliding[0];
+        for ( int i = 0; ; i++ ) {
+
+            _str[next].lump = s.lump;
+            next = _str[next].lnext;
+
+            if ( next == _strColliding[0] ) {
+                break;
+            }
+
+            if ( i == 1000 ) {
+                Cl.Error( "Infinite loop while setting lump." );
+                break;
+            }
+        }
+#else
+        int next = _strColliding[0];
+        do {
+            _str[next].lump = s.lump;
+            next = _str[next].lnext;
+        } while ( next != _strColliding[0] );
+#endif
+
+        // insert the new node into the merged lump
+
+        int ins = _strColliding[0];
+        _str[n].lnext = _str[ins].lnext;
+        _str[n].lprev = ins;
+        _str[_str[n].lnext].lprev = n;
+        _str[_str[n].lprev].lnext = n;
     }
 
     switch ( argv[1] ) {
@@ -190,17 +281,29 @@ static void GymSteerPlace_kmd( string [] argv ) {
         case "3": place( 0.5f, 0 ); break;
         default: break;
     }
+
     Cl.Log( $"Placed {argv[1]}" );
 }
 
 static void GymSteerKill_kmd( string [] argv ) {
+    int rem = 0;
     for ( int i = 1; i < _str.Count; i++ ) {
         var o = _str[i].origin;
         if ( ( o - Cl.mousePosGame ).sqrMagnitude <= 0.25f ) {
-            _str.RemoveAt( i );
-            Qonsole.Log( $"Removed pawn at {o.x} {o.y}" );
+            rem = i;
             break;
         }
+    }
+
+    if ( rem == 0 ) {
+        return;
+    }
+
+    if ( _str[rem].team == 0 ) {
+        var o = _str[rem].origin;
+        _str.RemoveAt( rem );
+        Cl.Log( $"Removed pawn at {o.x} {o.y}" );
+        return;
     }
 }
 

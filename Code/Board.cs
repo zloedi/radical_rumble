@@ -18,11 +18,10 @@ public class Board {
 
     public byte [] size = new byte[2];
 
+    // actual grids
     public byte [] terrain = null;
-
     public byte [] pawnDef = null;
     public byte [] pawnTeam = null;
-
     // FIXME: not sure it's place is here
     public byte [] navMap = null;
 
