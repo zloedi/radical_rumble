@@ -23,6 +23,25 @@ public static readonly Color bgrColor = new Color( 0.2f, 0.2f, 0.25f );
 
 static Vector2Int _pan;
 
+static Vector2 [] _circle = new Vector2[14];
+public static void WireCircleGame( Vector2 gamePos, float r, Color c ) {
+    WireCircleScreen( Draw.GTS( gamePos ), r * Draw.hexPixelSize, c );
+}
+
+public static void SegmentGame( Vector2 a, Vector2 b, Color c ) {
+    QGL.LateDrawLine( Draw.GTS( a ), Draw.GTS( b ), color: c );
+}
+
+public static void WireCircleScreen( Vector2 screenPos, float r, Color c ) {
+    int max = _circle.Length;
+    float step = ( float )( Math.PI * 2f / max );
+    for ( int i = 0; i < max; i++ ) {
+        Vector2 v = new Vector2( Mathf.Cos( i * step ), Mathf.Sin( i * step ) );
+        _circle[i] = v * r + screenPos;
+    }
+    QGL.LateDrawLineLoop( _circle, color: c );
+}
+
 public static void FillScreen( Color? color = null ) {
     Color c = color == null ? bgrColor : color.Value;
     Draw.FillRect( Draw.wboxScreen, c );
@@ -36,7 +55,7 @@ public static void BigRedMessage() {
 }
 
 public static void FillRect( WrapBox wbox, Color color ) {
-    QGL.LateBlit( null, wbox.x, wbox.y, wbox.w, wbox.h, color: color );
+    QGL.LateBlit( wbox.x, wbox.y, wbox.w, wbox.h, color: color );
 }
 
 public static void OutlinedTextCenter( int x, int y, string text, Color? color = null,

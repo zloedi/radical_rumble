@@ -24,22 +24,25 @@ static bool SvShowAvoidance_kvar = false;
 static bool SvShowCharge_kvar = false;
 #endif
 
-static bool ChickenBit_kvar = false;
+static int ChickenBit_kvar = 0;
 
 public void PostLoadMap() {
     // precache some paths (i.e. between structures)
     // making sure the paths are consistent between map modifications
     pawn.UpdateFilters();
+
     foreach ( var zA in pawn.filter.team[0] ) {
         foreach ( var zB in pawn.filter.team[1] ) {
             GetCachedPathEndPos( zA, zB, out List<int> p );
         }
     }
+
     foreach ( var zA in pawn.filter.team[0] ) {
         foreach ( var zB in pawn.filter.team[0] ) {
             GetCachedPathEndPos( zA, zB, out List<int> p );
         }
     }
+
     foreach ( var zA in pawn.filter.team[1] ) {
         foreach ( var zB in pawn.filter.team[1] ) {
             GetCachedPathEndPos( zA, zB, out List<int> p );
@@ -155,8 +158,13 @@ public void TickServerExperimental() {
 }
 
 public void TickServer() {
-    if ( ChickenBit_kvar ) {
+    if ( ChickenBit_kvar == 0 ) {
         TickServerExperimental();
+        return;
+    }
+
+    if ( ChickenBit_kvar == 1 ) {
+        Gym_TickServer_v2();
         return;
     }
 

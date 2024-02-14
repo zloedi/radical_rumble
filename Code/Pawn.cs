@@ -20,6 +20,9 @@ public enum State {
     NavigateToEnemyTower,
     ChargeEnemy,
     Attack,
+
+    NavigateToEnemy,
+
     Dead,
 }
 
@@ -40,11 +43,14 @@ public int [] mvStartTime = null;
 public float [] atkPos = null;
 public int [] atkStartTime = null;
 
+// FIXME: used?
 // a pawn of interest for navigation
 public byte [] navFocus = null;
 // a pawn of interest for attack
+// FIXME: used?
 public byte [] atkFocus = null;
 public byte [] state = null;
+public byte [] focus = null;
 
 // == these should be synced ==
 
@@ -135,6 +141,7 @@ public bool IsStructure( int z ) {
     return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
 }
 
+// FIXME: is this used?
 public bool IsNavFocus( int z ) {
     return ( GetDef( z ).flags & Pawn.Def.Flags.NavFocus ) != 0;
 }

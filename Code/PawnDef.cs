@@ -66,6 +66,7 @@ public class Def {
         None,
         Structure = 1 << 0,
         Flying    = 1 << 1,
+        // FIXME: is this used?
         NavFocus  = 1 << 2,
     }
 
