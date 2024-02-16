@@ -1,9 +1,15 @@
 using System;
 
-using UnityEngine;
+using SDLPorts;
 
 using Cl = RRClient;
 using Sv = RRServer;
+
+static class GameApp {
+    static void Main( string [] argv ) {
+        Application.Run( null, null, null, null );
+    }
+}
 
 static class Main {
 
@@ -63,7 +69,7 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind S +client_pan_down;
         //bind W +client_pan_up;
     " );
-    Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
+    //Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
 }
 
 static void QonsolePostStart_kmd( string [] argv ) {

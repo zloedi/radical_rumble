@@ -2,11 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-#if UNITY_STANDALONE
-using UnityEngine;
-#else
 using GalliumMath;
-#endif
 
 using static Pawn.Def;
 
@@ -163,10 +159,10 @@ public void TickServer() {
         return;
     }
 
-    if ( ChickenBit_kvar == 1 ) {
-        Gym_TickServer_v2();
-        return;
-    }
+    //if ( ChickenBit_kvar == 1 ) {
+    //    Gym_TickServer_v2();
+    //    return;
+    //}
 
     int getDuration( int z ) {
         float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;

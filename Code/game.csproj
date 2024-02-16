@@ -5,7 +5,10 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{49ef5c6a-86cf-11ee-beae-088fc30c8592}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <!--OutputType>Library</OutputType-->
+    <OutputType>exe</OutputType>
+    <!--OutputType>Exe</OutputType - console exe-->
+    <!--OutputType>WinExe</OutputType - windows exe-->
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>game</RootNamespace>
     <AssemblyName>game</AssemblyName>
@@ -24,6 +27,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,11 +37,14 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+
+    <!--
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
@@ -50,6 +57,8 @@
     <Reference Include="Unity.IMGUIModule">
       <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
+    -->
+
   </ItemGroup>
 
   <ItemGroup>
@@ -67,6 +76,8 @@
     <Compile Include="ZloediUtils/Qonche.cs" />
     <Compile Include="ZloediUtils/Qonsole/QonWidgets.cs" />
     <Compile Include="ZloediUtils/Qonsole/Qonsole.cs" />
+    <Compile Include="ZloediUtils/SDLPorts.cs" />
+    <Compile Include="ZloediUtils/SDL2.cs" />
     <Compile Include="ZloediUtils/SingleShot.cs" />
     <Compile Include="ZloediUtils/WrapBox.cs" />
     <Compile Include="ZloediUtils/WBUI.cs" />
@@ -80,7 +91,6 @@
     <Compile Include="ArrayUtil.cs" />
     <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
-    <Compile Include="GameGym.cs" />
     <Compile Include="Game_sv.cs" />
     <Compile Include="Gym.cs" />
     <Compile Include="Main.cs" />
@@ -95,6 +105,9 @@
     <Compile Include="Shadow.cs" />
     <Compile Include="FilterUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ZloediUtils/SDL2.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

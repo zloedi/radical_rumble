@@ -4,11 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Text;
 
-#if UNITY_STANDALONE
-using UnityEngine;
-#else
 using GalliumMath;
-#endif
 
 static class RRServer {
 
@@ -216,7 +212,7 @@ static string DeltaGameState() {
 }
 
 static string MapsDir() {
-#if UNITY_STANDALONE
+#if HAS_UNITY
     string path;
     if ( Application.isEditor ) {
         path = Application.dataPath + "/../../Build/";
