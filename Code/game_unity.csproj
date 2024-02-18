@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{49ef5c6a-86cf-11ee-beae-088fc30c8592}</ProjectGuid>
+    <!--OutputType>Library</OutputType-->
+    <OutputType>exe</OutputType>
+    <!--OutputType>Exe</OutputType - console exe-->
+    <!--OutputType>WinExe</OutputType - windows exe-->
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>game</RootNamespace>
+    <AssemblyName>game</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+
+    <!--
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.IMGUIModule">
+      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    -->
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="ZloediUtils/AppleFont.cs" />
+    <Compile Include="ZloediUtils/Cellophane.cs" />
+    <Compile Include="ZloediUtils/CodePage437.cs" />
+    <Compile Include="ZloediUtils/Delta.cs" />
+    <Compile Include="ZloediUtils/Hexes.cs" />
+    <Compile Include="ZloediUtils/HexPather.cs" />
+    <Compile Include="ZloediUtils/KeyBinds.cs" />
+    <Compile Include="ZloediUtils/Net.cs" />
+    <Compile Include="ZloediUtils/NokiaFont.cs" />
+    <Compile Include="ZloediUtils/QGL.cs" />
+    <Compile Include="ZloediUtils/QUI.cs" />
+    <Compile Include="ZloediUtils/Qonche.cs" />
+    <Compile Include="ZloediUtils/Qonsole/QonWidgets.cs" />
+    <Compile Include="ZloediUtils/Qonsole/Qonsole.cs" />
+    <Compile Include="ZloediUtils/SDLPorts.cs" />
+    <Compile Include="ZloediUtils/SDL2.cs" />
+    <Compile Include="ZloediUtils/SingleShot.cs" />
+    <Compile Include="ZloediUtils/WrapBox.cs" />
+    <Compile Include="ZloediUtils/WBUI.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Color.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Color32.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Mathf.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector2.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector2Int.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector3.cs" />
+    <Compile Include="ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="ArrayUtil.cs" />
+    <Compile Include="Draw.cs" />
+    <Compile Include="Game.cs" />
+    <Compile Include="Game_sv.cs" />
+    <Compile Include="Gym.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MapEditor.cs" />
+    <Compile Include="Board.cs" />
+    <Compile Include="Pawn.cs" />
+    <Compile Include="PawnDef.cs" />
+    <Compile Include="PlayerQGL.cs" />
+    <Compile Include="TickUtil.cs" />
+    <Compile Include="RRClient.cs" />
+    <Compile Include="RRServer.cs" />
+    <Compile Include="Shadow.cs" />
+    <Compile Include="FilterUtil.cs" />
+    <Compile Include="Properties/AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ZloediUtils/SDL2.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

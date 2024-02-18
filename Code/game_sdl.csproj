@@ -23,7 +23,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
