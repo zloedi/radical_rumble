@@ -70,27 +70,39 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind W +client_pan_up;
     " );
     //Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
+    Qonsole.Log( "PreConfig passed..." );
 }
 
 static void QonsolePostStart_kmd( string [] argv ) {
     _initialized = false;
+    
+    Qonsole.Log( "PostStart..." );
 
     try {
 
     if ( ! Application.isPlaying ) {
         return;
     }
+
+    Qonsole.Log( "App is playing..." );
+
     if ( Cl.IsLocalGame() || LocalServerAlwaysOn_kvar ) {
         if ( ! Sv.Init( svh: "[FFA000]Server: [-]" ) ) {
+            Qonsole.Log( "Server Init failed..." );
             return;
         }
     }
+
     if ( ! Cl.Init() ) {
+        Qonsole.Log( "Client Init failed..." );
         return;
     }
+
     _clockDate = DateTime.UtcNow;
     _clockPrevDate = DateTime.UtcNow;
     _initialized = true;
+
+    Qonsole.Log( "PostStart passed..." );
 
     } catch ( Exception e ) {
         Qonsole.Error( e );

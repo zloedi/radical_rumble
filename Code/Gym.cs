@@ -300,7 +300,7 @@ static void RTS_tck() {
                                                                     c: new Color( 1, 1, 1, 0.2f ) );
 
                 //Draw.SegmentGame( pawn.move[zA].pos, pawn.move[zMax].pos,
-                //                                                    c: new Color( 1, 1, 1, 0.2f ) );
+                //                                                  c: new Color( 1, 1, 1, 0.2f ) );
 
                 //Draw.SegmentGame( feeler, pawn.move[zMax].pos, c: new Color( 1, 1, 1, 0.2f ) );
 

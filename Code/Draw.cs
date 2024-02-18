@@ -116,7 +116,7 @@ public static Vector2Int AxialToScreen( int x, int y ) {
     return _pan + AxialToScreenNoPan( x, y );
 }
 
-public static Vector2 HexToScreen( int hx ) {
+public static Vector2Int HexToScreen( int hx ) {
     return AxialToScreen( board.Axial( hx ) );
 }
 
