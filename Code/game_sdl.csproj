@@ -10,8 +10,8 @@
     <!--OutputType>Exe</OutputType - console exe-->
     <!--OutputType>WinExe</OutputType - windows exe-->
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>game</RootNamespace>
-    <AssemblyName>game</AssemblyName>
+    <RootNamespace>game_sdl</RootNamespace>
+    <AssemblyName>game_sdl</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -23,7 +23,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -33,7 +33,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y </DefineConstants>
+    <DefineConstants>TRACE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>

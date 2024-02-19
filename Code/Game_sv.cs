@@ -11,7 +11,7 @@ using PS = Pawn.State;
 
 partial class Game {
 
-#if UNITY_STANDALONE
+#if true // UNITY_STANDALONE
 [Description( "Show pather lines." )]
 static bool SvShowPaths_kvar = false;
 [Description( "Show structure avoidance debug." )]
@@ -225,7 +225,7 @@ public void TickServer() {
             v1 = c + sign * p * avoidRadius * 1.25f;
             min = acac;
 
-#if UNITY_STANDALONE
+#if true // UNITY_STANDALONE
             if ( SvShowAvoidance_kvar ) {
                 SingleShot.Add( dt => {
                     float sz = Draw.hexPixelSize / 4;
@@ -883,7 +883,7 @@ Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
         v1 = c + sign * p * avoidRadius * 1.25f;
         min = acac;
 
-#if UNITY_STANDALONE
+#if true // UNITY_STANDALONE
         if ( SvShowAvoidance_kvar ) {
             SingleShot.Add( dt => {
                 float sz = Draw.hexPixelSize / 4;
@@ -899,7 +899,7 @@ Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
 }
 
 void DebugDrawPath( List<int> path ) {
-#if UNITY_STANDALONE
+#if true // UNITY_STANDALONE
     if ( ! SvShowPaths_kvar ) {
         return;
     }

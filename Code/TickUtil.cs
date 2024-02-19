@@ -1,26 +1,52 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 static class TickUtil {
 
-public static Action<string> Log = s => {};
-public static Action<string> Error = s => {};
+//public static Action<string> Log = s => {};
+//public static Action<string> Error = s => {};
 
+public static Action<string> Log = s => Qonsole.Log( s );
+public static Action<string> Error = s => Qonsole.Error( s );
+
+public static Action [] RegisterTicksOfClass( Type type, out string [] tickNames ) {
+    var ticks = new List<Action>();
+    var names = new List<string>();
+    MethodInfo [] methods = type.GetMethods( Cellophane.BFS );
+    foreach ( MethodInfo mi in methods ) {
+        if ( mi.Name.EndsWith( "_tck" ) ) {
+            var nm = mi.Name.Remove( mi.Name.Length - 4 );
+            ticks.Add( mi.CreateDelegate( typeof( Action ) ) as Action );
+            names.Add( Cellophane.NormalizeName( nm ) );
+            Log( $"Registered tick {names[names.Count - 1]}" );
+        }
+    }
+    tickNames = names.ToArray();
+    return ticks.ToArray();
+}
+
+#if false
 public static Action [] RegisterTicks( Type type, out string [] tickNames, params Action [] ticks ) {
     tickNames = new string[ticks.Length];
     MethodInfo [] methods = type.GetMethods( Cellophane.BFS );
     foreach ( MethodInfo mi in methods ) {
         if ( mi.Name.EndsWith( "_tck" ) ) {
             for ( int i = 0; i < ticks.Length; i++ ) {
+                Qonsole.Log( ticks[i].GetHashCode() );
+                Qonsole.Log( mi.GetMethodBody().GetHashCode() );
+                // doesn't seem to work with older versions of the runtime
                 if ( ticks[i].GetHashCode() == mi.GetHashCode() ) {
                     var nm = mi.Name.Remove( mi.Name.Length - 4 );
                     tickNames[i] = Cellophane.NormalizeName( nm );
+                    Log( $"Registered tick {tickNames[i]}" );
                 }
             }
         }
     }
     return ticks;
 }
+#endif
 
 public static bool SetState( string [] argv, Action [] ticks, string [] tickNames, ref int state ) {
     int idx;

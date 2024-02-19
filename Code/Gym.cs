@@ -13,10 +13,7 @@ static class Gym {
 static int GymState_kvar = 0;
 
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicks( typeof( Gym ), out _tickNames,
-    RTS_tck
-    //Steer_tck
-);
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( Gym ), out _tickNames );
 
 static string _stateName => _tickNames[GymState_kvar % _ticks.Length];
 

@@ -15,15 +15,7 @@ static int EdState_kvar = 1;
 static bool EdHexTracingVariant_kvar = false;
 
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicks( typeof( MapEditor ), out _tickNames,
-    None_tck,
-    PlaceTerrain_tck,
-    PlaceTowers_tck,
-    PlaceTurrets_tck,
-    PatherTest_tck,
-    HexTracing_tck,
-    AtkPosSolver_tck
-);
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( MapEditor ), out _tickNames );
 
 static string _stateName => _tickNames[EdState_kvar % _ticks.Length];
 

@@ -12,7 +12,7 @@ static class RRClient {
 // 127.0.0.1 -- this is a local game and the host is this machine
 // 89.190.193.149 -- raspberry pi server."
 )]
-public static string ClServerIpAddress_kvar = "89.190.193.149";
+public static string ClServerIpAddress_kvar = "127.0.0.1";
 
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;
@@ -55,8 +55,7 @@ static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicks( typeof( RRClient ), out _tickNames,
-                                                                Play_tck, Edit_tck, Gym_tck );
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RRClient ), out _tickNames );
 
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
@@ -82,8 +81,8 @@ public static bool Init() {
     ZClient.onConnected_f = OnConnected;
 
     //QUI.DrawLineRect = (x,y,w,h) => QGL.LateDrawLineRect(x,y,w,h,color:Color.magenta);
-    TickUtil.Log = QUI.Log = s => ZClient.Log( s );
-    TickUtil.Error = QUI.Error = s => ZClient.Error( s );
+    TickUtil.Log = QUI.Log = s => ZClient.Log( "TickUtil: " + s );
+    TickUtil.Error = QUI.Error = s => ZClient.Error( "TickUtil: " + s );
 
     // we don't need shadow copies of game state on the client
     return game.Init( skipShadowClones: true );

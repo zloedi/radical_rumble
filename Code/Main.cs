@@ -1,13 +1,54 @@
 using System;
 
 using SDLPorts;
+using GalliumMath;
 
 using Cl = RRClient;
 using Sv = RRServer;
 
-static class GameApp {
+static class SDLApp {
+    static void Init() {
+        Qonsole.Init();
+        Qonsole.Start();
+        Qonsole.Log( Guid.NewGuid() );
+        Application.Log = s => Qonsole.Log( "Application: " + s );
+        Application.Error = s => Qonsole.Error( "Application: " + s );
+        KeyBinds.Log = s => Qonsole.Log( "Keybinds: " + s );
+        KeyBinds.Error = s => Qonsole.Error( "Keybinds: " + s );
+        QGL.Log = o => Qonsole.Log( "QGL: " + o );
+        QGL.Error = s => Qonsole.Error( "QGL: " + s );
+    }
+
+    static void Tick() {
+        Qonsole.HandleSDLMouseMotion( Input.mousePosition.x, Input.mousePosition.y );
+
+        // will invoke our ticks on qonsole_tick
+        Qonsole.Update();
+
+        Qonsole.RenderGL();
+    }
+
+    static void Done() {
+        Qonsole.OnApplicationQuit();
+    }
+
+    static void OnText( string txt ) {
+        Qonsole.HandleSDLTextInput( txt );
+    }
+
+    static void OnKey( KeyCode kc ) {
+        Qonsole.HandleSDLKeyDown( kc );
+    }
+
     static void Main( string [] argv ) {
-        Application.Run( null, null, null, null );
+        Application.Init = Init;
+        Application.Tick = Tick;
+        Application.Done = Done;
+        Application.OnText = OnText;
+        Application.OnKey = OnKey;
+
+        // main loop goes on
+        Application.Run( argv );
     }
 }
 
@@ -18,7 +59,7 @@ static bool LocalServerAlwaysOn_kvar = false;
 static bool _initialized = false;
 
 static void QonsolePreConfig_kmd( string [] argv ) {
-    Cellophane.ConfigVersion_kvar = 1;
+    Cellophane.ConfigVersion_kvar = 2;
     Qonsole.TryExecute( @"
         bind Alpha1 ""cl_spawn Brute"" play;
         bind Alpha2 ""cl_spawn Archer"" play;
@@ -69,14 +110,11 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind S +client_pan_down;
         //bind W +client_pan_up;
     " );
-    //Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
-    Qonsole.Log( "PreConfig passed..." );
+    Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
 }
 
 static void QonsolePostStart_kmd( string [] argv ) {
     _initialized = false;
-    
-    Qonsole.Log( "PostStart..." );
 
     try {
 
@@ -84,25 +122,19 @@ static void QonsolePostStart_kmd( string [] argv ) {
         return;
     }
 
-    Qonsole.Log( "App is playing..." );
-
     if ( Cl.IsLocalGame() || LocalServerAlwaysOn_kvar ) {
         if ( ! Sv.Init( svh: "[FFA000]Server: [-]" ) ) {
-            Qonsole.Log( "Server Init failed..." );
             return;
         }
     }
 
     if ( ! Cl.Init() ) {
-        Qonsole.Log( "Client Init failed..." );
         return;
     }
 
     _clockDate = DateTime.UtcNow;
     _clockPrevDate = DateTime.UtcNow;
     _initialized = true;
-
-    Qonsole.Log( "PostStart passed..." );
 
     } catch ( Exception e ) {
         Qonsole.Error( e );
@@ -128,6 +160,18 @@ static void QonsoleTick_kmd( string [] argv ) {
     }
 
     Cl.Tick( timeDelta );
+
+    QGL.LateBlit( AppleFont.GetTexture(), 100, 100, 100, 100, angle: Time.time * 5f );
+    QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"), Screen.width - 50, 20 );
+
+    var pts = new Vector2 [] { 
+        new Vector2( 100, 100 ),
+        new Vector2( 200, 100 ),
+        new Vector2( 300, 300 ),
+        new Vector2( 100, 200 ),
+    };
+    QGL.LateDrawLineLoop( pts, color: Color.yellow );
+
 
     } catch ( Exception e ) {
         Qonsole.Error( e );
