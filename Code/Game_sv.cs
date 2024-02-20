@@ -2,7 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
 using GalliumMath;
+#endif
 
 using static Pawn.Def;
 

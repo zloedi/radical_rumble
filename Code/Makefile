@@ -1,11 +1,11 @@
+debug_unity:
+	rm ./bin/Debug/game.dll; make ./bin/Debug/game.dll
+
 debug_sdl:
 	rm ./bin/Debug/game_sdl.exe; make ./bin/Debug/game_sdl.exe
 
 release_sdl:
 	rm ./bin/Release/game_sdl.exe; make ./bin/Release/game_sdl.exe
-
-debug_unity:
-	rm ./bin/Debug/game.dll; make ./bin/Debug/game.dll
 
 release_unity:
 	rm ./bin/Release/game.dll; make ./bin/Release/game.dll
@@ -33,6 +33,7 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp bin/Debug/game.pdb ../RadicalRumbleUnity/Assets/ \
 		&& cp bin/Debug/game.dll ../BuildUnity/RadicalRumble_Data/Managed/ \
 		&& cp bin/Debug/game.pdb ../BuildUnity/RadicalRumble_Data/Managed/ \
+		&& cp *.map ../BuildUnity \
 
 ./bin/Release/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Release \
@@ -41,6 +42,7 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp ./bin/Release/game.pdb ../RadicalRumbleUnity/Assets/ \
 		&& cp bin/Release/game.dll ../BuildUnity/RadicalRumble_Data/Managed/ \
 		&& cp bin/Release/game.pdb ../BuildUnity/RadicalRumble_Data/Managed/ \
+		&& cp *.map ../BuildUnity \
 
 clean: 
 	dotnet clean game_sdl.csproj \

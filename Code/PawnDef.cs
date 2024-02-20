@@ -3,7 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
 using GalliumMath;
+#endif
 
 using static Pawn.Def.Flags;
 

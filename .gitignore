@@ -1,6 +1,7 @@
 .vs
 *.swp
 *.swo
+*.csproj.user
 *.dll
 *.dll.meta
 bin

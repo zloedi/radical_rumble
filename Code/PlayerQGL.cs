@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
 using GalliumMath;
-using SDLPorts;
+//using SDLPorts;
+#endif
 
 using Cl = RRClient;
 

@@ -1,11 +1,16 @@
 using System;
 
-using SDLPorts;
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
+//using SDLPorts;
 using GalliumMath;
+#endif
 
 using Cl = RRClient;
 using Sv = RRServer;
 
+#if SDL
 static class SDLApp {
     static void Init() {
         Qonsole.Init();
@@ -51,6 +56,7 @@ static class SDLApp {
         Application.Run( argv );
     }
 }
+#endif
 
 static class Main {
 

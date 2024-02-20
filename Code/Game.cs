@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
 
+#if UNITY_STANDALONE
+using UnityEngine;
+#else
 using GalliumMath;
+#endif
 
 partial class Game {
 

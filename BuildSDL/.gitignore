@@ -1,0 +1,5 @@
+*.map
+*.exe
+*.pdb
+*.dll
+*.cfg
