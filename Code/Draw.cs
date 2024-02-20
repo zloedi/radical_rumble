@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 #else
 using GalliumMath;
-//using SDLPorts;
+using SDLPorts;
 #endif
 
 using Cl = RRClient;

@@ -3,7 +3,7 @@ using System;
 #if UNITY_STANDALONE
 using UnityEngine;
 #else
-//using SDLPorts;
+using SDLPorts;
 using GalliumMath;
 #endif
 

@@ -6,7 +6,7 @@ using System.Reflection;
 using UnityEngine;
 #else
 using GalliumMath;
-//using SDLPorts;
+using SDLPorts;
 #endif
 
 static class RRClient {
