@@ -76,8 +76,8 @@
     <Compile Include="ZloediUtils/Qonche.cs" />
     <Compile Include="ZloediUtils/Qonsole/QonWidgets.cs" />
     <Compile Include="ZloediUtils/Qonsole/Qonsole.cs" />
-    <Compile Include="ZloediUtils/SDLPorts.cs" />
-    <Compile Include="ZloediUtils/SDL2.cs" />
+    <Compile Include="ZloediUtils/SDL/SDLPorts.cs" />
+    <Compile Include="ZloediUtils/SDL/SDL2.cs" />
     <Compile Include="ZloediUtils/SingleShot.cs" />
     <Compile Include="ZloediUtils/WrapBox.cs" />
     <Compile Include="ZloediUtils/WBUI.cs" />
