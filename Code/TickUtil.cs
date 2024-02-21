@@ -4,6 +4,7 @@ using System.Reflection;
 
 static class TickUtil {
 
+
 public static Action<string> Log = s => {};
 public static Action<string> Error = s => {};
 
