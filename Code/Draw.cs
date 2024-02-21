@@ -1,6 +1,11 @@
 using System;
 using System.Collections.Generic;
+#if UNITY_STANDALONE
 using UnityEngine;
+#else
+using GalliumMath;
+using SDLPorts;
+#endif
 
 using Cl = RRClient;
 
@@ -115,7 +120,7 @@ public static Vector2Int AxialToScreen( int x, int y ) {
     return _pan + AxialToScreenNoPan( x, y );
 }
 
-public static Vector2 HexToScreen( int hx ) {
+public static Vector2Int HexToScreen( int hx ) {
     return AxialToScreen( board.Axial( hx ) );
 }
 

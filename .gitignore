@@ -1,6 +1,7 @@
 .vs
 *.swp
 *.swo
+*.csproj.user
 *.dll
 *.dll.meta
 bin
@@ -13,11 +14,11 @@ RadicalRumbleUnity/**/*.csproj
 RadicalRumbleUnity/**/*.pdb
 RadicalRumbleUnity/**/*.pdb.meta
 RadicalRumbleUnity/Temp
+Code/**/*.pdb
+Code/**/*.exe
 Code/tags
 Code/vim_session_*
 Code/StandaloneServer/*.exe
 Code/StandaloneServer/*.pdb
 Code/StandaloneServer/*.cfg
 Code/StandaloneServer/*.sav
-Build/*
-!Build/*.map

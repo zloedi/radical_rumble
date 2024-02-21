@@ -219,7 +219,7 @@ static string MapsDir() {
 #if UNITY_STANDALONE
     string path;
     if ( Application.isEditor ) {
-        path = Application.dataPath + "/../../Build/";
+        path = Application.dataPath + "/../../BuildUnity/";
     } else {
         path = Application.dataPath + "/../";
     }

@@ -3,7 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+#if UNITY_STANDALONE
 using UnityEngine;
+#else
+using GalliumMath;
+using SDLPorts;
+#endif
 
 using Cl = RRClient;
 
@@ -12,10 +17,7 @@ static class Gym {
 static int GymState_kvar = 0;
 
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicks( typeof( Gym ), out _tickNames,
-    RTS_tck
-    //Steer_tck
-);
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( Gym ), out _tickNames );
 
 static string _stateName => _tickNames[GymState_kvar % _ticks.Length];
 
@@ -299,7 +301,7 @@ static void RTS_tck() {
                                                                     c: new Color( 1, 1, 1, 0.2f ) );
 
                 //Draw.SegmentGame( pawn.move[zA].pos, pawn.move[zMax].pos,
-                //                                                    c: new Color( 1, 1, 1, 0.2f ) );
+                //                                                  c: new Color( 1, 1, 1, 0.2f ) );
 
                 //Draw.SegmentGame( feeler, pawn.move[zMax].pos, c: new Color( 1, 1, 1, 0.2f ) );
 
