@@ -1,0 +1,6 @@
+*.map
+MonoBleedingEdge/
+*.exe
+*_Data/
+*.exe
+*.pdb
