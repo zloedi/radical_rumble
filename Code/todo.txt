@@ -1,5 +1,4 @@
-] See why the flyers don't move
-] Make sure charge works
+? Make sure charge works
 ] Implement melee attack.
 ] Implement ranged attack.
 ] Limit the spawn into zones around the towers (editable?)
