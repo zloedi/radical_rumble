@@ -1,5 +1,6 @@
 ? Make sure charge works
 ] Implement melee attack.
+    ] Stop at the proper point on the client
 ] Implement ranged attack.
 ] Limit the spawn into zones around the towers (editable?)
 ] Set client state to wait-for-ready on connect (send the team number there)

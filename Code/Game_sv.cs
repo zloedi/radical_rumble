@@ -18,8 +18,10 @@ partial class Game {
 #if UNITY_STANDALONE || SDL
 [Description( "Show pather lines." )]
 static bool SvShowPaths_kvar = false;
-[Description( "Show structure avoidance debug." )]
-static bool SvShowAvoidance_kvar = false;
+[Description( "Show pawn origins on the server." )]
+static bool SvShowOrigins_kvar = false;
+//[Description( "Show structure avoidance debug." )]
+//static bool SvShowAvoidance_kvar = false;
 [Description( "Show charge lines." )]
 static bool SvShowCharge_kvar = false;
 #endif
@@ -641,6 +643,9 @@ bool AvoidStructure( int team, Vector2 v0, Vector2 v1, out Vector2 w ) {
 }
 
 Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
+#if true
+    return v1;
+#else
     Vector2 ab = v1 - v0;
     float sq = ab.sqrMagnitude;
     if ( sq < 0.5f ) {
@@ -707,8 +712,8 @@ Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
         }
 #endif
     }
-
     return v1;
+#endif
 }
 
 void DebugDrawPath( List<int> path ) {
@@ -729,7 +734,7 @@ void DebugDrawPath( List<int> path ) {
 
 void DebugSeg( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
     DebugLine( a, b, duration, c );
-#if UNITY_STANDALONE
+#if UNITY_STANDALONE || SDL
     SingleShot.Add( dt => {
         Hexes.DrawHexWithLines( Draw.GameToScreenPosition( a ),
                                                         Draw.hexPixelSize / 5, Color.white );
@@ -740,7 +745,7 @@ void DebugSeg( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
 }
 
 void DebugLine( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
-#if UNITY_STANDALONE
+#if UNITY_STANDALONE || SDL
     Color col = c != null ? c.Value : Color.cyan;
     SingleShot.Add( dt => {
         QGL.LateDrawLine( Draw.GTS( a ), Draw.GTS( b ), color: col );
@@ -749,8 +754,8 @@ void DebugLine( Vector2 a, Vector2 b, float duration = 3, Color? c = null ) {
 }
 
 void DebugDrawOrigins() {
-#if UNITY_STANDALONE
-    if ( ! SvShowPaths_kvar ) {
+#if UNITY_STANDALONE || SDL
+    if ( ! SvShowOrigins_kvar ) {
         return;
     }
     foreach ( var z in pawn.filter.no_garbage ) {
