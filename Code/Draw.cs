@@ -165,7 +165,7 @@ public static void PawnSprites( float alpha = 1 ) {
     Vector2Int offShad;
 
     Vector2Int sz( int z ) {
-        float d = pawn.GetDef( z ).radius * 2;
+        float d = pawn.Radius( z ) * 2;
         return new Vector2Int( ( int )( size.x * d ), ( int )( size.y * d ) );
     }
 

@@ -14,7 +14,7 @@ using static Pawn.Def.Flags;
 partial class Pawn {
 
 public static Def Tower = Register( new Def {
-    flags = Structure | NavFocus,
+    flags = Structure | PatrolWaypoint,
     range = 10,
     maxHP = 5000,
     damage = 2,
@@ -33,7 +33,7 @@ public static Def Turret = Register( new Def {
 } );
 
 public static Def Archer = Register( new Def {
-    range = 4,
+    range = 3,
     maxHP = 500,
     speed = 120,
     damage = 1,
@@ -64,10 +64,9 @@ public class Def {
     [Flags]
     public enum Flags {
         None,
-        Structure = 1 << 0,
-        Flying    = 1 << 1,
-        // FIXME: is this used?
-        NavFocus  = 1 << 2,
+        Structure       = 1 << 0,
+        Flying          = 1 << 1,
+        PatrolWaypoint  = 1 << 2,
     }
 
     public static float MaxRadius;

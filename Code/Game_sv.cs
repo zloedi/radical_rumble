@@ -54,7 +54,7 @@ public void PostLoadMap() {
 
 public void TickServer() {
     void charge( int z, int zEnemy ) {
-        pawn.atkFocus[z] = ( byte )zEnemy;
+        pawn.focus[z] = ( byte )zEnemy;
         // change route segment before next movement lerp so we have the proper position
         MvUpdateChargeRoute( z, zEnemy );
         pawn.SetState( z, PS.ChargeEnemy );
@@ -84,14 +84,14 @@ public void TickServer() {
             continue;
         }
 
-        if ( NavGetFocusPawn( z, out int zFocus ) ) {
+        if ( GetPatrolWaypoint( z, out int zPatrol ) ) {
             MvInterrupt( z );
-            pawn.SetState( z, PS.NavigateToEnemyTower );
+            pawn.SetState( z, PS.Patrol );
             Log( $"{pawn.DN( z )} navigates to tower." );
         }
     }
 
-    foreach ( var z in pawn.filter.ByState( PS.NavigateToEnemyTower ) ) {
+    foreach ( var z in pawn.filter.ByState( PS.Patrol ) ) {
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
             // path inflection point, get a new segment to lerp on
             if ( ! NavUpdate( z ) ) {
@@ -108,16 +108,7 @@ public void TickServer() {
     }
 
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
-        int zEnemy = pawn.atkFocus[z];
-
-        if ( ! IsReachableEnemy( z, zEnemy ) ) {
-            // pawn on focus is dead or out of sight, chase something else instead
-            MvInterrupt( z );
-            pawn.atkFocus[z] = 0;
-            pawn.SetState( z, PS.NavigateToEnemyTower );
-            Log( $"{pawn.DN( z )} fails to charge, navigate to tower." );
-            continue;
-        }
+        int zEnemy = pawn.focus[z];
 
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
             // reached attack position, transition to attack
@@ -128,18 +119,34 @@ public void TickServer() {
         }
 
         MvUpdateChargeRoute( z, zEnemy );
+
+        if ( AtkGetFocusPawn( z, out zEnemy ) ) {
+            // if the enemy is charging me, switch targets to it
+            if ( zEnemy != pawn.focus[z] && pawn.focus[zEnemy] == z ) {
+                charge( z, zEnemy );
+            }
+        }
+
+        if ( ! IsReachableEnemy( z, zEnemy ) ) {
+            // pawn on focus is dead or out of sight, chase something else instead
+            pawn.focus[z] = 0;
+            NavUpdate( z );
+            pawn.SetState( z, PS.Patrol );
+            Log( $"{pawn.DN( z )} fails to charge, navigate to tower." );
+            continue;
+        }
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
-        if ( pawn.IsGarbage( pawn.atkFocus[z] ) ) {
-            pawn.atkFocus[z] = 0;
+        if ( pawn.IsGarbage( pawn.focus[z] ) ) {
+            pawn.focus[z] = 0;
             pawn.SetState( z, PS.Idle );
             continue;
         }
 
-        if ( pawn.hp[pawn.atkFocus[z]] <= 0 ) {
-            pawn.atkFocus[z] = 0;
-            pawn.SetState( pawn.atkFocus[z], PS.Dead );
+        if ( pawn.hp[pawn.focus[z]] <= 0 ) {
+            pawn.focus[z] = 0;
+            pawn.SetState( pawn.focus[z], PS.Dead );
             pawn.SetState( z, PS.Idle );
             continue;
         }
@@ -479,9 +486,9 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
     float minEnemy = 9999999;
 
     foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
-        if ( pawn.IsStructure( ze ) ) {
-            continue;
-        }
+        //if ( pawn.IsPatrolWaypoint( ze ) && pawn.focus[z] == ze ) {
+        //    continue;
+        //}
 
         float sq = pawn.SqDist( z, ze );
         if ( sq >= minEnemy ) {
@@ -504,7 +511,18 @@ int AtkDuration( int z ) {
 }
 
 Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
-    return pawn.mvPos[zEnemy];
+    float dist = pawn.Radius( z )
+                    + pawn.Radius( zEnemy )
+                    + Mathf.Max( 0.45f, pawn.Range( z ) );
+    Vector2 d = pawn.mvPos[z] - pawn.mvPos[zEnemy];
+    float sq = d.sqrMagnitude;
+    if ( sq < 0.00001f ) {
+        return pawn.mvPos[zEnemy] + Vector2.one * dist;
+    }
+    if ( sq < dist * dist ) {
+        return pawn.mvPos[z];
+    }
+    return pawn.mvPos[zEnemy] + d / Mathf.Sqrt( sq ) * dist;
 }
 
 void MvUpdateChargeRoute( int z, int zEnemy ) {
@@ -512,7 +530,7 @@ void MvUpdateChargeRoute( int z, int zEnemy ) {
 
     // handle the case where enemies go head-to-head
     // pick 'random' pawn to stop moving a bit before impact
-    if ( pawn.atkFocus[zEnemy] == z
+    if ( pawn.focus[zEnemy] == z
         && pawn.mvEnd[zEnemy] != pawn.mvPos[zEnemy]
         && ( ( z ^ zEnemy ) & 1 ) == pawn.team[z] ) {
         float sp = Mathf.Max( pawn.SpeedSec( zEnemy ), pawn.SpeedSec( z ) ) / 2;
@@ -545,41 +563,54 @@ void MvUpdateChargeRoute( int z, int zEnemy ) {
     }
 }
 
-bool NavGetFocusPawn( int z, out int zNavFocus ) {
-    zNavFocus = 0;
+bool GetPatrolWaypoint( int z, out int zWaypoint ) {
+    zWaypoint = 0;
     float minNav = 9999999;
 
     foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
-        float sq = pawn.SqDist( z, ze );
-        if ( sq >= minNav ) {
+        if ( ! pawn.IsPatrolWaypoint( ze ) ) {
             continue;
         }
-        if ( pawn.IsNavFocus( ze ) ) {
-            zNavFocus = ze;
-            minNav = sq;
+
+        GetCachedPathEndPos( z, ze, out List<int> path );
+
+        float len = 0;
+        for ( int i = 0; i < path.Count - 1; i++ ) {
+            Vector2 a = HexToV( path[i + 0] );
+            Vector2 b = HexToV( path[i + 1] );
+            len += ( b - a ).sqrMagnitude;
         }
+
+        if ( len >= minNav ) {
+            continue;
+        }
+
+        zWaypoint = ze;
+        minNav = len;
     }
 
-    return zNavFocus != 0;
+    //Log( $"Distance to patrol waypoint: {minNav}" );
+
+    return zWaypoint != 0;
 }
 
 // movement path inflection point handling
 bool NavUpdate( int z ) {
     List<int> path;
-    int zFocus = pawn.navFocus[z];
+    int zFocus = pawn.focus[z];
 
     if ( pawn.IsGarbage( zFocus ) ) {
-        zFocus = pawn.navFocus[z] = 0;
+        zFocus = pawn.focus[z] = 0;
     }
 
     if ( zFocus == 0 ) {
         MvInterrupt( z );
 
-        if ( ! NavGetFocusPawn( z, out zFocus ) ) {
+        if ( ! GetPatrolWaypoint( z, out zFocus ) ) {
             return false;
         }
 
-        pawn.navFocus[z] = ( byte )zFocus;
+        pawn.focus[z] = ( byte )zFocus;
 
         if ( GetCachedPathEndPos( z, zFocus, out path ) > 2 ) {
             // push the source position on the side

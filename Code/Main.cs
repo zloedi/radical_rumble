@@ -169,9 +169,10 @@ static void QonsoleTick_kmd( string [] argv ) {
 
     Cl.Tick( timeDelta );
 
+    QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"), Screen.width - 50, 20 );
+
 #if false
     QGL.LateBlit( AppleFont.GetTexture(), 100, 100, 100, 100, angle: Time.time * 5f );
-    QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"), Screen.width - 50, 20 );
     var pts = new Vector2 [] { 
         new Vector2( 100, 100 ),
         new Vector2( 200, 100 ),

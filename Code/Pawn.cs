@@ -16,11 +16,10 @@ partial class Pawn {
         None,
         Spawning,
         Idle,
-        NavigateToEnemyTower,
+        // usually move to enemy tower
+        Patrol,
         ChargeEnemy,
         Attack,
-
-        NavigateToEnemy,
 
         Dead,
     }
@@ -42,13 +41,9 @@ partial class Pawn {
     public float [] atkPos = null;
     public int [] atkStartTime = null;
 
-    // FIXME: used?
-    // a pawn of interest for navigation
-    public byte [] navFocus = null;
-    // a pawn of interest for attack
-    // FIXME: used?
-    public byte [] atkFocus = null;
     public byte [] state = null;
+
+    // the pawn of interest for navigation and attack
     public byte [] focus = null;
 
     // == these should be synced ==
@@ -116,6 +111,10 @@ partial class Pawn {
         return defs[def[z]].radius;
     }
 
+    public float Range( int z ) {
+        return defs[def[z]].range;
+    }
+
     public int MaxHP( int z ) {
         return defs[def[z]].maxHP;
     }
@@ -140,9 +139,8 @@ partial class Pawn {
         return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
     }
 
-    // FIXME: is this used?
-    public bool IsNavFocus( int z ) {
-        return ( GetDef( z ).flags & Pawn.Def.Flags.NavFocus ) != 0;
+    public bool IsPatrolWaypoint( int z ) {
+        return ( GetDef( z ).flags & Pawn.Def.Flags.PatrolWaypoint ) != 0;
     }
 
     // FIXME: no longer valid
@@ -153,7 +151,7 @@ partial class Pawn {
             return false;
         }
 
-        return navFocus[z] == 0;
+        return focus[z] == 0;
     }
 
     public bool IsEnemy( int z, int zEnemy ) {

@@ -43,7 +43,7 @@ public static void Tick() {
 
         // zero delta move means stop
         // FIXME: remove if the pawn state is sent over the network
-        if ( pawn.mvEndTime[z] == Cl.serverClock ) {
+        if ( pawn.mvEndTime[z] <= Cl.serverClock ) {
             // FIXME: should lerp to actual end pos
             pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
             return;
