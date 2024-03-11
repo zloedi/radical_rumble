@@ -1,5 +1,11 @@
+] See why the flyers don't move
+] Make sure charge works
+] Implement melee attack.
+] Implement ranged attack.
+] Limit the spawn into zones around the towers (editable?)
 ] Set client state to wait-for-ready on connect (send the team number there)
 ] Implement button 'ready'/'not ready'
+] On map load everyone goes into observer mode
 
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.

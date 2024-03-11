@@ -70,6 +70,7 @@ public void TickServerExperimental() {
     foreach ( var z in pawn.filter.ByState( PS.Spawning ) ) {
         pawn.MvClamp( z );
         pawn.SetState( z, PS.Idle );
+        Log( $"{pawn.DN( z )} is idling." );
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Idle ) ) {

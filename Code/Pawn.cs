@@ -12,7 +12,6 @@ using GalliumMath;
 using static Pawn.Def;
 
 partial class Pawn {
-
     public enum State {
         None,
         Spawning,
@@ -329,12 +328,16 @@ partial class Pawn {
                                                             filter.no_byState[SB( State.None )] );
         }
 
-        foreach ( int z in filter.no_structures ) {
-            foreach ( var s in Pawn.AllStates ) {
-                int sb = SB( s );
-                filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+        void assignByState( List<byte> l ) {
+            foreach ( int z in l ) {
+                foreach ( var s in Pawn.AllStates ) {
+                    int sb = SB( s );
+                    filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+                }
             }
         }
-    }
 
+        assignByState( filter.no_structures );
+        assignByState( filter.flying );
+    }
 }

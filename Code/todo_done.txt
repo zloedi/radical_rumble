@@ -1,3 +1,4 @@
-* Make it possible to rotate game view by 180 degrees.
-* Rotate view if team > 0
+* See why the flyers don't move
 * Healthbars proper color
+* Rotate view if team > 0
+* Make it possible to rotate game view by 180 degrees.

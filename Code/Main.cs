@@ -70,9 +70,11 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind Alpha1 ""cl_spawn Brute"" play;
         bind Alpha2 ""cl_spawn Archer"" play;
         bind Alpha3 ""cl_spawn Flyer"" play;
-        bind Alpha4 ""cl_spawn Brute 1"" play;
-        bind Alpha5 ""cl_spawn Archer 1"" play;
-        bind Alpha6 ""cl_spawn Flyer 1"" play;
+
+        //bind Alpha4 ""cl_spawn Brute 1"" play;
+        //bind Alpha5 ""cl_spawn Archer 1"" play;
+        //bind Alpha6 ""cl_spawn Flyer 1"" play;
+
         bind K ""cl_kill"" play;
 
         bind Alpha1  ""ed_atk_pos_solver_place 1 0"" ed_atk_pos_solver;
