@@ -69,6 +69,11 @@ public static void Tick() {
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
     Draw.PawnSprites();
+
+    if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
+        WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, align: 6,
+                                                    color: Color.white, fontSize: Draw.textSize );
+    }
 }
 
 

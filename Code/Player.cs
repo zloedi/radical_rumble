@@ -76,7 +76,6 @@ class Player {
         }
     }
 
-    // otherwise this is an observer client
     public bool IsPlayer( int zport ) {
         foreach ( var zp in this.zport ) {
             if ( zp == zport ) {
@@ -84,5 +83,9 @@ class Player {
             }
         }
         return false;
+    }
+
+    public bool IsObserver( int zport ) {
+        return ! IsPlayer( zport );
     }
 }
