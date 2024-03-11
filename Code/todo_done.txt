@@ -1,0 +1,3 @@
+* Make it possible to rotate game view by 180 degrees.
+* Rotate view if team > 0
+* Healthbars proper color

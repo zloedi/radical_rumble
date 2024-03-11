@@ -39,26 +39,11 @@
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
-
-    <!--
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.InputLegacyModule.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.IMGUIModule">
-      <HintPath>..\Build\RadicalRumble_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
-    </Reference>
-    -->
-
   </ItemGroup>
 
   <ItemGroup>
@@ -98,6 +83,7 @@
     <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
+    <Compile Include="Player.cs" />
     <Compile Include="PlayerQGL.cs" />
     <Compile Include="TickUtil.cs" />
     <Compile Include="RRClient.cs" />

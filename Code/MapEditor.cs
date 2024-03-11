@@ -81,6 +81,9 @@ static void PlaceTerrain_tck() {
         return;
     }
 
+    Vector2 spos = Draw.AxialToScreen( Cl.mousePosAxial );
+    Hexes.DrawHexWithLines( spos, Draw.hexPixelSize, Color.white );
+
     if ( Cl.mouse0Down || ( Cl.mouse0Held && Cl.mouseHexChanged && Cl.AllowSpam() ) ) {
         Cl.SvCmd( $"sv_set_terrain {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 128" );
     }

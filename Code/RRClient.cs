@@ -53,6 +53,7 @@ public static int clockDelta;
 public static int serverClock;
 
 public static Board board => game.board;
+public static int zport => ZClient.netChan.zport;
 
 static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 
@@ -482,10 +483,12 @@ static void ClSpawn_kmd( string [] argv ) {
         Log( $"{argv[0]} Can't find def named {argv[1]}" );
         return;
     }
-    int team = 0;
+
+    string team = "";
     if ( argv.Length > 2 ) {
-        int.TryParse( argv[2], out team );
+        team = argv[2];
     }
+
     SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
 }
 

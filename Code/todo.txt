@@ -1,3 +1,6 @@
+] Set client state to wait-for-ready on connect (send the team number there)
+] Implement button 'ready'/'not ready'
+
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
         * Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
@@ -42,7 +45,7 @@
         ] If any of these is false -- go through the defender's 'focusedOnMe' filter and erase
           the moving attackers attack slots, forcing them to be eventually redistributed.
 
-== Implement team mates avoidance. ==
+== Implement teammates avoidance. ==
 
 ] ...
 

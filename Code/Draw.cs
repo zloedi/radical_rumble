@@ -20,6 +20,8 @@ public static int hexPixelSize => 12 * pixelSize;
 
 public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
+public static int team;
+public static bool rotate180 => team != 0;
 
 public static Board board => Cl.game.board;
 public static Pawn pawn => Cl.game.pawn;
@@ -94,7 +96,7 @@ public static Vector2 STG( Vector2 xy ) {
 
 public static Vector2 ScreenToGamePosition( Vector2 xy ) {
     Vector2 origin = Hexes.HexToScreen( Vector2Int.zero, hexPixelSize );
-    xy -= _pan;
+    xy = InvertScreenTransform( xy );
     xy /= hexPixelSize;
     return xy - origin;
 }
@@ -104,7 +106,7 @@ public static Vector2 GTS( Vector2 gamePos ) {
 }
 
 public static Vector2 GameToScreenPosition( Vector2 gamePos ) {
-    return _pan + gamePos * Draw.hexPixelSize;
+    return ApplyScreenTransform( gamePos * Draw.hexPixelSize );
 }
 
 public static Vector2Int AxialToScreenNoPan( int x, int y ) {
@@ -117,7 +119,7 @@ public static Vector2Int AxialToScreen( Vector2Int axial ) {
 }
 
 public static Vector2Int AxialToScreen( int x, int y ) {
-    return _pan + AxialToScreenNoPan( x, y );
+    return ApplyScreenTransform( AxialToScreenNoPan( x, y ) );
 }
 
 public static Vector2Int HexToScreen( int hx ) {
@@ -130,7 +132,8 @@ public static int ScreenToHex( Vector2 xy ) {
 }
 
 public static Vector2Int ScreenToAxial( Vector2 xy ) {
-    return Hexes.ScreenToHex( xy - _pan, hexPixelSize );
+    xy = InvertScreenTransform( xy );
+    return Hexes.ScreenToHex( xy, hexPixelSize );
 }
 
 public static void TerrainTile( int x, int y, Color? c = null, float sz = 1 ) {
@@ -189,7 +192,7 @@ public static void PawnSprites( float alpha = 1 ) {
         vsz.x -= pixelSize * 2;
         vsz.y -= pixelSize * 2;
         vpos += Vector2Int.one * pixelSize;
-        Color c = pawn.team[z] == 0 ? new Color( 0, 0.35f, 1f ) : Color.red;
+        Color c = pawn.team[z] == team ? new Color( 0, 0.35f, 1f ) : Color.red;
         QGL.LateBlit( null, vpos, vsz, color: c );
     }
 
@@ -202,8 +205,10 @@ public static void PawnSprites( float alpha = 1 ) {
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {
-        Vector2 pos = _pan + pawn.mvPos[z] * Draw.hexPixelSize - szHalf( z );
+        Vector2 pos = pawn.mvPos[z] * Draw.hexPixelSize;
         topLeft = new Vector2Int( ( int )pos.x, ( int )pos.y );
+        topLeft = ApplyScreenTransform( topLeft );
+        topLeft -= szHalf( z );
     }
 
     const int flyShOff = 7;
@@ -345,6 +350,34 @@ static void GetBoardBoundsInPixels( out int x, out int y, out int w, out int h )
 
     y -= Hexes.hexSpriteRegularHeight / 2 * pixelSize;
     h += Hexes.hexSpriteRegularHeight * pixelSize;
+}
+
+// take into account 180 degrees rotation + panning
+static Vector2 ApplyScreenTransform( Vector2 pos ) {
+    pos += _pan;
+    if ( rotate180 ) {
+        pos.x = Screen.width - pos.x;
+        pos.y = Screen.height - pos.y;
+    }
+    return pos;
+}
+
+static Vector2Int ApplyScreenTransform( Vector2Int pos ) {
+    pos += _pan;
+    if ( rotate180 ) {
+        pos.x = Screen.width - pos.x;
+        pos.y = Screen.height - pos.y;
+    }
+    return pos;
+}
+
+static Vector2 InvertScreenTransform( Vector2 pos ) {
+    if ( rotate180 ) {
+        pos.x = Screen.width - pos.x;
+        pos.y = Screen.height - pos.y;
+    }
+    pos -= _pan;
+    return pos;
 }
 
 

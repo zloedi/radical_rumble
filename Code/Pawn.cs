@@ -13,329 +13,328 @@ using static Pawn.Def;
 
 partial class Pawn {
 
-public enum State {
-    None,
-    Spawning,
-    Idle,
-    NavigateToEnemyTower,
-    ChargeEnemy,
-    Attack,
+    public enum State {
+        None,
+        Spawning,
+        Idle,
+        NavigateToEnemyTower,
+        ChargeEnemy,
+        Attack,
 
-    NavigateToEnemy,
+        NavigateToEnemy,
 
-    Dead,
-}
-
-public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
-
-public const int MAX_PAWN = 256;
-
-public ushort [] hp = null;
-public byte [] team = null;
-public byte [] def = null;
-
-// lerped movement position
-public Vector2 [] mvPos = null;
-public Vector2 [] mvEnd = null;
-public Vector2 [] mvStart = null;
-public int [] mvStartTime = null;
-
-public float [] atkPos = null;
-public int [] atkStartTime = null;
-
-// FIXME: used?
-// a pawn of interest for navigation
-public byte [] navFocus = null;
-// a pawn of interest for attack
-// FIXME: used?
-public byte [] atkFocus = null;
-public byte [] state = null;
-public byte [] focus = null;
-
-// == these should be synced ==
-
-// transmitted fixed point version of end position
-public int [] mvEnd_tx = null;
-public int [] mvEndTime = null;
-public int [] atkEndTime = null;
-
-public Filter filter = new Filter();
-
-List<Array> _allRows = new List<Array>();
-
-public Pawn() {
-    ArrayUtil.CreateAll( this, MAX_PAWN, out _allRows );
-    FillDefNames();
-}
-
-public void Reset() {
-    ArrayUtil.Clear( _allRows );
-}
-
-public void Clear( int z ) {
-    ArrayUtil.ClearColumn( _allRows, z );
-}
-
-public byte SB( State s ) {
-    return ( byte )s;
-}
-
-public void SetState( int z, State s ) {
-    state[z] = SB( s );
-}
-
-int _lastFree;
-public int Create( int pawnDef ) {
-    int z;
-
-    if ( ! ArrayUtil.FindFreeColumn( def, out z, _lastFree ) ) {
-        return 0;
+        Dead,
     }
 
-    Clear( z );
+    public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
 
-    def[z] = ( byte )pawnDef;
-    hp[z] = ( byte )MaxHP( z );
+    public const int MAX_PAWN = 256;
 
-    return z;
-}
+    public ushort [] hp = null;
+    public byte [] team = null;
+    public byte [] def = null;
 
-public void Destroy( int z ) {
-    Clear( z );
-    _lastFree = z;
-}
+    // lerped movement position
+    public Vector2 [] mvPos = null;
+    public Vector2 [] mvEnd = null;
+    public Vector2 [] mvStart = null;
+    public int [] mvStartTime = null;
 
-public float SpeedSec( int z ) {
-    return Speed( z ) / 60f;
-}
+    public float [] atkPos = null;
+    public int [] atkStartTime = null;
 
-public int Speed( int z ) {
-    return GetDef( z ).speed;
-}
+    // FIXME: used?
+    // a pawn of interest for navigation
+    public byte [] navFocus = null;
+    // a pawn of interest for attack
+    // FIXME: used?
+    public byte [] atkFocus = null;
+    public byte [] state = null;
+    public byte [] focus = null;
 
-public float Radius( int z ) {
-    return defs[def[z]].radius;
-}
+    // == these should be synced ==
 
-public int MaxHP( int z ) {
-    return defs[def[z]].maxHP;
-}
+    // transmitted fixed point version of end position
+    public int [] mvEnd_tx = null;
+    public int [] mvEndTime = null;
+    public int [] atkEndTime = null;
 
-public Def GetDef( int z ) {
-    return defs[def[z]];
-}
+    public Filter filter = new Filter();
 
-public string DN( int z ) {
-    return DebugName( z );
-}
+    List<Array> _allRows;
 
-public string DebugName( int z ) {
-    return $"{GetDef( z ).name} {z}";
-}
-
-public bool IsFlying( int z ) {
-    return ( GetDef( z ).flags & Pawn.Def.Flags.Flying ) != 0;
-}
-
-public bool IsStructure( int z ) {
-    return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
-}
-
-// FIXME: is this used?
-public bool IsNavFocus( int z ) {
-    return ( GetDef( z ).flags & Pawn.Def.Flags.NavFocus ) != 0;
-}
-
-// FIXME: no longer valid
-public bool IsIdling( int z ) {
-    // if we haven't transmitted any positions yet, don't try to interpolate paths
-    // FIXME: this is a temp solution
-    if ( mvEnd_tx[z] == 0 ) {
-        return false;
+    public Pawn() {
+        ArrayUtil.CreateAll( this, MAX_PAWN, out _allRows );
+        FillDefNames();
     }
 
-    return navFocus[z] == 0;
-}
-
-public bool IsEnemy( int z, int zEnemy ) {
-    return team[z] != team[zEnemy];
-}
-
-public bool IsGarbage( int z ) {
-    return def[z] == 0;
-}
-
-public float SqDist( int zA, int zB ) {
-    return ( mvPos[zB] - mvPos[zA] ).sqrMagnitude;
-}
-
-public void MvClamp( int z ) {
-    mvStart[z] = mvPos[z] = mvEnd[z];
-}
-
-// this will generate a delta (clock change)
-public void MvSnapToEnd( int z, int clock ) {
-    mvStartTime[z] = mvEndTime[z] = clock;
-    MvClamp( z );
-}
-
-// this will generate a delta (clock change)
-public void MvInterrupt( int z, int clock ) {
-    mvStartTime[z] = mvEndTime[z] = clock;
-    mvStart[z] = mvEnd[z] = mvPos[z];
-}
-
-public bool MvLerp( int z, int clock ) {
-    int duration = mvEndTime[z] - mvStartTime[z];
-    if ( duration <= 0 ) {
-        return true;
+    public void Reset() {
+        ArrayUtil.Clear( _allRows );
     }
 
-    if ( clock >= mvEndTime[z] ) {
-        return true;
+    public void Clear( int z ) {
+        ArrayUtil.ClearColumn( _allRows, z );
     }
 
-    int ti = clock - mvStartTime[z];
-    float t = ( float )ti / duration;
-    mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
-    return false;
-}
-
-public bool AtkLerp( int z, int clock ) {
-    int duration = atkEndTime[z] - atkStartTime[z];
-    if ( duration <= 0 ) {
-        return true;
+    public byte SB( State s ) {
+        return ( byte )s;
     }
 
-    if ( clock >= atkEndTime[z] ) {
-        return true;
+    public void SetState( int z, State s ) {
+        state[z] = SB( s );
     }
 
-    int ti = clock - atkStartTime[z];
-    atkPos[z] = ( float )ti / duration;
+    int _lastFree;
+    public int Create( int pawnDef ) {
+        int z;
 
-    return false;
-}
+        if ( ! ArrayUtil.FindFreeColumn( def, out z, _lastFree ) ) {
+            return 0;
+        }
 
-public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
-    if ( mvPos[z] == Vector2.zero ) {
-        mvPos[z] = mvStart[z] = mvEnd[z];
+        Clear( z );
+
+        def[z] = ( byte )pawnDef;
+        hp[z] = ( byte )MaxHP( z );
+
+        return z;
+    }
+
+    public void Destroy( int z ) {
+        Clear( z );
+        _lastFree = z;
+    }
+
+    public float SpeedSec( int z ) {
+        return Speed( z ) / 60f;
+    }
+
+    public int Speed( int z ) {
+        return GetDef( z ).speed;
+    }
+
+    public float Radius( int z ) {
+        return defs[def[z]].radius;
+    }
+
+    public int MaxHP( int z ) {
+        return defs[def[z]].maxHP;
+    }
+
+    public Def GetDef( int z ) {
+        return defs[def[z]];
+    }
+
+    public string DN( int z ) {
+        return DebugName( z );
+    }
+
+    public string DebugName( int z ) {
+        return $"{GetDef( z ).name} {z}";
+    }
+
+    public bool IsFlying( int z ) {
+        return ( GetDef( z ).flags & Pawn.Def.Flags.Flying ) != 0;
+    }
+
+    public bool IsStructure( int z ) {
+        return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
+    }
+
+    // FIXME: is this used?
+    public bool IsNavFocus( int z ) {
+        return ( GetDef( z ).flags & Pawn.Def.Flags.NavFocus ) != 0;
+    }
+
+    // FIXME: no longer valid
+    public bool IsIdling( int z ) {
+        // if we haven't transmitted any positions yet, don't try to interpolate paths
+        // FIXME: this is a temp solution
+        if ( mvEnd_tx[z] == 0 ) {
+            return false;
+        }
+
+        return navFocus[z] == 0;
+    }
+
+    public bool IsEnemy( int z, int zEnemy ) {
+        return team[z] != team[zEnemy];
+    }
+
+    public bool IsGarbage( int z ) {
+        return def[z] == 0;
+    }
+
+    public float SqDist( int zA, int zB ) {
+        return ( mvPos[zB] - mvPos[zA] ).sqrMagnitude;
+    }
+
+    public void MvClamp( int z ) {
+        mvStart[z] = mvPos[z] = mvEnd[z];
+    }
+
+    // this will generate a delta (clock change)
+    public void MvSnapToEnd( int z, int clock ) {
         mvStartTime[z] = mvEndTime[z] = clock;
-        return true;
+        MvClamp( z );
     }
 
-    int duration = mvEndTime[z] - mvStartTime[z];
-    if ( duration <= 0 ) {
-        // FIXME: lerp mvpos to end if they differ
-        return true;
+    // this will generate a delta (clock change)
+    public void MvInterrupt( int z, int clock ) {
+        mvStartTime[z] = mvEndTime[z] = clock;
+        mvStart[z] = mvEnd[z] = mvPos[z];
     }
 
-    if ( clock >= mvEndTime[z] ) {
-        Vector2 v = mvEnd[z] - mvStart[z];
-        float sq = v.sqrMagnitude;
-        if ( sq < 0.0001f ) {
+    public bool MvLerp( int z, int clock ) {
+        int duration = mvEndTime[z] - mvStartTime[z];
+        if ( duration <= 0 ) {
             return true;
         }
 
-        // keep moving in the same general direction until the server correction arrives
-        // this really craps-up for faster pawns, but it is ok for almost everything
-        v /= Mathf.Sqrt( sq );
-        Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime / 1000f;
-        if ( ( newPos - mvEnd[z] ).sqrMagnitude > SpeedSec( z ) ) {
-            // stop if too far from the destination
-            mvPos[z] = mvEnd[z];
+        if ( clock >= mvEndTime[z] ) {
             return true;
         }
 
-        mvPos[z] = newPos;
+        int ti = clock - mvStartTime[z];
+        float t = ( float )ti / duration;
+        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
         return false;
     }
 
-    int ti = clock - mvStartTime[z];
-    float t = ( float )ti / duration;
+    public bool AtkLerp( int z, int clock ) {
+        int duration = atkEndTime[z] - atkStartTime[z];
+        if ( duration <= 0 ) {
+            return true;
+        }
 
-    mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+        if ( clock >= atkEndTime[z] ) {
+            return true;
+        }
 
-    return false;
-}
+        int ti = clock - atkStartTime[z];
+        atkPos[z] = ( float )ti / duration;
 
-public class Filter {
-    public List<IList> all;
-
-    public List<byte> garbage = null, no_garbage = null;
-    public List<byte> flying = null, no_flying = null;
-    public List<byte> structures = null, no_structures = null;
-
-    // FIXME: obsolete
-    public List<byte> idling = null, no_idling = null;
-    public List<byte> [] enemies = new List<byte>[2];
-    public List<byte> [] team = new List<byte>[2];
-    public List<byte> [] byState = new List<byte>[AllStates.Length];
-    public List<byte> [] no_byState = new List<byte>[AllStates.Length];
-
-    public Filter() {
-        FilterUtil.CreateAll( this, out all );
+        return false;
     }
 
-    public List<byte> ByState( State state ) {
-        return byState[( int )state];
+    public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
+        if ( mvPos[z] == Vector2.zero ) {
+            mvPos[z] = mvStart[z] = mvEnd[z];
+            mvStartTime[z] = mvEndTime[z] = clock;
+            return true;
+        }
+
+        int duration = mvEndTime[z] - mvStartTime[z];
+        if ( duration <= 0 ) {
+            // FIXME: lerp mvpos to end if they differ
+            return true;
+        }
+
+        if ( clock >= mvEndTime[z] ) {
+            Vector2 v = mvEnd[z] - mvStart[z];
+            float sq = v.sqrMagnitude;
+            if ( sq < 0.0001f ) {
+                return true;
+            }
+
+            // keep moving in the same general direction until the server correction arrives
+            // this really craps-up for faster pawns, but it is ok for almost everything
+            v /= Mathf.Sqrt( sq );
+            Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime / 1000f;
+            if ( ( newPos - mvEnd[z] ).sqrMagnitude > SpeedSec( z ) ) {
+                // stop if too far from the destination
+                mvPos[z] = mvEnd[z];
+                return true;
+            }
+
+            mvPos[z] = newPos;
+            return false;
+        }
+
+        int ti = clock - mvStartTime[z];
+        float t = ( float )ti / duration;
+
+        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+
+        return false;
     }
 
-    public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
-        var l = condition ? la : lb;
-        l.Add( ( byte )z );
-    }
+    public class Filter {
+        public List<IList> all;
 
-    public void Clear() {
-        foreach ( var l in all ) {
-            l.Clear();
+        public List<byte> garbage = null, no_garbage = null;
+        public List<byte> flying = null, no_flying = null;
+        public List<byte> structures = null, no_structures = null;
+
+        // FIXME: obsolete
+        public List<byte> idling = null, no_idling = null;
+        public List<byte> [] enemies = new List<byte>[2];
+        public List<byte> [] team = new List<byte>[2];
+        public List<byte> [] byState = new List<byte>[AllStates.Length];
+        public List<byte> [] no_byState = new List<byte>[AllStates.Length];
+
+        public Filter() {
+            FilterUtil.CreateAll( this, out all );
+        }
+
+        public List<byte> ByState( State state ) {
+            return byState[( int )state];
+        }
+
+        public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
+            var l = condition ? la : lb;
+            l.Add( ( byte )z );
+        }
+
+        public void Clear() {
+            foreach ( var l in all ) {
+                l.Clear();
+            }
         }
     }
-}
 
-public void UpdateFilters() {
-    filter.Clear();
+    public void UpdateFilters() {
+        filter.Clear();
 
-    for ( int z = 0; z < MAX_PAWN; z++ ) {
-        filter.Assign( z, IsGarbage( z ), filter.garbage, filter.no_garbage );
-    }
+        for ( int z = 0; z < MAX_PAWN; z++ ) {
+            filter.Assign( z, IsGarbage( z ), filter.garbage, filter.no_garbage );
+        }
 
-    foreach ( int z in filter.no_garbage ) {
-        filter.Assign( z, team[z] == 0, filter.team[0], filter.team[1] );
-    }
+        foreach ( int z in filter.no_garbage ) {
+            filter.Assign( z, team[z] == 0, filter.team[0], filter.team[1] );
+        }
 
-    foreach ( int z in filter.no_garbage ) {
-        filter.Assign( z, team[z] == 0, filter.enemies[1], filter.enemies[0] );
-    }
+        foreach ( int z in filter.no_garbage ) {
+            filter.Assign( z, team[z] == 0, filter.enemies[1], filter.enemies[0] );
+        }
 
-    foreach ( int z in filter.no_garbage ) {
-        filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
-    }
+        foreach ( int z in filter.no_garbage ) {
+            filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
+        }
 
-    foreach ( int z in filter.no_flying ) {
-        filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
-    }
-    
-    foreach ( int z in filter.flying ) {
-        filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
-    }
+        foreach ( int z in filter.no_flying ) {
+            filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
+        }
+        
+        foreach ( int z in filter.flying ) {
+            filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
+        }
 
-    foreach ( int z in filter.no_structures ) {
-        filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
-    }
+        foreach ( int z in filter.no_structures ) {
+            filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
+        }
 
-    foreach ( int z in filter.structures ) {
-        filter.Assign( z, true, filter.byState[SB( State.None )],
+        foreach ( int z in filter.structures ) {
+            filter.Assign( z, true, filter.byState[SB( State.None )],
                                                             filter.no_byState[SB( State.None )] );
-    }
+        }
 
-    foreach ( int z in filter.no_structures ) {
-        foreach ( var s in Pawn.AllStates ) {
-            int sb = SB( s );
-            filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+        foreach ( int z in filter.no_structures ) {
+            foreach ( var s in Pawn.AllStates ) {
+                int sb = SB( s );
+                filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+            }
         }
     }
-}
-
 
 }

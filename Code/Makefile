@@ -17,6 +17,7 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp bin/Debug/game_sdl.exe ../BuildSDL/ \
 		&& cp bin/Debug/game_sdl.pdb ../BuildSDL/ \
 		&& cp ZloediUtils/SDL/SDL2.dll ../BuildSDL \
+		&& cp ZloediUtils/SDL/SDL2.dll bin/Debug/ \
 		&& cp *.map ../BuildSDL \
 
 ./bin/Release/game_sdl.exe:

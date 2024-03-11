@@ -12,6 +12,11 @@ using GalliumMath;
 
 static class RRServer {
 
+enum State {
+    None,
+    Wait,
+    Play,
+}
 
 public const int PULSE_TIME = 3333;
 public const int TICK_TIME = 100;
@@ -105,8 +110,28 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
     ZServer.onTick_f = RRServer.Tick;
     ZServer.onClientDisconnect_f = zport => {};
-    // FIXME: blanket resend the universe
-    ZServer.onClientConnect_f = zport => game.shadow.ClearShadowRows();
+    // FIXME: resend the entire universe to everyone?
+    ZServer.onClientConnect_f = zport => {
+        game.shadow.ClearShadowRows();
+
+        int pl = game.player.GetByZPort( zport );
+        if ( pl != 0 ) {
+            Log( $"Reconnecting player {pl}" );
+            return;
+        }
+
+        if ( ! game.player.AnyTeamNeedsPlayers() ) {
+            Log( "Game is full, client is an observer." );
+            return;
+        }
+
+        pl = game.player.Create( zport );
+        if ( pl != 0 ) {
+            Log( $"Created player {pl} of team {game.player.team[pl]}." );
+        } else {
+            Error( $"Failed to create player for client {zport}" );
+        }
+    };
 
     return ZServer.Init();
 }
@@ -117,6 +142,7 @@ public static void Done() {
 
 static int _pulse;
 static int _localServerSleep;
+// as opposed to standalone server process
 public static void RunLocalServer( int timeDeltaMs ) {
     bool sendPacket = false;
 
@@ -326,12 +352,6 @@ static void SvExecute_kmd( string [] argv, int zport ) {
     Cellophane.TryExecute( cpargv, zport );
 }
 
-static void SvPrintClients_kmd( string [] argv ) {
-    foreach ( var c in ZServer.clients ) {
-        Log( $"endpoint: {c.endPoint}; zport: {c.netChan.zport}" ); 
-    }
-}
-
 static void SvSetTerrain_kmd( string [] argv, int zport ) {
     if ( argv.Length < 4 ) {
         Log( $"Usage: {argv[0]} <x> <y> <terrain>" );
@@ -343,6 +363,12 @@ static void SvSetTerrain_kmd( string [] argv, int zport ) {
     int.TryParse( argv[3], out int terrain );
 
     game.SetTerrain( x, y, terrain );
+}
+
+static void SvPrintClients_kmd( string [] argv ) {
+    foreach ( var c in ZServer.clients ) {
+        Log( $"endpoint: {c.endPoint}; zport: {c.netChan.zport}" ); 
+    }
 }
 
 static void SvUndelta_kmd( string [] argv ) {
@@ -378,6 +404,9 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
     if ( argv.Length > 4 ) {
         int.TryParse( argv[4], out int team );
         game.SetTeam( z, team );
+    } else {
+        int pl = game.player.GetByZPort( zport );
+        game.SetTeam( z, game.player.team[pl] );
     }
 }
 

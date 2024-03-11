@@ -15,6 +15,7 @@ public Action<string> Error = s => Qonsole.Error( s );
 
 public Shadow shadow = new Shadow();
 
+public Player player = new Player();
 public Pawn pawn = new Pawn();
 public Board board = new Board();
 
@@ -30,6 +31,10 @@ public Array [] gridRows;
 
 public Game() {
     syncedRows = new Array [] {
+        player.zport,
+        player.state,
+        player.team,
+
         pawn.def,
         pawn.hp,
         pawn.team,
@@ -57,17 +62,25 @@ public Game() {
 public bool Init( bool skipShadowClones = false ) {
     shadow.Log = Log;
     shadow.Error = Error;
-    if ( ! shadow.CreateShadows( pawn, 0, skipShadowClones, typeof( float ), typeof( Vector2 ) ) ) {
+
+    if ( ! shadow.CreateShadows( player, maxRow: 0, skipClone: skipShadowClones ) ) {
+        return false;
+    }
+    if ( ! shadow.CreateShadows( pawn, maxRow: 0, skipShadowClones,
+                                                            // ignored types
+                                                            typeof( float ), typeof( Vector2 ) ) ) {
         return false;
     }
     if ( ! shadow.CreateShadows( board, skipClone: skipShadowClones ) ) {
         return false;
     }
+
     return true;
 }
 
 public void Reset() {
     Log( "[ffc000]RESETTING THE GAME STATE[-]" );
+    player.Reset();
     pawn.Reset();
     board.Reset();
     _pathCache.Clear();
