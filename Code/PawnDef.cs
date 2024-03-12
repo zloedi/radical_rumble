@@ -15,45 +15,45 @@ partial class Pawn {
 
 public static Def Tower = Register( new Def {
     flags = Structure | PatrolWaypoint,
-    range = 10,
+    range = 7,
     maxHP = 5000,
-    damage = 2,
+    damage = 60,
     radius = 0.6f,
     color = Color.magenta,
 } );
 
 public static Def Turret = Register( new Def {
     flags = Structure,
-    range = 10,
-    maxHP = 5000,
-    damage = 2,
+    range = 7,
+    maxHP = 2500,
+    damage = 60,
     radius = 0.5f,
     color = new Color( 1f, 0.8f, 0 ),
     debugName = "U",
 } );
 
 public static Def Archer = Register( new Def {
-    range = 3,
-    maxHP = 500,
-    speed = 120,
-    damage = 1,
-    radius = 0.4f,
+    range = 4,
+    maxHP = 120,
+    speed = 60,
+    damage = 80,
+    radius = 0.32f,
     color = Color.red,
 } );
 
 public static Def Brute = Register( new Def {
     maxHP = 500,
     speed = 60,
-    damage = 1,
+    damage = 80,
     radius = 0.4f,
     color = Color.green,
 } );
 
 public static Def Flyer = Register( new Def {
     flags = Flying,
-    maxHP = 500,
+    maxHP = 1000,
     speed = 60,
-    damage = 1,
+    damage = 80,
     radius = 0.5f,
     color = new Color( 0f, 0.4f, 1f ),
 } );
@@ -76,8 +76,10 @@ public class Def {
     public Flags flags;
     public int maxHP;
     public int speed = 60;
+    public int attackTime = 1000;
+    public int loadTime = 600;
     public float range;
-    public float damage;
+    public int damage;
     public float radius = 0.5f;
     public Color color;
 
@@ -121,7 +123,9 @@ public static bool FindDefByName( string name, out Def def ) {
 
 static Def Register( Def def ) {
     if ( defs == null ) {
-        defs = new List<Def>{ new Def() };
+        var dummy = new Def();
+        dummy.name = "GARBAGE";
+        defs = new List<Def>{ dummy };
     }
     defs.Add( def );
     Def.MaxRadius = Mathf.Max( Def.MaxRadius, def.radius );

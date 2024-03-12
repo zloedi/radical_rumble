@@ -38,8 +38,10 @@ public Game() {
         pawn.def,
         pawn.hp,
         pawn.team,
+        pawn.focus,
         pawn.mvEndTime,
         pawn.mvEnd_tx,
+        pawn.atkEndTime,
 
         board.size,
         board.terrain,
@@ -89,7 +91,8 @@ public void Reset() {
 
 List<ushort> deltaChange = new List<ushort>();
 List<int> deltaNumbers = new List<int>();
-public bool UndeltaState( string [] argv, int clock, out bool updateBoard ) {
+public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
+                                                            Pawn.ClientTrigger [] pawnTrig = null ) {
     updateBoard = false;
 
     if ( argv.Length < 1 ) {
@@ -137,16 +140,24 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
                 }
                 
+                // the move-end points are transferred as fixed point
+                // take care of them implicitly here
                 if ( row == pawn.mvEnd_tx ) {
-                    // new movement segment arrives, trigger movement on the client
-                    for ( int i = 0; i < deltaChange.Count; i++ ) {
-                        pawn.mvStart[deltaChange[i]] = pawn.mvPos[deltaChange[i]];
-                    }
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
                         pawn.mvEnd[deltaChange[i]] = TxToV( deltaNumbers[i] );
                     }
+                    
+                    // raise the movement triggers on the client
+                    if ( pawnTrig != null ) {
+                        for ( int i = 0; i < deltaChange.Count; i++ ) {
+                            pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Move;
+                        }
+                    }
+                }
+
+                if ( row == pawn.atkEndTime && pawnTrig != null ) {
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
-                        pawn.mvStartTime[deltaChange[i]] = clock;
+                        pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Attack;
                     }
                 }
             }

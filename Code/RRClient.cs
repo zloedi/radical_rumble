@@ -62,6 +62,8 @@ static bool ClPrintOutgoingCommands_kvar = false;
 static string [] _tickNames;
 static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RRClient ), out _tickNames );
 
+static Pawn.ClientTrigger [] _trigger = new Pawn.ClientTrigger[Pawn.MAX_PAWN];
+
 public static void Log( object o ) {
     ZClient.Log( o.ToString() );
 }
@@ -156,6 +158,9 @@ public static void Tick( double timeDeltaDbl ) {
 
     _ticks[ClState_kvar % _ticks.Length]();
 
+    // make sure the events are cleared each tick, before any incoming deltas
+    Array.Clear( _trigger, 0, _trigger.Length );
+
     // might change the clock
     ZClient.Tick( clockDelta );
 
@@ -218,6 +223,14 @@ public static bool AllowSpam() {
 
 public static void DrawBoard( Color? colorSolid = null ) {
     Draw.Board( colorSolid );
+}
+
+public static bool TriggerOn( int z, Pawn.ClientTrigger trig ) {
+    return ( _trigger[z] & trig ) != 0;
+}
+
+public static void TriggerRaise( int z, Pawn.ClientTrigger trig ) {
+    _trigger[z] |= trig;
 }
 
 public static void SvCmd( string cmd ) {
@@ -360,7 +373,7 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // apply server game state on the client
-    game.UndeltaState( argv, ( int )clock, out bool updateBoard );
+    game.UndeltaState( argv, ( int )clock, out bool updateBoard, pawnTrig: _trigger );
 
     if ( ClPrintIncomingPackets_kvar > 1 ) {
         Log( $"incoming packet: '{packetStr}'" );

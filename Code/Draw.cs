@@ -8,6 +8,7 @@ using SDLPorts;
 #endif
 
 using Cl = RRClient;
+using Trig = Pawn.ClientTrigger;
 
 static class Draw {
 
@@ -152,6 +153,7 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
+static float [] _hurtBlink = new float[Pawn.MAX_PAWN];
 public static void PawnSprites( float alpha = 1 ) {
     if ( SkipPawns_cvar ) {
         return;
@@ -178,29 +180,57 @@ public static void PawnSprites( float alpha = 1 ) {
     }
 
     void blit( int z, Vector2Int vpos, Color color ) {
+        if ( pawn.hp[z] == 0 ) {
+            return;
+        }
+        if ( Cl.TriggerOn( z, Trig.HurtVisuals ) ) {
+            _hurtBlink[z] = 1.15f;
+            SingleShot.AddConditional( dt => {
+                _hurtBlink[z] -= dt * 5;
+                _hurtBlink[z] = Mathf.Max( 0, _hurtBlink[z] );
+                return _hurtBlink[z] > 0;
+            } );
+        }
         color.a *= alpha;
+
+        color.r += _hurtBlink[z];
+        color.g += _hurtBlink[z];
+        color.b += _hurtBlink[z];
+
         QGL.LateBlit( Hexes.hexSpriteRegular, vpos, sz( z ), color: color );
     }
 
     void healthbar( int z, Vector2Int vpos ) {
+        if ( pawn.hp[z] == 0 ) {
+            return;
+        }
         Vector2Int vsz = sz( z );
         vpos.x += vsz.x / 2;
         vsz = new Vector2Int( vsz.x * 4 / 5, 4 * pixelSize );
         vpos.x -= vsz.x / 2;
         vpos.y -= vsz.y + pixelSize;
         QGL.LateBlit( null, vpos, vsz, color: Color.black * 0.5f );
+        //QGL.LatePrint( pawn.hp[z], vpos + new Vector2( vsz.x / 2, vsz.y * 2 ) );
         vsz.x -= pixelSize * 2;
         vsz.y -= pixelSize * 2;
         vpos += Vector2Int.one * pixelSize;
-        Color c = pawn.team[z] == team ? new Color( 0, 0.35f, 1f ) : Color.red;
+        Color c = pawn.team[z] == team ? new Color( 0, 0.45f, 1f ) : Color.red;
+        float t = pawn.hp[z] / ( float )pawn.MaxHP( z );
+        vsz.x = ( int )( vsz.x * t + 0.5f );
         QGL.LateBlit( null, vpos, vsz, color: c );
     }
 
     void print( int z, Vector2Int vpos ) {
+        if ( pawn.hp[z] == 0 ) {
+            return;
+        }
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Vector2Int v = vpos + szHalf( z ) + offPrn;
         var c = def.color;
         c.a = alpha;
+        c.r += _hurtBlink[z];
+        c.g += _hurtBlink[z];
+        c.b += _hurtBlink[z];
         QGL.LatePrint( def.debugName, v, color: c, scale: Draw.pixelSize );
     }
 

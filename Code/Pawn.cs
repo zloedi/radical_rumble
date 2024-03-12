@@ -16,12 +16,22 @@ partial class Pawn {
         None,
         Spawning,
         Idle,
+
         // usually move to enemy tower
         Patrol,
+
         ChargeEnemy,
         Attack,
 
         Dead,
+    }
+
+    // flags that live for a single tick on the client
+    public enum ClientTrigger {
+        None,
+        Move        = 1 << 0,
+        Attack      = 1 << 1,
+        HurtVisuals = 1 << 2,
     }
 
     public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
@@ -38,19 +48,21 @@ partial class Pawn {
     public Vector2 [] mvStart = null;
     public int [] mvStartTime = null;
 
-    public float [] atkPos = null;
-    public int [] atkStartTime = null;
+    //public float [] atkPos = null;
+    //public int [] atkStartTime = null;
 
     public byte [] state = null;
+
+    // == these should be synced ==
 
     // the pawn of interest for navigation and attack
     public byte [] focus = null;
 
-    // == these should be synced ==
-
     // transmitted fixed point version of end position
     public int [] mvEnd_tx = null;
     public int [] mvEndTime = null;
+
+    // time of impact/take damage
     public int [] atkEndTime = null;
 
     public Filter filter = new Filter();
@@ -70,7 +82,7 @@ partial class Pawn {
         ArrayUtil.ClearColumn( _allRows, z );
     }
 
-    public byte SB( State s ) {
+    public static byte SB( State s ) {
         return ( byte )s;
     }
 
@@ -89,7 +101,7 @@ partial class Pawn {
         Clear( z );
 
         def[z] = ( byte )pawnDef;
-        hp[z] = ( byte )MaxHP( z );
+        hp[z] = ( ushort )MaxHP( z );
 
         return z;
     }
@@ -113,6 +125,18 @@ partial class Pawn {
 
     public float Range( int z ) {
         return defs[def[z]].range;
+    }
+
+    public int AttackTime( int z ) {
+        return defs[def[z]].attackTime;
+    }
+
+    public int LoadTime( int z ) {
+        return defs[def[z]].loadTime;
+    }
+
+    public int Damage( int z ) {
+        return defs[def[z]].damage;
     }
 
     public int MaxHP( int z ) {
@@ -158,6 +182,10 @@ partial class Pawn {
         return team[z] != team[zEnemy];
     }
 
+    public bool IsDead( int z ) {
+        return state[z] == SB( State.Dead );
+    }
+
     public bool IsGarbage( int z ) {
         return def[z] == 0;
     }
@@ -198,21 +226,21 @@ partial class Pawn {
         return false;
     }
 
-    public bool AtkLerp( int z, int clock ) {
-        int duration = atkEndTime[z] - atkStartTime[z];
-        if ( duration <= 0 ) {
-            return true;
-        }
+    //public bool AtkLerp( int z, int clock ) {
+    //    int duration = atkEndTime[z] - atkStartTime[z];
+    //    if ( duration <= 0 ) {
+    //        return true;
+    //    }
 
-        if ( clock >= atkEndTime[z] ) {
-            return true;
-        }
+    //    if ( clock >= atkEndTime[z] ) {
+    //        return true;
+    //    }
 
-        int ti = clock - atkStartTime[z];
-        atkPos[z] = ( float )ti / duration;
+    //    int ti = clock - atkStartTime[z];
+    //    atkPos[z] = ( float )ti / duration;
 
-        return false;
-    }
+    //    return false;
+    //}
 
     public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
         if ( mvPos[z] == Vector2.zero ) {
@@ -264,11 +292,13 @@ partial class Pawn {
         public List<byte> structures = null, no_structures = null;
 
         // FIXME: obsolete
-        public List<byte> idling = null, no_idling = null;
         public List<byte> [] enemies = new List<byte>[2];
         public List<byte> [] team = new List<byte>[2];
         public List<byte> [] byState = new List<byte>[AllStates.Length];
         public List<byte> [] no_byState = new List<byte>[AllStates.Length];
+
+        public List<byte> alive => ByStateNot( State.Dead );
+        public List<byte> no_alive => ByState( State.Dead );
 
         public Filter() {
             FilterUtil.CreateAll( this, out all );
@@ -276,6 +306,10 @@ partial class Pawn {
 
         public List<byte> ByState( State state ) {
             return byState[( int )state];
+        }
+
+        public List<byte> ByStateNot( State state ) {
+            return no_byState[( int )state];
         }
 
         public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
@@ -298,6 +332,13 @@ partial class Pawn {
         }
 
         foreach ( int z in filter.no_garbage ) {
+            foreach ( var s in Pawn.AllStates ) {
+                int sb = SB( s );
+                filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
+            }
+        }
+
+        foreach ( int z in filter.no_garbage ) {
             filter.Assign( z, team[z] == 0, filter.team[0], filter.team[1] );
         }
 
@@ -312,30 +353,5 @@ partial class Pawn {
         foreach ( int z in filter.no_flying ) {
             filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
         }
-        
-        foreach ( int z in filter.flying ) {
-            filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
-        }
-
-        foreach ( int z in filter.no_structures ) {
-            filter.Assign( z, IsIdling( z ), filter.idling, filter.no_idling );
-        }
-
-        foreach ( int z in filter.structures ) {
-            filter.Assign( z, true, filter.byState[SB( State.None )],
-                                                            filter.no_byState[SB( State.None )] );
-        }
-
-        void assignByState( List<byte> l ) {
-            foreach ( int z in l ) {
-                foreach ( var s in Pawn.AllStates ) {
-                    int sb = SB( s );
-                    filter.Assign( z, state[z] == sb, filter.byState[sb], filter.no_byState[sb] );
-                }
-            }
-        }
-
-        assignByState( filter.no_structures );
-        assignByState( filter.flying );
     }
 }

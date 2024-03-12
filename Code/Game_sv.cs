@@ -15,9 +15,13 @@ using PS = Pawn.State;
 
 partial class Game {
 
+const float ATK_MIN_DIST = 0.45f;
+
 #if UNITY_STANDALONE || SDL
 [Description( "Show pather lines." )]
 static bool SvShowPaths_kvar = false;
+[Description( "Show attack lines." )]
+static bool SvShowAttacks_kvar = false;
 [Description( "Show pawn origins on the server." )]
 static bool SvShowOrigins_kvar = false;
 //[Description( "Show structure avoidance debug." )]
@@ -26,6 +30,8 @@ static bool SvShowOrigins_kvar = false;
 static bool SvShowCharge_kvar = false;
 #endif
 
+[Description( "Turns on error checks in the server tick." )]
+static bool SvAsserts_kvar = false;
 //static int ChickenBit_kvar = 0;
 
 public void PostLoadMap() {
@@ -57,8 +63,8 @@ public void TickServer() {
         pawn.focus[z] = ( byte )zEnemy;
         // change route segment before next movement lerp so we have the proper position
         MvUpdateChargeRoute( z, zEnemy );
-        pawn.SetState( z, PS.ChargeEnemy );
         Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
+        pawn.SetState( z, PS.ChargeEnemy );
     }
 
     pawn.UpdateFilters();
@@ -71,13 +77,26 @@ public void TickServer() {
 
     foreach ( var z in pawn.filter.ByState( PS.Spawning ) ) {
         pawn.MvClamp( z );
-        pawn.SetState( z, PS.Idle );
         Log( $"{pawn.DN( z )} is idling." );
+        pawn.SetState( z, PS.Idle );
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Idle ) ) {
 
+        pawn.focus[z] = 0;
+        pawn.atkEndTime[z] = 0;
+
         if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
+
+            if ( pawn.IsStructure( z ) ) {
+                Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
+                pawn.focus[z] = ( byte )zEnemy;
+                // a hack to prevent at least turrets firing like crazy on enemy death
+                pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z );
+                pawn.SetState( z, PS.Attack );
+                continue;
+            }
+
             MvInterrupt( z );
             charge( z, zEnemy );
             Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
@@ -86,8 +105,8 @@ public void TickServer() {
 
         if ( GetPatrolWaypoint( z, out int zPatrol ) ) {
             MvInterrupt( z );
+            Log( $"{pawn.DN( z )} patrolling." );
             pawn.SetState( z, PS.Patrol );
-            Log( $"{pawn.DN( z )} navigates to tower." );
         }
     }
 
@@ -110,6 +129,15 @@ public void TickServer() {
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
         int zEnemy = pawn.focus[z];
 
+        if ( ! IsReachableEnemy( z, zEnemy ) ) {
+            // pawn on focus is dead or out of sight, chase something else instead
+            pawn.focus[z] = 0;
+            NavUpdate( z );
+            Log( $"{pawn.DN( z )} fails to charge {pawn.DN( zEnemy )}, navigate to tower." );
+            pawn.SetState( z, PS.Patrol );
+            continue;
+        }
+
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
             // reached attack position, transition to attack
             pawn.MvSnapToEnd( z, ZServer.clock );
@@ -121,47 +149,130 @@ public void TickServer() {
         MvUpdateChargeRoute( z, zEnemy );
 
         if ( AtkGetFocusPawn( z, out zEnemy ) ) {
-            // if the enemy is charging me, switch targets to it
+            // if there is an enemy that is charging me, switch targets to it
             if ( zEnemy != pawn.focus[z] && pawn.focus[zEnemy] == z ) {
                 charge( z, zEnemy );
             }
         }
-
-        if ( ! IsReachableEnemy( z, zEnemy ) ) {
-            // pawn on focus is dead or out of sight, chase something else instead
-            pawn.focus[z] = 0;
-            NavUpdate( z );
-            pawn.SetState( z, PS.Patrol );
-            Log( $"{pawn.DN( z )} fails to charge, navigate to tower." );
-            continue;
-        }
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
-        if ( pawn.IsGarbage( pawn.focus[z] ) ) {
+        int zEnemy = pawn.focus[z];
+        float r = DistanceForAttack( z, zEnemy ) + 0.5f;
+        if ( pawn.IsDead( zEnemy )
+                || pawn.IsGarbage( zEnemy )
+                || pawn.SqDist( z, zEnemy ) > r * r ) {
             pawn.focus[z] = 0;
+            Log( $"{pawn.DN( z )} idling ({pawn.DN( zEnemy )} out of range)" );
             pawn.SetState( z, PS.Idle );
             continue;
         }
 
-        if ( pawn.hp[pawn.focus[z]] <= 0 ) {
-            pawn.focus[z] = 0;
-            pawn.SetState( pawn.focus[z], PS.Dead );
-            pawn.SetState( z, PS.Idle );
+        if ( pawn.atkEndTime[z] <= 0 ) {
+            pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z ) / 2;
+        }
+    }
+
+    // any ongoing attacks should keep ticking, no matter if in Attack state or not
+    foreach ( var z in pawn.filter.no_garbage ) {
+
+        if ( pawn.atkEndTime[z] == 0 ) {
             continue;
         }
 
-        if ( pawn.AtkLerp( z, ZServer.clock ) ) {
-            pawn.atkStartTime[z] = ZServer.clock;
-            pawn.atkEndTime[z] = pawn.atkStartTime[z] + AtkDuration( z );
+        if ( pawn.atkEndTime[z] >= ZServer.clock ) {
+            continue;
+        }
+
+        int zf = pawn.focus[z];
+
+        // the focus is already dead and bloated
+        if ( ! pawn.IsDead( z ) && ( pawn.IsDead( zf ) || pawn.IsGarbage( zf ) ) ) {
+            // pawns in the list may die while walking the list
+            if ( ! pawn.IsDead( z ) ) {
+                Log( $"{pawn.DN( z )} is idling (its focus {pawn.DN( zf )} is dead)." );
+                pawn.SetState( z, PS.Idle );
+            }
+            continue;
+        }
+
+        // if still in attack state, loop another attack
+        if ( pawn.state[z] == Pawn.SB( PS.Attack ) ) {
+            int extra = ZServer.clock - pawn.atkEndTime[z];
+            pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z ) - extra;
+        }
+
+        if ( SvShowAttacks_kvar ) {
+            DebugLine( pawn.mvPos[z], pawn.mvPos[pawn.focus[z]], duration: 0.25f );
+        }
+
+        pawn.hp[zf] = ( ushort )Mathf.Max( 0, pawn.hp[zf] - pawn.Damage( z ) );
+        if ( pawn.hp[zf] == 0 ) {
+            Log( $"{pawn.DN( z )} is killed." );
+            pawn.SetState( zf, PS.Dead );
+
+            // pawns in the list may die while walking the list
+            if ( ! pawn.IsDead( z ) ) {
+                Log( $"{pawn.DN( z )} is idling (killed its target)." );
+                pawn.SetState( z, PS.Idle );
+            }
+        }
+    }
+
+    // remove engagement to dead
+    foreach ( var zd in pawn.filter.ByState( PS.Dead ) ) {
+        foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
+            unfocus( z );
+        }
+
+        foreach ( var z in pawn.filter.ByState( PS.Patrol ) ) {
+            unfocus( z );
+        }
+
+        foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
+            unfocus( z );
+        }
+
+        void unfocus( int z ) {
+            if ( pawn.focus[z] == zd ) {
+                pawn.SetState( z, PS.Idle );
+            }
         }
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Dead ) ) {
-        Destroy( z );
+        MvInterrupt( z );
+        
+        // if dead and couldn't reload, kill off this attack
+        int t = pawn.AttackTime( z ) - pawn.LoadTime( z );
+        if ( pawn.atkEndTime[z] - t > ZServer.clock ) {
+            pawn.focus[z] = 0;
+            pawn.atkEndTime[z] = 0;
+            continue;
+        }
+
+        // the dead pawns attacks may still connect (ranged only?), postpone this a bit
+        if ( pawn.atkEndTime[z] <= ZServer.clock ) {
+            pawn.focus[z] = 0;
+            pawn.atkEndTime[z] = 0;
+        }
+    }
+
+    if ( SvAsserts_kvar ) {
+        foreach ( var z in pawn.filter.garbage ) {
+            if ( pawn.state[z] != 0 ) {
+                Error( $"Garbage pawn has state {pawn.DN( z )}" );
+            }
+        }
+        foreach ( var z in pawn.filter.no_garbage ) {
+            if ( pawn.hp[z] == 0 && pawn.state[z] != Pawn.SB( PS.Dead ) ) {
+                Error( $"Dead pawn but not in dead state {pawn.DN( z )}" );
+            }
+        }
     }
 
     DebugDrawOrigins();
+
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
     }
@@ -337,27 +448,13 @@ public void SetTerrain( int x, int y, int terrain ) {
     }
 }
 
-Vector2Int [] _nbrs = new Vector2Int[6];
 bool PassableTerrainToTarget( int z, int zTarget ) {
     if ( zTarget == 0 ) {
         return false;
     }
     Vector2Int axialA = VToAxial( pawn.mvPos[z] );
     Vector2Int axialB = VToAxial( pawn.mvPos[zTarget] );
-    if ( ! board.CanReach( axialA, axialB ) ) {
-        return false;
-    }
-
-    Hexes.Neighbours( axialB, out _nbrs[0], out _nbrs[1], out _nbrs[2],
-                                out _nbrs[3], out _nbrs[4], out _nbrs[5] );
-
-    foreach ( var n in _nbrs ) {
-        if ( ! board.CanReach( axialA, n ) ) {
-            return false;
-        }
-    }
-
-    return true;
+    return board.CanReach( axialA, axialB );
 }
 
 int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
@@ -464,8 +561,14 @@ void MvInterrupt( int z ) {
     pawn.MvInterrupt( z, ZServer.clock );
 }
 
+// is reachable by land (inert pawns don't care about this one)
 bool IsReachableEnemy( int z, int zEnemy ) {
-    if ( pawn.IsGarbage( zEnemy ) ) {
+    if ( pawn.IsDead( zEnemy ) || pawn.IsGarbage( zEnemy ) ) {
+        return false;
+    }
+
+    // non-flying melees can't engage flyers
+    if ( ! pawn.IsFlying( z ) && pawn.Range( z ) == 0 && pawn.IsFlying( zEnemy ) ) {
         return false;
     }
 
@@ -481,15 +584,47 @@ bool IsReachableEnemy( int z, int zEnemy ) {
     return true;
 }
 
+float DistanceForAttack( int zAttacker, int zDefender ) {
+    return pawn.Radius( zAttacker )
+            + pawn.Radius( zDefender )
+            + Mathf.Max( ATK_MIN_DIST, pawn.Range( zAttacker ) );
+}
+
 bool AtkGetFocusPawn( int z, out int zEnemy ) {
     zEnemy = 0;
     float minEnemy = 9999999;
 
-    foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
-        //if ( pawn.IsPatrolWaypoint( ze ) && pawn.focus[z] == ze ) {
-        //    continue;
-        //}
+    Vector2Int axialA = VToAxial( pawn.mvPos[z] );
+    if ( pawn.IsStructure( z ) ) {
+        foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
+            float sq = pawn.SqDist( z, ze );
+            if ( sq >= minEnemy ) {
+                continue;
+            }
 
+            if ( pawn.IsDead( ze ) || pawn.IsGarbage( ze ) ) {
+                continue;
+            }
+
+            float r = DistanceForAttack( z, ze );
+
+            // don't care about pawns outside of attack range when structure
+            if ( sq > r * r ) {
+                continue;
+            }
+
+            Vector2Int axialB = VToAxial( pawn.mvPos[ze] );
+            if ( ! board.CanReach( axialA, axialB ) ) {
+                continue;
+            }
+
+            zEnemy = ze;
+            minEnemy = sq;
+        }
+        return zEnemy != 0;
+    }
+
+    foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
         float sq = pawn.SqDist( z, ze );
         if ( sq >= minEnemy ) {
             continue;
@@ -506,14 +641,10 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
     return zEnemy != 0;
 }
 
-int AtkDuration( int z ) {
-    return 1000;
-}
-
 Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
     float dist = pawn.Radius( z )
                     + pawn.Radius( zEnemy )
-                    + Mathf.Max( 0.45f, pawn.Range( z ) );
+                    + Mathf.Max( ATK_MIN_DIST, pawn.Range( z ) );
     Vector2 d = pawn.mvPos[z] - pawn.mvPos[zEnemy];
     float sq = d.sqrMagnitude;
     if ( sq < 0.00001f ) {
@@ -566,6 +697,10 @@ void MvUpdateChargeRoute( int z, int zEnemy ) {
 bool GetPatrolWaypoint( int z, out int zWaypoint ) {
     zWaypoint = 0;
     float minNav = 9999999;
+
+    if ( pawn.IsStructure( z ) ) {
+        return false;
+    }
 
     foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
         if ( ! pawn.IsPatrolWaypoint( ze ) ) {
