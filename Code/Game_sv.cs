@@ -72,6 +72,23 @@ public void TickServer() {
 
     foreach ( var z in pawn.filter.ByState( PS.None ) ) {
         pawn.MvClamp( z );
+        Vector2Int p = VToAxial( pawn.mvPos[z] );
+        if ( ! board.IsSolid( p ) ) {
+            // snap to solid hex if something bad happens
+            for ( int y = 0; y < board.height; y++ ) {
+                for ( int x = 0; x < board.width; x++ ) {
+                    int ix = ( p.x + x ) % board.width;
+                    int iy = ( p.y + y ) % board.height;
+                    if ( board.IsSolid( ix, iy ) ) {
+                        pawn.mvEnd[z] = AxialToV( new Vector2Int( ix, iy ) );
+                        pawn.MvClamp( z );
+                        Log( $"Snapping to grid {pawn.DN( z )}" );
+                        goto quit;
+                    }
+                }
+            }
+        }
+quit:
         pawn.SetState( z, PS.Spawning );
     }
 
@@ -130,6 +147,13 @@ public void TickServer() {
         int zEnemy = pawn.focus[z];
 
         if ( ! IsReachableEnemy( z, zEnemy ) ) {
+
+            // try to immediatly chase another attackable entity
+            if ( AtkGetFocusPawn( z, out int ze ) ) {
+                charge( z, ze );
+                continue;
+            }
+
             // pawn on focus is dead or out of sight, chase something else instead
             pawn.focus[z] = 0;
             NavUpdate( z );

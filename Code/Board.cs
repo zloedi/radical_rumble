@@ -63,6 +63,10 @@ public class Board {
         return IsSolid( Hex( axial ) );
     }
 
+    public bool IsSolid( int x, int y ) {
+        return IsSolid( Hex( x, y ) );
+    }
+
     public int Clamp( int hx ) {
         return Mathf.Clamp( hx, 0, numItems - 1 );
     }
