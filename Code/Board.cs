@@ -22,6 +22,7 @@ public class Board {
     public byte [] terrain = null;
     public byte [] pawnDef = null;
     public byte [] pawnTeam = null;
+    public byte [] zone = null;
     // FIXME: not sure it's place is here
     public byte [] navMap = null;
 
@@ -173,8 +174,13 @@ public class Board {
         public List<ushort> solid, no_solid;
         public List<ushort> spawners, no_spawners;
 
+        public Zone [] zones = new Zone[8];
+
         public Filter() {
             FilterUtil.CreateAll( this, out all );
+            for ( int i = 0; i < zones.Length; i++ ) {
+                zones[i] = new Zone();
+            }
         }
 
         public void Assign( int hx, bool condition, List<ushort> la, List<ushort> lb ) {
@@ -201,6 +207,37 @@ public class Board {
         for ( int hx = 0; hx < numItems; hx++ ) {
             filter.Assign( hx, pawnDef[hx] != 0, filter.spawners, filter.no_spawners );
         }
+
+        foreach ( var zn in filter.zones ) {
+            zn.team = 0;
+            zn.polygon.Clear();
+        }
+
+        foreach ( var hx in filter.solid ) {
+            ZoneData zd = UnpackZoneData( zone[hx] );
+            if ( zd.id == 0 ) {
+                continue;
+            }
+            Zone fz = filter.zones[zd.id];
+            int n = zd.polyIdx - ( fz.polygon.Count - 1 );
+            for ( int i = 0; i < n; i++ ) {
+                fz.polygon.Add( 0 );
+            }
+            fz.polygon[zd.polyIdx] = hx;
+        }
+
+#if false
+        foreach ( var zn in filter.zones ) {
+            if ( zn.polygon.Count == 0 ) {
+                continue;
+            }
+            string s = "";
+            foreach ( var p in zn.polygon ) {
+                s += p + ",";
+            }
+            Qonsole.Log( "list: " + s );
+        }
+#endif
     }
 
     public int PathSqDist( List<int> path ) {
@@ -268,5 +305,32 @@ public class Board {
             }
         }
         return true;
+    }
+
+    public class Zone {
+        public int team;
+        public List<ushort> polygon = new List<ushort>();
+    }
+
+    public struct ZoneData {
+        public int team;
+        public int id;
+        public int polyIdx;
+    }
+
+    public byte PackZoneData( ZoneData zd ) {
+        return ( byte )( 0
+            | ( ( zd.team    & 1  ) << 7 )
+            | ( ( zd.id      & 7  ) << 4 )
+            | ( ( zd.polyIdx & 15 ) << 0 )
+        );
+    }
+
+    public ZoneData UnpackZoneData( byte b ) {
+        return new ZoneData {
+            team =    ( b >> 7  ) & 1,
+            id =      ( b >> 4  ) & 7,
+            polyIdx = ( b >> 0  ) & 15,
+        };
     }
 }

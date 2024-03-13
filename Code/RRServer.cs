@@ -365,6 +365,20 @@ static void SvSetTerrain_kmd( string [] argv, int zport ) {
     game.SetTerrain( x, y, terrain );
 }
 
+static void SvAddZonePoint_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 5 ) {
+        Log( $"Usage: {argv[0]} <x> <y> <team> <id> ; id == 0 -- remove zone" );
+        return;
+    }
+
+    int.TryParse( argv[1], out int x );
+    int.TryParse( argv[2], out int y );
+    int.TryParse( argv[3], out int team );
+    int.TryParse( argv[4], out int id );
+
+    game.AddZonePoint( x, y, team, id );
+}
+
 static void SvPrintClients_kmd( string [] argv ) {
     foreach ( var c in ZServer.clients ) {
         Log( $"endpoint: {c.endPoint}; zport: {c.netChan.zport}" ); 

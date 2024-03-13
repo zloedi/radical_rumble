@@ -486,7 +486,8 @@ static void ClCenterBoard_kmd( string [] argv ) {
     Draw.CenterBoardOnScreen();
 }
 
-static void ClSpawn_kmd( string [] argv ) {
+// public to shortwire select-to-spawn
+public static void ClSpawn_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
         Error( $"{argv[0]} <def_name> [team]" );
         return;

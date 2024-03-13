@@ -45,17 +45,20 @@ public Game() {
 
         board.size,
         board.terrain,
+        board.zone,
     };
 
     persistentRows = new Array [] {
         board.size,
         board.terrain,
+        board.zone,
         board.pawnDef,
         board.pawnTeam,
     };
 
     gridRows = new Array [] {
         board.terrain,
+        board.zone,
         board.pawnDef,
         board.pawnTeam,
     };
@@ -184,6 +187,7 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
 #endif
 
     if ( updateBoard ) {
+        Log( "Update board filters." );
         board.UpdateFilters();
         gridPawn.Clear();
         _pathCache.Clear();

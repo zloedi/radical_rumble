@@ -30,20 +30,6 @@ static Game game => Cl.game;
 
 static bool CanClick => QUI.hotWidget == 0 && QUI.activeWidget == 0;
 
-static MapEditor() {
-    MethodInfo [] methods = typeof( MapEditor ).GetMethods( Cellophane.BFS );
-    foreach ( MethodInfo mi in methods ) {
-        if ( mi.Name.EndsWith( "_tck" ) ) {
-            for ( int i = 0; i < _ticks.Length; i++ ) {
-                if ( _ticks[i].GetHashCode() == mi.GetHashCode() ) {
-                    var nm = mi.Name.Remove( mi.Name.Length - 4 );
-                    _tickNames[i] = Cellophane.NormalizeName( nm );
-                }
-            }
-        }
-    }
-}
-
 public static void Tick() {
     int t = EdState_kvar % _ticks.Length;
     Cl.TickKeybinds( context: $"ed_{_tickNames[t]}" );
@@ -436,6 +422,95 @@ static void EdLoad_kmd( string [] argv ) {
         }
     }
     Cl.SvCmd( $"sv_load_map {EdLastSavedMap_kvar}" );
+}
+
+//int _spawnIdx;
+// team
+// id
+// hex idx
+
+
+// https://dominoc925.blogspot.com/2012/02/c-code-snippet-to-determine-if-point-is.html
+private static bool IsPointInPolygon( Vector2 [] polygon, Vector2 point ) {
+    bool isInside = false;
+    for ( int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++ ) {
+        if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) && (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)) {
+            isInside = !isInside;
+        }
+    }
+    return isInside;
+}
+
+static List<Vector2> _zoneBuf = new List<Vector2>();
+static int _zoneId = 0;
+static void PlaceSpawnZones_tck() {
+    TickBegin();
+
+    if ( ! CanClick ) {
+        return;
+    }
+
+    if ( Cl.mouse0Down ) {
+        Board.ZoneData zd = board.UnpackZoneData( board.zone[Cl.mouseHex] );
+        if ( zd.id != 0 && _zoneId == 0 ) {
+            _zoneId = zd.id;
+        } else {
+            if ( _zoneId == 0 ) {
+                for ( int i = 1; i < board.filter.zones.Length; i++ ) {
+                    if ( board.filter.zones[i].polygon.Count == 0 ) {
+                        _zoneId = i;
+                        break;
+                    }
+                }
+            }
+
+            if ( _zoneId == 0 ) {
+                Cl.Error( "Out of zones." );
+            } else {
+                Cl.SvCmd( $"sv_add_zone_point {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 0 {_zoneId}" );
+            }
+        }
+    }
+
+    if ( Cl.mouse1Down ) {
+        if ( _zoneId == 0 ) {
+            Cl.SvCmd( $"sv_add_zone_point {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 0 0" );
+        } else {
+            _zoneId = 0;
+        }
+    }
+
+    foreach ( var zn in board.filter.zones ) {
+        if ( zn.polygon.Count == 0 ) {
+            continue;
+        }
+
+        _zoneBuf.Clear();
+        foreach ( var hx in zn.polygon ) {
+            Board.ZoneData zd = board.UnpackZoneData( board.zone[hx] );
+            Vector2 spos = Draw.HexToScreen( hx );
+            QGL.LatePrint( $"{zd.id}\n{zd.polyIdx}", spos, color: Color.white );
+            _zoneBuf.Add( Draw.HexToScreen( hx ) );
+        }
+
+        if ( Cl.mouse1Down
+                && _zoneId == 0
+                && IsPointInPolygon( _zoneBuf.ToArray(), Cl.mousePosScreen ) ) {
+            //Qonsole.OneShotCmd( $"ed_set_zone_team {_zone} 0;" );
+            Qonsole.Log( "===========" );
+        }
+
+        QGL.LateDrawLineLoop( _zoneBuf );
+    }
+
+    if ( _zoneId != 0 ) {
+        QGL.LatePrint( $"{_zoneId}", Cl.mousePosScreen - new Vector2( 0, 10 ), color: Color.white );
+    }
+
+    TickEnd();
+}
+
+static void EdSetZoneTeam_kmd( string [] argv ) {
 }
 
 

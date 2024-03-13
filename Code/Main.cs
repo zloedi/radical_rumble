@@ -110,8 +110,9 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind F4 ""cl_set_state edit ; ed_set_state place_turrets"";
         bind F5 ""cl_set_state edit ; ed_set_state atk_pos_solver"";
         bind F6 ""cl_set_state edit ; ed_set_state place_terrain"";
+        bind F7 ""cl_set_state edit ; ed_set_state place_spawn_zones"";
 
-        bind F7 ""cl_set_state gym ; gym_set_state steer"";
+        bind F8 ""cl_set_state gym ; gym_set_state steer"";
 
         //bind A +client_pan_left;
         //bind D +client_pan_right;

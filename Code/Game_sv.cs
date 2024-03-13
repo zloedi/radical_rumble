@@ -330,6 +330,36 @@ public void SetTeam( int z, int team ) {
     }
 }
 
+public void AddZonePoint( int x, int y, int team, int id ) {
+    if ( x < 0 || x >= board.width || y < 0 || y >= board.height ) {
+        return;
+    }
+
+    board.UpdateFilters();
+
+    if ( id == 0 ) {
+        int hxA = board.Hex( x, y );
+        Board.ZoneData zdA = board.UnpackZoneData( board.zone[hxA] );
+        foreach ( var hxB in board.filter.solid ) {
+            Board.ZoneData zdB = board.UnpackZoneData( board.zone[hxB] );
+            if ( zdB.id == zdA.id && zdB.polyIdx > zdA.polyIdx ) {
+                zdB.polyIdx--;
+                board.zone[hxB] = board.PackZoneData( zdB );
+            }
+        }
+        board.zone[hxA] = 0;
+        return;
+    }
+
+    board.zone[board.Hex( x, y )] = board.PackZoneData( new Board.ZoneData {
+        team = team,
+        id = id,
+        polyIdx = board.filter.zones[id].polygon.Count,
+    } );
+
+    board.UpdateFilters();
+}
+
 public void SetTerrain( int x, int y, int terrain ) {
     const int BORDER = 2;
 

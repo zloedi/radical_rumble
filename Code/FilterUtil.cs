@@ -18,7 +18,6 @@ public static void CreateAll( object o, out List<IList> all ) {
             var list = Activator.CreateInstance( ft );
             fi.SetValue( o, list );
             all.Add( ( IList )list );
-            //Qonsole.Log( $"Creating list {fi.Name}" );
         }
         if( ft.IsArray ) {
             ft = fi.FieldType.GetElementType();
@@ -30,7 +29,6 @@ public static void CreateAll( object o, out List<IList> all ) {
                     var list = Activator.CreateInstance( ft );
                     a.SetValue( list, i );
                     all.Add( ( IList )list );
-                    //Qonsole.Log( $"Creating list {fi.Name}[{i}]" );
                 }
             }
         }
