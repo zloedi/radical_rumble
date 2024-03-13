@@ -27,7 +27,7 @@ static bool SvShowOrigins_kvar = false;
 //[Description( "Show structure avoidance debug." )]
 //static bool SvShowAvoidance_kvar = false;
 [Description( "Show charge lines." )]
-static bool SvShowCharge_kvar = false;
+static int SvShowCharge_kvar = 0;
 #endif
 
 [Description( "Turns on error checks in the server tick." )]
@@ -207,13 +207,18 @@ quit:
 
     foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
         int zEnemy = pawn.focus[z];
-        float r = DistanceForAttack( z, zEnemy ) + 0.5f;
-        if ( pawn.IsDead( zEnemy )
-                || pawn.IsGarbage( zEnemy )
-                || pawn.SqDist( z, zEnemy ) > r * r ) {
+
+        if ( pawn.IsDead( zEnemy ) || pawn.IsGarbage( zEnemy ) ) {
             pawn.focus[z] = 0;
             Log( $"{pawn.DN( z )} idling ({pawn.DN( zEnemy )} out of range)" );
             pawn.SetState( z, PS.Idle );
+            continue;
+        }
+
+        float r = DistanceForAttack( z, zEnemy ) + 0.5f;
+        if ( pawn.SqDist( z, zEnemy ) > r * r ) {
+            pawn.atkEndTime[z] = 0;
+            charge( z, zEnemy );
             continue;
         }
 
@@ -295,28 +300,13 @@ quit:
         // if dead and couldn't reload, kill off this attack
         int t = pawn.AttackTime( z ) - pawn.LoadTime( z );
         if ( pawn.atkEndTime[z] - t > ZServer.clock ) {
-            pawn.focus[z] = 0;
-            pawn.atkEndTime[z] = 0;
+            Destroy( z );
             continue;
         }
 
         // the dead pawns attacks may still connect (ranged only?), postpone this a bit
         if ( pawn.atkEndTime[z] <= ZServer.clock ) {
-            pawn.focus[z] = 0;
-            pawn.atkEndTime[z] = 0;
-        }
-    }
-
-    if ( SvAsserts_kvar ) {
-        foreach ( var z in pawn.filter.garbage ) {
-            if ( pawn.state[z] != 0 ) {
-                Error( $"Garbage pawn has state {pawn.DN( z )}" );
-            }
-        }
-        foreach ( var z in pawn.filter.no_garbage ) {
-            if ( pawn.hp[z] == 0 && pawn.state[z] != Pawn.SB( PS.Dead ) ) {
-                Error( $"Dead pawn but not in dead state {pawn.DN( z )}" );
-            }
+            Destroy( z );
         }
     }
 
@@ -324,6 +314,22 @@ quit:
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
+    }
+
+    if ( SvAsserts_kvar ) {
+        pawn.UpdateFilters();
+
+        foreach ( var z in pawn.filter.garbage ) {
+            if ( pawn.state[z] != 0 ) {
+                Error( $"Garbage pawn has state {pawn.DN( z )}" );
+            }
+        }
+
+        foreach ( var z in pawn.filter.no_garbage ) {
+            if ( pawn.hp[z] == 0 && pawn.state[z] != Pawn.SB( PS.Dead ) ) {
+                Error( $"Dead pawn but not in dead state {pawn.DN( z )}" );
+            }
+        }
     }
 
     void charge( int z, int zEnemy ) {
@@ -707,7 +713,6 @@ Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
         return pawn.mvPos[zEnemy] + Vector2.one * dist;
     }
     if ( sq < dist * dist ) {
-        Error( "dicks" );
         return pawn.mvPos[z];
     }
     return pawn.mvPos[zEnemy] + d / Mathf.Sqrt( sq ) * dist;
@@ -733,9 +738,17 @@ void MvChase( int z, int zEnemy ) {
     pawn.mvStartTime[z] = ZServer.clock;
     pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
 
-    if ( SvShowCharge_kvar ) {
-        if ( pawn.team[z] == 0 ) {
+    if ( SvShowCharge_kvar != 0 ) {
+        if ( SvShowCharge_kvar == 1 ) {
             DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+        } else if ( SvShowCharge_kvar == 2 ) {
+            if ( pawn.team[z] == 0 ) {
+                DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+            }
+        } else {
+            if ( pawn.team[z] == 1 ) {
+                DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+            }
         }
     }
 }

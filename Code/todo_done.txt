@@ -1,3 +1,6 @@
+* Implement melee attack.
+    ? Stop at the proper point on the client
+* Implement ranged attack.
 * See why the flyers don't move
 * Healthbars proper color
 * Rotate view if team > 0

@@ -1,9 +1,6 @@
 ? Make sure charge works
-] Game over and winner announce
 ] The dead never get recycled
-] Implement melee attack.
-    ] Stop at the proper point on the client
-] Implement ranged attack.
+] Game over and winner announce
 ] Limit the spawn into zones around the towers (editable?)
 ] Set client state to wait-for-ready on connect (send the team number there)
 ] Implement button 'ready'/'not ready'
