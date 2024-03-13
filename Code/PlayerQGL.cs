@@ -13,12 +13,13 @@ using Trig = Pawn.ClientTrigger;
 
 public static class PlayerQGL {
 
+static bool ClSpawnDirectly_kvar = false;
 
 static Player player => Cl.game.player;
 static Pawn pawn => Cl.game.pawn;
 static Game game => Cl.game;
 
-//static int _selectedPawn;
+static int _selectedSpawn;
 
 public static void Tick() {
     if ( player.IsPlayer( Cl.zport ) ) {
@@ -32,6 +33,18 @@ public static void Tick() {
 
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
+
+    if ( _selectedSpawn != 0 && Cl.mouse0Down ) {
+        string name = Pawn.defs[_selectedSpawn].name;
+        string x = Cellophane.FtoA( Cl.mousePosGame.x );
+        string y = Cellophane.FtoA( Cl.mousePosGame.y );
+        Cl.SvCmd( $"sv_spawn {name} {x} {y}" );
+        _selectedSpawn = 0;
+    }
+
+    if ( _selectedSpawn != 0 && Cl.mouse1Down ) {
+        _selectedSpawn = 0;
+    }
 
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( Cl.TriggerOn( z, Trig.Move ) ) {
@@ -109,7 +122,9 @@ public static void Tick() {
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
     Draw.PawnSprites();
-    //Draw.PawnDef( Cl.mousePosScreen, 1 );
+    if ( _selectedSpawn != 0 ) {
+        Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn );
+    }
 
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( pawn.atkEndTime[z] != 0 ) {
@@ -143,7 +158,23 @@ public static void Tick() {
     }
 }
 
-static void ClSelectPawn_kmd( string [] argv ) {
+static void ClSelectToSpawn_kmd( string [] argv ) {
+    if ( ClSpawnDirectly_kvar ) {
+        Cl.ClSpawn_kmd( argv );
+        return;
+    }
+
+    if ( argv.Length < 2 ) {
+        Cl.Error( $"{argv[0]} <def_name> [team]" );
+        return;
+    }
+
+    if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
+        Cl.Log( $"{argv[0]} Can't find def named {argv[1]}" );
+        return;
+    }
+
+    _selectedSpawn = def;
 }
 
 

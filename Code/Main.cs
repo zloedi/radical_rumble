@@ -67,9 +67,9 @@ static bool _initialized = false;
 static void QonsolePreConfig_kmd( string [] argv ) {
     Cellophane.ConfigVersion_kvar = 2;
     Qonsole.TryExecute( @"
-        bind Alpha1 ""cl_spawn Brute"" play;
-        bind Alpha2 ""cl_spawn Archer"" play;
-        bind Alpha3 ""cl_spawn Flyer"" play;
+        bind Alpha1 ""cl_select_to_spawn Brute"" play;
+        bind Alpha2 ""cl_select_to_spawn Archer"" play;
+        bind Alpha3 ""cl_select_to_spawn Flyer"" play;
 
         //bind Alpha4 ""cl_spawn Brute 1"" play;
         //bind Alpha5 ""cl_spawn Archer 1"" play;

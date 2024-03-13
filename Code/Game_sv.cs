@@ -18,18 +18,18 @@ partial class Game {
 const float ATK_MIN_DIST = 0.45f;
 
 #if UNITY_STANDALONE || SDL
-[Description( "1 -- Show navigation (patrol) nav lines. 2 -- Show all uncached pather lines on caching." )]
-static int SvShowPaths_kvar = 0;
-[Description( "Show attack lines." )]
-static bool SvShowAttacks_kvar = false;
 [Description( "Show pawn origins on the server." )]
 static bool SvShowOrigins_kvar = false;
 //[Description( "Show structure avoidance debug." )]
 //static bool SvShowAvoidance_kvar = false;
-[Description( "Show charge lines." )]
-static int SvShowCharge_kvar = 0;
 #endif
 
+[Description( "1 -- Show navigation (patrol) nav lines. 2 -- Show all uncached pather lines on caching." )]
+static int SvShowPaths_kvar = 0;
+[Description( "Show charge lines." )]
+static int SvShowCharge_kvar = 0;
+[Description( "Show attack lines." )]
+static bool SvShowAttacks_kvar = false;
 [Description( "Turns on error checks in the server tick." )]
 static bool SvAsserts_kvar = false;
 [Description( "Towers don't die." )]

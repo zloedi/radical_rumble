@@ -5,12 +5,11 @@ public static class StandaloneServer {
 
 static void Main( string[] args ) {
     const int PULSE_TIME = 3333;
-    const int CONFIG_VERSION = 1;
+    const int CONFIG_VERSION = 2;
 
     Qonsole.Init( CONFIG_VERSION );
 
     Game game = new Game();
-
 
     int pulseTime = PULSE_TIME;
     int traceLevel = 0;
@@ -48,14 +47,14 @@ static void Main( string[] args ) {
         // while idling, drain incoming packets and send out any pending packets
         // if got client command, stop idling and shoot a delta immediately
 
-        const int maxTick = 256;
+        const int maxTick = 80;
 
         int tick = maxTick;
         DateTime prevTime = DateTime.UtcNow;
         while ( tick > 0 ) {
             // sleep for that many microseconds if no activity
             // will execute any incoming client reliable commands immediately
-            ZServer.Poll( out bool hadCommands, microseconds: 64 * 1024 );
+            ZServer.Poll( out bool hadCommands, microseconds: 20 * 1000 );
             if ( hadCommands ) {
                 forcePacket = true;
                 break;
