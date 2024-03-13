@@ -112,7 +112,7 @@ static void PlaceStructTick( string structName ) {
 
     if ( Cl.mouse0Down ) {
         if ( game.GetFirstPawnOnHex( Cl.mouseHex, out int z ) ) {
-            Qonsole.OneShotCmd( $"map_editor_set_team {z} 0;" );
+            Qonsole.OneShotCmd( $"ed_set_team {z} 0;" );
         } else {
             Vector2 v = game.HexToV( Cl.mouseHex );
             Cl.SvCmd( $"sv_spawn {structName} {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );

@@ -1,4 +1,6 @@
 ? Make sure charge works
+] Game over and winner announce
+] The dead never get recycled
 ] Implement melee attack.
     ] Stop at the proper point on the client
 ] Implement ranged attack.

@@ -231,7 +231,7 @@ public static void PawnSprites( float alpha = 1 ) {
         c.r += _hurtBlink[z];
         c.g += _hurtBlink[z];
         c.b += _hurtBlink[z];
-        QGL.LatePrint( def.debugName, v, color: c, scale: Draw.pixelSize );
+        QGL.LatePrint( def.abbrev, v, color: c, scale: Draw.pixelSize );
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {

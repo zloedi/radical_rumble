@@ -29,7 +29,7 @@ public static Def Turret = Register( new Def {
     damage = 60,
     radius = 0.5f,
     color = new Color( 1f, 0.8f, 0 ),
-    debugName = "U",
+    abbrev = "U",
 } );
 
 public static Def Archer = Register( new Def {
@@ -38,6 +38,7 @@ public static Def Archer = Register( new Def {
     speed = 60,
     damage = 80,
     radius = 0.32f,
+    abbrev = "a",
     color = Color.red,
 } );
 
@@ -51,10 +52,12 @@ public static Def Brute = Register( new Def {
 } );
 
 public static Def Flyer = Register( new Def {
+    range = 2.5f,
     flags = Flying,
     maxHP = 1000,
     speed = 60,
     damage = 80,
+    loadTime = 800,
     radius = 0.5f,
     color = new Color( 0f, 0.4f, 1f ),
 } );
@@ -73,7 +76,7 @@ public class Def {
     public static float MaxRadius;
 
     public string name;
-    public string debugName;
+    public string abbrev;
     public Flags flags;
     public int maxHP;
     public int speed = 60;
@@ -95,7 +98,7 @@ void FillDefNames() {
         if ( fi.FieldType == typeof( Def ) ) {
             var def = fi.GetValue( null ) as Def;
             def.name = fi.Name;
-            def.debugName = def.debugName == null ? "" + def.name[0] : def.debugName;
+            def.abbrev = def.abbrev == null ? "" + def.name[0] : def.abbrev;
         }
     }
 }

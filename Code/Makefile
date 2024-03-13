@@ -18,14 +18,15 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp bin/Debug/game_sdl.pdb ../BuildSDL/ \
 		&& cp ZloediUtils/SDL/SDL2.dll ../BuildSDL \
 		&& cp ZloediUtils/SDL/SDL2.dll bin/Debug/ \
-		&& cp *.map ../BuildSDL \
+		&& cp ../BuildSDL/*.map ./ \
 
 ./bin/Release/game_sdl.exe:
 	dotnet build game_sdl.csproj --nologo --configuration Release \
 		&& cp bin/Release/game_sdl.exe ../BuildSDL/ \
 		&& cp bin/Release/game_sdl.pdb ../BuildSDL/ \
 		&& cp ZloediUtils/SDL/SDL2.dll ../BuildSDL \
-		&& cp *.map ../BuildSDL \
+		&& cp ZloediUtils/SDL/SDL2.dll bin/Release/ \
+		&& cp ../BuildSDL/*.map ./ \
 
 ./bin/Debug/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Debug \

@@ -59,14 +59,6 @@ public void PostLoadMap() {
 }
 
 public void TickServer() {
-    void charge( int z, int zEnemy ) {
-        pawn.focus[z] = ( byte )zEnemy;
-        // change route segment before next movement lerp so we have the proper position
-        MvUpdateChargeRoute( z, zEnemy );
-        Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
-        pawn.SetState( z, PS.ChargeEnemy );
-    }
-
     pawn.UpdateFilters();
     RegisterIntoGrids();
 
@@ -143,41 +135,74 @@ quit:
         }
     }
 
+//#if false
+//    foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
+//        int zEnemy = pawn.focus[z];
+//
+//        if ( ! IsReachableEnemy( z, zEnemy ) ) {
+//
+//            // if my current enemy is unavailable, try to immediatly chase another attackable entity
+//            if ( AtkGetFocusPawn( z, out int ze ) ) {
+//                charge( z, ze );
+//                continue;
+//            }
+//
+//            // pawn on focus is dead or out of sight, chase something else instead
+//            pawn.focus[z] = 0;
+//            NavUpdate( z );
+//            Log( $"{pawn.DN( z )} fails to charge {pawn.DN( zEnemy )}, navigate to tower." );
+//            pawn.SetState( z, PS.Patrol );
+//            continue;
+//        }
+//
+//        if ( pawn.MvLerp( z, ZServer.clock ) ) {
+//            // reached attack position, transition to attack
+//            pawn.MvSnapToEnd( z, ZServer.clock );
+//            Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
+//            pawn.SetState( z, PS.Attack );
+//            continue;
+//        }
+//
+//        MvUpdateChargeRoute( z, zEnemy );
+//
+//        if ( AtkGetFocusPawn( z, out zEnemy ) ) {
+//            // if there is an enemy that is charging me, switch targets to it
+//            if ( zEnemy != pawn.focus[z]
+//                    && pawn.focus[zEnemy] == z
+//                    && pawn.state[zEnemy] == Pawn.SB( PS.Attack ) ) {
+//                charge( z, zEnemy );
+//            }
+//        }
+//    }
+//#endif
+
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
-        int zEnemy = pawn.focus[z];
 
-        if ( ! IsReachableEnemy( z, zEnemy ) ) {
+        // get nearest attackable enemy to charge
+        if ( AtkGetFocusPawn( z, out int ze ) ) {
+            pawn.focus[z] = ( byte )ze;
+        }
 
-            // try to immediatly chase another attackable entity
-            if ( AtkGetFocusPawn( z, out int ze ) ) {
-                charge( z, ze );
-                continue;
-            }
-
-            // pawn on focus is dead or out of sight, chase something else instead
+        // nothing to chase, go on patrol
+        else {
             pawn.focus[z] = 0;
             NavUpdate( z );
-            Log( $"{pawn.DN( z )} fails to charge {pawn.DN( zEnemy )}, navigate to tower." );
+            Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.SetState( z, PS.Patrol );
             continue;
         }
 
+        // we need to lerp before the chase routine changes our end point
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
             // reached attack position, transition to attack
             pawn.MvSnapToEnd( z, ZServer.clock );
-            Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
+            Log( $"{pawn.DN( z )} starts attacking {pawn.DN( pawn.focus[z] )}" );
             pawn.SetState( z, PS.Attack );
             continue;
         }
 
-        MvUpdateChargeRoute( z, zEnemy );
-
-        if ( AtkGetFocusPawn( z, out zEnemy ) ) {
-            // if there is an enemy that is charging me, switch targets to it
-            if ( zEnemy != pawn.focus[z] && pawn.focus[zEnemy] == z ) {
-                charge( z, zEnemy );
-            }
-        }
+        // potentially switches the mv lerp end point to something else if the target is moving
+        MvChase( z, pawn.focus[z] );
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Attack ) ) {
@@ -265,7 +290,7 @@ quit:
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Dead ) ) {
-        MvInterrupt( z );
+        pawn.MvClamp( z );
         
         // if dead and couldn't reload, kill off this attack
         int t = pawn.AttackTime( z ) - pawn.LoadTime( z );
@@ -299,6 +324,15 @@ quit:
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
+    }
+
+    void charge( int z, int zEnemy ) {
+        pawn.focus[z] = ( byte )zEnemy;
+        // change route segment before next movement lerp
+        // so the lerp has proper position
+        MvChase( z, zEnemy );
+        Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
+        pawn.SetState( z, PS.ChargeEnemy );
     }
 }
 
@@ -666,35 +700,21 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
 }
 
 Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
-    float dist = pawn.Radius( z )
-                    + pawn.Radius( zEnemy )
-                    + Mathf.Max( ATK_MIN_DIST, pawn.Range( z ) );
+    float dist = DistanceForAttack( z, zEnemy );
     Vector2 d = pawn.mvPos[z] - pawn.mvPos[zEnemy];
     float sq = d.sqrMagnitude;
     if ( sq < 0.00001f ) {
         return pawn.mvPos[zEnemy] + Vector2.one * dist;
     }
     if ( sq < dist * dist ) {
+        Error( "dicks" );
         return pawn.mvPos[z];
     }
     return pawn.mvPos[zEnemy] + d / Mathf.Sqrt( sq ) * dist;
 }
 
-void MvUpdateChargeRoute( int z, int zEnemy ) {
+void MvChase( int z, int zEnemy ) {
     Vector2 chase = AtkPointOnEnemy( z, zEnemy );
-
-    // handle the case where enemies go head-to-head
-    // pick 'random' pawn to stop moving a bit before impact
-    if ( pawn.focus[zEnemy] == z
-        && pawn.mvEnd[zEnemy] != pawn.mvPos[zEnemy]
-        && ( ( z ^ zEnemy ) & 1 ) == pawn.team[z] ) {
-        float sp = Mathf.Max( pawn.SpeedSec( zEnemy ), pawn.SpeedSec( z ) ) / 2;
-        float sq = sp * sp;
-        if ( ( pawn.mvPos[zEnemy] - pawn.mvPos[z] ).sqrMagnitude < sq ) {
-            MvInterrupt( z );
-            return;
-        }
-    }
 
     if ( ( pawn.mvEnd[z] - chase ).sqrMagnitude < 0.00001f ) {
         // still chasing the same point
@@ -714,7 +734,9 @@ void MvUpdateChargeRoute( int z, int zEnemy ) {
     pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
 
     if ( SvShowCharge_kvar ) {
-        DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+        if ( pawn.team[z] == 0 ) {
+            DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+        }
     }
 }
 
