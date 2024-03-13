@@ -153,6 +153,28 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
+public static void PawnDef( Vector2 pos, int def ) {
+    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), def );
+}
+
+public static void PawnDef( Vector2Int pos, int def ) {
+    Pawn.Def dobj = Pawn.defs[def];
+    float d = dobj.radius * 2;
+    Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth,
+                                                                    Hexes.hexSpriteRegularHeight );
+    Vector2Int size = dsprite * Draw.pixelSize;
+    Vector2Int sz = new Vector2Int( ( int )( size.x * d ), ( int )( size.y * d ) );
+    Vector2Int szHalf = sz / 2;
+    Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
+
+    pos -= szHalf;
+
+    Color c = new Color( dobj.color.r * 0.5f, dobj.color.g * 0.5f, dobj.color.b * 0.5f );
+    QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: c );
+    Vector2Int v = pos + szHalf + offPrn;
+    QGL.LatePrint( dobj.abbrev, v, color: dobj.color, scale: Draw.pixelSize );
+}
+
 static float [] _hurtBlink = new float[Pawn.MAX_PAWN];
 public static void PawnSprites( float alpha = 1 ) {
     if ( SkipPawns_cvar ) {

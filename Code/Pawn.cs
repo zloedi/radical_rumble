@@ -86,6 +86,10 @@ partial class Pawn {
         return ( byte )s;
     }
 
+    public State GetState( int z ) {
+        return ( State )state[z];
+    }
+
     public void SetState( int z, State s ) {
         state[z] = SB( s );
     }
@@ -161,6 +165,10 @@ partial class Pawn {
 
     public bool IsStructure( int z ) {
         return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
+    }
+
+    public bool IsWinObjective( int z ) {
+        return ( GetDef( z ).flags & Pawn.Def.Flags.WinObjective ) != 0;
     }
 
     public bool IsPatrolWaypoint( int z ) {

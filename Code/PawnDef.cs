@@ -14,7 +14,7 @@ using static Pawn.Def.Flags;
 partial class Pawn {
 
 public static Def Tower = Register( new Def {
-    flags = Structure | PatrolWaypoint,
+    flags = Structure | PatrolWaypoint | WinObjective,
     range = 7,
     maxHP = 5000,
     damage = 60,
@@ -71,6 +71,7 @@ public class Def {
         Structure       = 1 << 0,
         Flying          = 1 << 1,
         PatrolWaypoint  = 1 << 2,
+        WinObjective    = 1 << 3,
     }
 
     public static float MaxRadius;

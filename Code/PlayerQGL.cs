@@ -18,6 +18,8 @@ static Player player => Cl.game.player;
 static Pawn pawn => Cl.game.pawn;
 static Game game => Cl.game;
 
+//static int _selectedPawn;
+
 public static void Tick() {
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
@@ -107,6 +109,7 @@ public static void Tick() {
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
     Draw.PawnSprites();
+    //Draw.PawnDef( Cl.mousePosScreen, 1 );
 
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( pawn.atkEndTime[z] != 0 ) {
@@ -138,6 +141,9 @@ public static void Tick() {
         // use the unity clock here to keep moving even on crappy synced clock delta
         pawn.SpeculateMovementPosition( z, clock, ( int )( Time.deltaTime * 1000 ) );
     }
+}
+
+static void ClSelectPawn_kmd( string [] argv ) {
 }
 
 

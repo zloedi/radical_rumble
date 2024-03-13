@@ -18,8 +18,8 @@ partial class Game {
 const float ATK_MIN_DIST = 0.45f;
 
 #if UNITY_STANDALONE || SDL
-[Description( "Show pather lines." )]
-static bool SvShowPaths_kvar = false;
+[Description( "1 -- Show navigation (patrol) nav lines. 2 -- Show all uncached pather lines on caching." )]
+static int SvShowPaths_kvar = 0;
 [Description( "Show attack lines." )]
 static bool SvShowAttacks_kvar = false;
 [Description( "Show pawn origins on the server." )]
@@ -32,30 +32,14 @@ static int SvShowCharge_kvar = 0;
 
 [Description( "Turns on error checks in the server tick." )]
 static bool SvAsserts_kvar = false;
+[Description( "Towers don't die." )]
+static bool SvInvincibleTowers_kvar = false;
+[Description( "Extra logging for the path cache." )]
+static bool SvLogPaths_kvar = false;
 //static int ChickenBit_kvar = 0;
 
 public void PostLoadMap() {
-    // precache some paths (i.e. between structures)
-    // making sure the paths are consistent between map modifications
     pawn.UpdateFilters();
-
-    foreach ( var zA in pawn.filter.team[0] ) {
-        foreach ( var zB in pawn.filter.team[1] ) {
-            GetCachedPathEndPos( zA, zB, out List<int> p );
-        }
-    }
-
-    foreach ( var zA in pawn.filter.team[0] ) {
-        foreach ( var zB in pawn.filter.team[0] ) {
-            GetCachedPathEndPos( zA, zB, out List<int> p );
-        }
-    }
-
-    foreach ( var zA in pawn.filter.team[1] ) {
-        foreach ( var zB in pawn.filter.team[1] ) {
-            GetCachedPathEndPos( zA, zB, out List<int> p );
-        }
-    }
 }
 
 public void TickServer() {
@@ -135,47 +119,6 @@ quit:
         }
     }
 
-//#if false
-//    foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
-//        int zEnemy = pawn.focus[z];
-//
-//        if ( ! IsReachableEnemy( z, zEnemy ) ) {
-//
-//            // if my current enemy is unavailable, try to immediatly chase another attackable entity
-//            if ( AtkGetFocusPawn( z, out int ze ) ) {
-//                charge( z, ze );
-//                continue;
-//            }
-//
-//            // pawn on focus is dead or out of sight, chase something else instead
-//            pawn.focus[z] = 0;
-//            NavUpdate( z );
-//            Log( $"{pawn.DN( z )} fails to charge {pawn.DN( zEnemy )}, navigate to tower." );
-//            pawn.SetState( z, PS.Patrol );
-//            continue;
-//        }
-//
-//        if ( pawn.MvLerp( z, ZServer.clock ) ) {
-//            // reached attack position, transition to attack
-//            pawn.MvSnapToEnd( z, ZServer.clock );
-//            Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
-//            pawn.SetState( z, PS.Attack );
-//            continue;
-//        }
-//
-//        MvUpdateChargeRoute( z, zEnemy );
-//
-//        if ( AtkGetFocusPawn( z, out zEnemy ) ) {
-//            // if there is an enemy that is charging me, switch targets to it
-//            if ( zEnemy != pawn.focus[z]
-//                    && pawn.focus[zEnemy] == z
-//                    && pawn.state[zEnemy] == Pawn.SB( PS.Attack ) ) {
-//                charge( z, zEnemy );
-//            }
-//        }
-//    }
-//#endif
-
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
 
         // get nearest attackable enemy to charge
@@ -241,7 +184,7 @@ quit:
         int zf = pawn.focus[z];
 
         // the focus is already dead and bloated
-        if ( ! pawn.IsDead( z ) && ( pawn.IsDead( zf ) || pawn.IsGarbage( zf ) ) ) {
+        if ( pawn.IsDead( zf ) || pawn.IsGarbage( zf ) ) {
             // pawns in the list may die while walking the list
             if ( ! pawn.IsDead( z ) ) {
                 Log( $"{pawn.DN( z )} is idling (its focus {pawn.DN( zf )} is dead)." );
@@ -260,7 +203,14 @@ quit:
             DebugLine( pawn.mvPos[z], pawn.mvPos[pawn.focus[z]], duration: 0.25f );
         }
 
+        if ( SvInvincibleTowers_kvar && pawn.IsWinObjective( zf )  ) {
+            continue;
+        }
+
+        // == damage application ==
+
         pawn.hp[zf] = ( ushort )Mathf.Max( 0, pawn.hp[zf] - pawn.Damage( z ) );
+
         if ( pawn.hp[zf] == 0 ) {
             Log( $"{pawn.DN( z )} is killed." );
             pawn.SetState( zf, PS.Dead );
@@ -321,7 +271,7 @@ quit:
 
         foreach ( var z in pawn.filter.garbage ) {
             if ( pawn.state[z] != 0 ) {
-                Error( $"Garbage pawn has state {pawn.DN( z )}" );
+                Error( $"Garbage pawn {pawn.DN( z )} has state {pawn.GetState( z )}" );
             }
         }
 
@@ -512,13 +462,17 @@ public void SetTerrain( int x, int y, int terrain ) {
     }
 }
 
-bool PassableTerrainToTarget( int z, int zTarget ) {
+bool MvCanCrossTerrain( int z, int zTarget ) {
+#if false
     if ( zTarget == 0 ) {
         return false;
     }
     Vector2Int axialA = VToAxial( pawn.mvPos[z] );
     Vector2Int axialB = VToAxial( pawn.mvPos[zTarget] );
     return board.CanReach( axialA, axialB );
+#else
+    return GetCachedPathVec( pawn.mvPos[z], pawn.mvPos[zTarget], out List<int> path ) == 2;
+#endif
 }
 
 int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
@@ -546,18 +500,42 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
 
     int key = ( hxSrc << 16 ) | hxTarget;
     if ( _pathCache.TryGetValue( key, out path ) ) {
+        //if ( SvShowPaths_kvar == 2 ) {
+        //  DebugDrawPath( path, Color.green );
+        //}
         return path.Count;
     }
 
-    Log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
-    board.GetPath( hxSrc, hxTarget );
+    log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
+
+    int n = 0;
+    if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 5 ) ) {
+        n += board.patherCTX.diagNumCrossedNodes;
+        if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 10 ) ) {
+            n += board.patherCTX.diagNumCrossedNodes;
+            board.GetPath( hxSrc, hxTarget );
+        }
+    }
+    n += board.patherCTX.diagNumCrossedNodes;
+
+    log( $"[ffc000]Num nodes crossed: {n}[-]" );
 
     CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
 
     path = _pathCache[key];
 
-    Log( $"[ffc000]Path len: {path.Count}[-]" );
-    Log( $"[ffc000]Num paths in cache: {_pathCache.Count}[-]" );
+    if ( SvShowPaths_kvar > 1 ) {
+        DebugDrawPath( path, Color.magenta );
+    }
+
+    log( $"[ffc000]Path len: {path.Count}[-]" );
+    log( $"[ffc000]Num paths in cache: {_pathCache.Count}[-]" );
+
+    void log( string s ) {
+        if ( SvLogPaths_kvar ) {
+            Log( s );
+        }
+    }
 
     return path.Count;
 }
@@ -568,7 +546,9 @@ void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
     for ( int i = 1; i < path.Count; i++ ) {
         int key = ( path[i] << 16 ) | hxB;
         if ( _pathCache.TryGetValue( key, out List<int> tmp ) ) {
-            Log( $"[ffc000]Patching {tmp.Count} nodes out of {path.Count}[-]" );
+            if ( SvLogPaths_kvar ) {
+                Log( $"[ffc000]Patching {tmp.Count} nodes out of {path.Count}[-]" );
+            }
             path.RemoveRange( i, path.Count - i );
             path.AddRange( tmp );
             break;
@@ -636,14 +616,14 @@ bool IsReachableEnemy( int z, int zEnemy ) {
         return false;
     }
 
-    if ( ! PassableTerrainToTarget( z, zEnemy ) ) {
+    if ( ! MvCanCrossTerrain( z, zEnemy ) ) {
         return false;
     }
 
-    Vector2 atk = AtkPointOnEnemy( z, zEnemy );
-    if ( AvoidStructure( pawn.team[z], pawn.mvPos[z], atk, out Vector2 asp ) ) {
-        return false;
-    }
+    //Vector2 atk = AtkPointOnEnemy( z, zEnemy );
+    //if ( AvoidStructure( pawn.team[z], pawn.mvPos[z], atk, out Vector2 asp ) ) {
+    //    return false;
+    //}
 
     return true;
 }
@@ -677,8 +657,7 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
                 continue;
             }
 
-            Vector2Int axialB = VToAxial( pawn.mvPos[ze] );
-            if ( ! board.CanReach( axialA, axialB ) ) {
+            if ( ! IsReachableEnemy( z, ze ) ) {
                 continue;
             }
 
@@ -690,10 +669,16 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
 
     foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
         float sq = pawn.SqDist( z, ze );
+
         if ( sq >= minEnemy ) {
             continue;
         }
         
+        const float minDist = 6f;
+        if ( sq > minDist * minDist ) {
+            continue;
+        }
+
         if ( ! IsReachableEnemy( z, ze ) ) {
             continue;
         }
@@ -842,7 +827,9 @@ bool NavUpdate( int z ) {
         return false;
     }
 
-    DebugDrawPath( path );
+    if ( SvShowPaths_kvar == 1 ) {
+        DebugDrawPath( path, Color.white );
+    }
 
     pawn.mvStart[z] = pawn.mvEnd[z];
     pawn.mvEnd[z] = AvoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
@@ -941,18 +928,15 @@ Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
 #endif
 }
 
-void DebugDrawPath( List<int> path ) {
+void DebugDrawPath( List<int> path, Color c ) {
 #if UNITY_STANDALONE || SDL
-    if ( ! SvShowPaths_kvar ) {
-        return;
-    }
     List<Vector2> pathLine = new List<Vector2>();
     pathLine.Clear();
     foreach ( var hx in path ) {
         pathLine.Add( Draw.HexToScreen( hx ) );
     }
     SingleShot.Add( dt => {
-        QGL.LateDrawLine( pathLine );
+        QGL.LateDrawLine( pathLine, c );
     } );
 #endif
 }

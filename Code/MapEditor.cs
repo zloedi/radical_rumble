@@ -132,54 +132,6 @@ static void PlaceStructTick( string structName ) {
     TickEnd();
 }
 
-static bool CanReach( int hxA, int hxB, byte [] navMap ) {
-    if ( hxA == hxB ) {
-        return true;
-    }
-
-    bool isBlocking( Vector2Int axial ) {
-        return navMap[board.Hex( axial )] != 0;
-    }
-
-    Vector3 cubeA = Hexes.AxialToCube( board.Axial( hxA ) );
-    Vector3 cubeB = Hexes.AxialToCube( board.Axial( hxB ) );
-    float n = Hexes.CubeDistance( cubeA, cubeB );
-    float step = 1f / n;
-    for ( float i = 0; i <= n; i++ ) {
-        Vector3 c = Vector3.Lerp( cubeA, cubeB, i * step );
-        Vector3 cr = Hexes.CubeRound( c );
-        Vector3 d = c - cr;
-
-        {
-            Vector2Int ax = Hexes.CubeToAxial( cr );
-            if ( isBlocking( ax ) ) {
-                return false;
-            }
-        }
-
-        const float eps = 0.49f;
-        if ( d.x > eps * eps ) {
-            c.x += 0.5f;
-            Vector2Int ax = Hexes.CubeToAxial( Hexes.CubeRound( c ) );
-            if ( isBlocking( ax ) ) {
-                return false;
-            }
-        } else if ( d.y > eps * eps ) {
-            c.y += 0.5f;
-            Vector2Int ax = Hexes.CubeToAxial( Hexes.CubeRound( c ) );
-            if ( isBlocking( ax ) ) {
-                return false;
-            }
-        } else if ( d.z > eps * eps ) {
-            c.z += 0.5f;
-            Vector2Int ax = Hexes.CubeToAxial( Hexes.CubeRound( c ) );
-            if ( isBlocking( ax ) ) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
 static int _hxA, _hxB;
 static HexPather.Context _patherCTX => board.patherCTX;

@@ -97,7 +97,7 @@ public class Board {
     }
 
     // hxTarget may be a void hex
-    public void GetPath( int hxSrc, int hxTarget ) {
+    public bool GetPath( int hxSrc, int hxTarget, int maxPath = 256 ) {
         // fill the obstacle map
         foreach ( var hx in filter.solid ) {
             navMap[hx] = 0;
@@ -108,23 +108,25 @@ public class Board {
         navMap[hxSrc] = 0;
 
         // flood the map with score
-        HexPather.FloodMap( hxSrc, 256, width, navMap, numItems, patherCTX );
+        HexPather.FloodMap( hxSrc, maxPath, width, navMap, numItems, patherCTX );
 
         // put the geometrical distance in the score
+        Vector3Int a = Hexes.AxialToCubeInt( Axial( hxSrc ) );
         foreach ( var hx in filter.solid ) {
-            Vector3Int a = Hexes.AxialToCubeInt( Axial( hxSrc ) );
             Vector3Int b = Hexes.AxialToCubeInt( Axial( hx ) );
             int dist = ( b - a ).sqrMagnitude;
             patherCTX.floodMap[hx] = ( patherCTX.floodMap[hx] << 16 ) | dist;
         }
 
         // trace and strip the path
-        HexPather.TracePath( hxTarget, width, patherCTX, path );
+        bool result = HexPather.TracePath( hxTarget, width, patherCTX, path );
         StripPath();
 
         // the flood is inversed because couldn't make 'simmetrical' paths otherwise
         path.Reverse();
         strippedPath.Reverse();
+
+        return result;
     }
 
     public void StripPath() {
