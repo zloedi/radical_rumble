@@ -369,16 +369,33 @@ static void SvSetTerrain_kmd( string [] argv, int zport ) {
 
 static void SvAddZonePoint_kmd( string [] argv, int zport ) {
     if ( argv.Length < 5 ) {
-        Log( $"Usage: {argv[0]} <x> <y> <team> <id> ; id == 0 -- remove zone" );
+        Log( $"Usage: {argv[0]} <x> <y> <zone_id> <team> ; zone_id == 0 -- remove zone" );
         return;
     }
 
     int.TryParse( argv[1], out int x );
     int.TryParse( argv[2], out int y );
-    int.TryParse( argv[3], out int team );
-    int.TryParse( argv[4], out int id );
+    int.TryParse( argv[3], out int id );
+    int.TryParse( argv[4], out int team );
 
-    game.AddZonePoint( x, y, team, id );
+    game.SetZonePoint( x, y, id: id, team: team );
+    Log( $"Adding zone point for zone {id} on hex {game.board.Hex( x, y )}; team: {team}." );
+}
+
+static void SvSetZonePoint_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 6 ) {
+        Log( $"Usage: {argv[0]} <x> <y> <zone_id> <team> <polyIdx>; zone_id == 0 -- remove zone" );
+        return;
+    }
+
+    int.TryParse( argv[1], out int x );
+    int.TryParse( argv[2], out int y );
+    int.TryParse( argv[3], out int id );
+    int.TryParse( argv[4], out int team );
+    int.TryParse( argv[5], out int polyIdx );
+
+    game.SetZonePoint( x, y, id: id, team: team, polyIdx: polyIdx );
+    Log( $"Setting zone point for zone {id} on hex {game.board.Hex( x, y )}; team: {team}, index: {polyIdx}." );
 }
 
 static void SvPrintClients_kmd( string [] argv ) {

@@ -13,6 +13,9 @@ using Trig = Pawn.ClientTrigger;
 static class Draw {
 
 
+// shadow offset for flyers
+const int FLYERS_SHADOW_OFFSET = 5;
+
 static bool SkipPawns_cvar = false;
 
 public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 300 );
@@ -30,6 +33,7 @@ public static Pawn pawn => Cl.game.pawn;
 public static readonly Color bgrColor = new Color( 0.2f, 0.2f, 0.25f );
 
 static Vector2Int _pan;
+static Vector2Int _pawnSymbolOffset => new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
 
 static Vector2 [] _circle = new Vector2[14];
 public static void WireCircleGame( Vector2 gamePos, float r, Color c ) {
@@ -89,6 +93,21 @@ public static void OutlinedTextCenter( int x, int y, string text, Color? color =
                                                                     color: black, scale: scale );
     }
     QGL.LatePrintNokia( text, x, y, color: color, scale: scale );
+}
+
+static List<Vector2> _zoneBuf = new List<Vector2>();
+
+static void GetZoneBuf( Board.Zone zn ) {
+    _zoneBuf.Clear();
+    foreach ( var hx in zn.polygon ) {
+        Board.ZoneData zd = board.UnpackZoneData( board.zone[hx] );
+        _zoneBuf.Add( Draw.HexToScreen( hx ) );
+    }
+}
+
+public static bool IsPointInZone( Board.Zone zn, Vector2 screenPoint ) {
+    GetZoneBuf( zn );
+    return Game.IsPointInPolygon( _zoneBuf, screenPoint );
 }
 
 public static Vector2 STG( Vector2 xy ) {
@@ -153,26 +172,60 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
-public static void PawnDef( Vector2 pos, int def ) {
-    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), def );
+public static void Zones( int team = -1 ) {
+    foreach ( var zn in board.filter.zones ) {
+        if ( zn.polygon.Count == 0 ) {
+            continue;
+        }
+        if ( team != -1 && zn.team != team ) {
+            continue;
+        }
+        Color col = zn.team == 0 ? Color.cyan : Color.red;
+        GetZoneBuf( zn );
+        QGL.LateDrawLineLoop( _zoneBuf, color: col );
+    }
 }
 
-public static void PawnDef( Vector2Int pos, int def ) {
-    Pawn.Def dobj = Pawn.defs[def];
-    float d = dobj.radius * 2;
+public static void PawnDef( Vector2 pos, int def, float alpha ) {
+    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), def, alpha );
+}
+
+static int _floatAnimShadow => ( int )( pixelSize * Mathf.Sin( Time.time * 2 ) - pixelSize );
+static int _floatAnim => ( int )( pixelSize * 1.5f * Mathf.Sin( Time.time * 2 ) );
+static Color _colShadow => Color.black * 0.3f;
+
+public static void PawnDef( Vector2Int pos, int defIdx, float alpha ) {
+    Pawn.Def def = Pawn.defs[defIdx];
+
+    float d = def.radius * 2;
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth,
                                                                     Hexes.hexSpriteRegularHeight );
     Vector2Int size = dsprite * Draw.pixelSize;
     Vector2Int sz = new Vector2Int( ( int )( size.x * d ), ( int )( size.y * d ) );
     Vector2Int szHalf = sz / 2;
-    Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
 
-    pos -= szHalf;
+    bool fly = ( def.flags & Pawn.Def.Flags.Flying ) != 0;
 
-    Color c = new Color( dobj.color.r * 0.5f, dobj.color.g * 0.5f, dobj.color.b * 0.5f );
-    QGL.LateBlit( Hexes.hexSpriteRegular, pos, sz, color: c );
-    Vector2Int v = pos + szHalf + offPrn;
-    QGL.LatePrint( dobj.abbrev, v, color: dobj.color, scale: Draw.pixelSize );
+    int shadowBump = fly ? FLYERS_SHADOW_OFFSET : 1;
+    Vector2Int offShadow = Vector2Int.one * Draw.pixelSize * shadowBump;
+
+    // shadow
+    Vector2Int szBob = sz + ( fly ? Vector2Int.one * _floatAnimShadow : Vector2Int.zero );
+    QGL.LateBlit( Hexes.hexSpriteRegular, pos - szHalf, szBob, color: _colShadow * alpha );
+
+    pos -= offShadow;
+    pos.y += fly ? _floatAnim : 0;
+
+    // sprite
+    Color c = def.color * 0.5f;
+    c.a = alpha;
+    QGL.LateBlit( Hexes.hexSpriteRegular, pos - szHalf, sz, color: c );
+
+    // symbol
+    c = def.color;
+    c.a = alpha;
+    Vector2Int vv = pos + _pawnSymbolOffset;
+    QGL.LatePrint( def.symbol, vv, color: c, scale: Draw.pixelSize );
 }
 
 static float [] _hurtBlink = new float[Pawn.MAX_PAWN];
@@ -183,10 +236,10 @@ public static void PawnSprites( float alpha = 1 ) {
 
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth, Hexes.hexSpriteRegularHeight );
     Vector2Int size = dsprite * Draw.pixelSize;
-    Vector2Int offPrn = new Vector2Int( Draw.pixelSize, Draw.pixelSize * 2 );
-    Vector2Int offShadow = new Vector2Int( Draw.pixelSize, Draw.pixelSize );
+    Vector2Int offSymbol = _pawnSymbolOffset;
 
     Vector2Int offShad;
+    int bobAnim;
 
     Vector2Int sz( int z ) {
         float d = pawn.Radius( z ) * 2;
@@ -197,8 +250,10 @@ public static void PawnSprites( float alpha = 1 ) {
         return sz( z ) / 2;
     }
 
-    void setParams( int shadowBump = 1 ) {
+    void setParams( int shadowBump = 1, int bob = 0 ) {
+        Vector2Int offShadow = Vector2Int.one * Draw.pixelSize;
         offShad = offShadow * shadowBump;
+        bobAnim = bob;
     }
 
     void blit( int z, Vector2Int vpos, Color color ) {
@@ -219,7 +274,8 @@ public static void PawnSprites( float alpha = 1 ) {
         color.g += _hurtBlink[z];
         color.b += _hurtBlink[z];
 
-        QGL.LateBlit( Hexes.hexSpriteRegular, vpos, sz( z ), color: color );
+        Vector2Int szBob = sz( z ) + Vector2Int.one * bobAnim;
+        QGL.LateBlit( Hexes.hexSpriteRegular, vpos, szBob, color: color );
     }
 
     void healthbar( int z, Vector2Int vpos ) {
@@ -238,22 +294,22 @@ public static void PawnSprites( float alpha = 1 ) {
         vpos += Vector2Int.one * pixelSize;
         Color c = pawn.team[z] == team ? new Color( 0, 0.45f, 1f ) : Color.red;
         float t = pawn.hp[z] / ( float )pawn.MaxHP( z );
-        vsz.x = ( int )( vsz.x * t + 0.5f );
+        vsz.x = Mathf.Max( 1, ( int )( vsz.x * t + 0.5f ) );
         QGL.LateBlit( null, vpos, vsz, color: c );
     }
 
-    void print( int z, Vector2Int vpos ) {
+    void symbol( int z, Vector2Int vpos ) {
         if ( pawn.hp[z] == 0 ) {
             return;
         }
         Pawn.Def def = Pawn.defs[pawn.def[z]];
-        Vector2Int v = vpos + szHalf( z ) + offPrn;
+        Vector2Int v = vpos + szHalf( z ) + offSymbol;
         var c = def.color;
         c.a = alpha;
         c.r += _hurtBlink[z];
         c.g += _hurtBlink[z];
         c.b += _hurtBlink[z];
-        QGL.LatePrint( def.abbrev, v, color: c, scale: Draw.pixelSize );
+        QGL.LatePrint( def.symbol, v, color: c, scale: Draw.pixelSize );
     }
 
     void getScreenPos( int z, out Vector2Int topLeft ) {
@@ -263,40 +319,43 @@ public static void PawnSprites( float alpha = 1 ) {
         topLeft -= szHalf( z );
     }
 
-    const int flyShOff = 7;
-
+    // structures
     setParams();
     foreach ( var z in pawn.filter.structures ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( z, pos, color: Color.black * 0.3f );
+        blit( z, pos, color: _colShadow );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( z, pos - offShad, color: c );
-        print( z, pos - offShad );
+        symbol( z, pos - offShad );
     }
 
+    // non-structure ground units
     setParams();
     foreach ( var z in pawn.filter.no_structures ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( z, pos, color: Color.black * 0.3f );
+        blit( z, pos, color: _colShadow );
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( z, pos - offShad, color: c );
-        print( z, pos - offShad );
+        symbol( z, pos - offShad );
     }
 
-    setParams( shadowBump: flyShOff );
+    // flyers on top of other units
+    setParams( shadowBump: FLYERS_SHADOW_OFFSET, bob: _floatAnimShadow );
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
-        blit( z, pos, color: Color.black * 0.3f );
+        blit( z, pos, color: _colShadow );
     }
 
+    setParams( shadowBump: FLYERS_SHADOW_OFFSET );
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
+        pos.y += _floatAnim;
         Pawn.Def def = pawn.GetDef( z );
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( z, pos - offShad, color: c );
-        print( z, pos - offShad );
+        symbol( z, pos - offShad );
     }
 
     // == healthbars ==
@@ -313,7 +372,7 @@ public static void PawnSprites( float alpha = 1 ) {
         healthbar( z, pos - offShad );
     }
 
-    setParams( shadowBump: flyShOff );
+    setParams( shadowBump: FLYERS_SHADOW_OFFSET );
     foreach ( var z in pawn.filter.flying ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
@@ -359,6 +418,7 @@ public static void BoardBounds() {
 
 public static void CenterBoardOnScreen() {
     GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
+    //_pan.x = 20 * pixelSize + ( Screen.width - w ) / 2 - x;
     _pan.x = ( Screen.width - w ) / 2 - x;
     _pan.y = ( Screen.height - h ) / 2 - y;
 }

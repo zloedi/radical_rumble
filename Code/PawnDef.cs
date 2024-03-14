@@ -29,7 +29,7 @@ public static Def Turret = Register( new Def {
     damage = 60,
     radius = 0.5f,
     color = new Color( 1f, 0.8f, 0 ),
-    abbrev = "U",
+    symbol = 'U',
 } );
 
 public static Def Archer = Register( new Def {
@@ -38,7 +38,7 @@ public static Def Archer = Register( new Def {
     speed = 60,
     damage = 80,
     radius = 0.32f,
-    abbrev = "a",
+    symbol = 'a',
     color = Color.red,
 } );
 
@@ -77,7 +77,7 @@ public class Def {
     public static float MaxRadius;
 
     public string name;
-    public string abbrev;
+    public char symbol = ' ';
     public Flags flags;
     public int maxHP;
     public int speed = 60;
@@ -99,7 +99,7 @@ void FillDefNames() {
         if ( fi.FieldType == typeof( Def ) ) {
             var def = fi.GetValue( null ) as Def;
             def.name = fi.Name;
-            def.abbrev = def.abbrev == null ? "" + def.name[0] : def.abbrev;
+            def.symbol = def.symbol == ' ' ? def.name[0] : def.symbol;
         }
     }
 }

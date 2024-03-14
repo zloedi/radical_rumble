@@ -40,6 +40,7 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
     Draw.FillScreen();
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: skipVoidHexes );
+    Draw.Zones();
 
     if ( pawnsAlpha > 0.0001f ) {
         pawn.UpdateFilters();
@@ -430,17 +431,6 @@ static void EdLoad_kmd( string [] argv ) {
 // hex idx
 
 
-// https://dominoc925.blogspot.com/2012/02/c-code-snippet-to-determine-if-point-is.html
-private static bool IsPointInPolygon( Vector2 [] polygon, Vector2 point ) {
-    bool isInside = false;
-    for ( int i = 0, j = polygon.Length - 1; i < polygon.Length; j = i++ ) {
-        if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) && (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)) {
-            isInside = !isInside;
-        }
-    }
-    return isInside;
-}
-
 static List<Vector2> _zoneBuf = new List<Vector2>();
 static int _zoneId = 0;
 static void PlaceSpawnZones_tck() {
@@ -467,40 +457,51 @@ static void PlaceSpawnZones_tck() {
             if ( _zoneId == 0 ) {
                 Cl.Error( "Out of zones." );
             } else {
-                Cl.SvCmd( $"sv_add_zone_point {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 0 {_zoneId}" );
+                Cl.SvCmd( $"sv_add_zone_point {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} {_zoneId} 0" );
             }
         }
     }
 
     if ( Cl.mouse1Down ) {
         if ( _zoneId == 0 ) {
+            // erase zone vertex
             Cl.SvCmd( $"sv_add_zone_point {Cl.mousePosAxial.x} {Cl.mousePosAxial.y} 0 0" );
         } else {
             _zoneId = 0;
         }
     }
 
-    foreach ( var zn in board.filter.zones ) {
+    for ( int zoneId = 0; zoneId < board.filter.zones.Length; zoneId++ ) {
+        Board.Zone zn = board.filter.zones[zoneId];
+
         if ( zn.polygon.Count == 0 ) {
             continue;
         }
 
+        Color col = zn.team == 0 ? Color.cyan : Color.red;
+
         _zoneBuf.Clear();
         foreach ( var hx in zn.polygon ) {
             Board.ZoneData zd = board.UnpackZoneData( board.zone[hx] );
-            Vector2 spos = Draw.HexToScreen( hx );
-            QGL.LatePrint( $"{zd.id}\n{zd.polyIdx}", spos, color: Color.white );
             _zoneBuf.Add( Draw.HexToScreen( hx ) );
         }
 
-        if ( Cl.mouse1Down
-                && _zoneId == 0
-                && IsPointInPolygon( _zoneBuf.ToArray(), Cl.mousePosScreen ) ) {
-            //Qonsole.OneShotCmd( $"ed_set_zone_team {_zone} 0;" );
-            Qonsole.Log( "===========" );
+        //QGL.LateDrawLineLoop( _zoneBuf, color: col );
+
+        foreach ( var hx in zn.polygon ) {
+            Board.ZoneData zd = board.UnpackZoneData( board.zone[hx] );
+            Vector2 spos = Draw.HexToScreen( hx );
+            QGL.LatePrint( $"{zd.id}\n{zd.polyIdx}", spos, color: col );
         }
 
-        QGL.LateDrawLineLoop( _zoneBuf );
+        // right clicking inside a zone (not on a zone vertex) will let us set the team
+        if ( Cl.mouse1Down && Game.IsPointInPolygon( _zoneBuf, Cl.mousePosScreen ) ) {
+            Board.ZoneData zd = board.UnpackZoneData( board.zone[Cl.mouseHex] );
+            if ( zd.id == 0 ) {
+                Qonsole.Log( "\nEnter zone team. The last argument is the team:" );
+                Qonsole.OneShotCmd( $"ed_set_zone_team {zoneId} 0;" );
+            }
+        }
     }
 
     if ( _zoneId != 0 ) {
@@ -511,6 +512,20 @@ static void PlaceSpawnZones_tck() {
 }
 
 static void EdSetZoneTeam_kmd( string [] argv ) {
+    if ( argv.Length < 3 ) {
+        Cl.Error( $"Usage: {argv[0]} <zoneId> <team>" );
+    }
+
+    int.TryParse( argv[1], out int zoneId );
+    string cmd = "";
+    Board.Zone zn = board.filter.zones[zoneId];
+    for ( int i = 0; i < zn.polygon.Count; i++ ) {
+        int hx = zn.polygon[i];
+        Vector2Int axial = board.Axial( hx );
+        cmd += $"sv_set_zone_point {axial.x} {axial.y} {argv[1]} {argv[2]} {i}; ";
+    }
+    Cl.Log( $"Setting team cmd: {cmd}" );
+    Cl.SvCmd( cmd );
 }
 
 

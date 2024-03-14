@@ -227,6 +227,10 @@ public bool GetPawnsOnHex( int hx, out List<byte> l ) {
     return l.Count > 0;
 }
 
+public bool BoardHasDef( int hx, Pawn.Def def ) {
+    return Pawn.defs[board.pawnDef[hx]] == def;
+}
+
 const int FRAC_BITS = 8;
 public static int ToTx( float f ) {
     int dec = ( int )f;
@@ -255,11 +259,11 @@ public int VToHex( Vector2 v ) {
     return board.Hex( VToAxial( v ) );
 }
 
-public Vector2Int VToAxial( Vector2 v ) {
+public static Vector2Int VToAxial( Vector2 v ) {
     return Hexes.ScreenToHex( v );
 }
 
-public Vector2 AxialToV( Vector2Int axial ) {
+public static Vector2 AxialToV( Vector2Int axial ) {
     return Hexes.HexToScreen( axial );
 }
 
@@ -267,8 +271,15 @@ public Vector2 HexToV( int hx ) {
     return AxialToV( board.Axial( hx ) );
 }
 
-public bool BoardHasDef( int hx, Pawn.Def def ) {
-    return Pawn.defs[board.pawnDef[hx]] == def;
+// https://dominoc925.blogspot.com/2012/02/c-code-snippet-to-determine-if-point-is.html
+public static bool IsPointInPolygon( List<Vector2> polygon, Vector2 point ) {
+    bool isInside = false;
+    for ( int i = 0, j = polygon.Count - 1; i < polygon.Count; j = i++ ) {
+        if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) && (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)) {
+            isInside = !isInside;
+        }
+    }
+    return isInside;
 }
 
 

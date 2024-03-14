@@ -47,6 +47,10 @@ class Player {
         Clear( pl );
     }
 
+    public int TeamByZPort( int zp ) {
+        return team[GetByZPort( zp )];
+    }
+    
     public int GetByZPort( int zp ) {
         for ( int pl = 1; pl < MAX_PLAYER; pl++ ) {
             if ( zport[pl] == zp ) {

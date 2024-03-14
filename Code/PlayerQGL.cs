@@ -17,15 +17,16 @@ static bool ClSpawnDirectly_kvar = false;
 
 static Player player => Cl.game.player;
 static Pawn pawn => Cl.game.pawn;
+static Board board => Cl.game.board;
 static Game game => Cl.game;
 
 static int _selectedSpawn;
+static int _myTeam => Draw.team;
 
 public static void Tick() {
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
-        int pl = player.GetByZPort( Cl.zport );
-        Draw.team = player.team[pl];
+        Draw.team = player.TeamByZPort( Cl.zport );
     }
 
     int clock = ( int )Cl.clock;
@@ -34,7 +35,15 @@ public static void Tick() {
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
 
-    if ( _selectedSpawn != 0 && Cl.mouse0Down ) {
+    bool allowSpawn = false;
+    foreach ( var zn in board.filter.zones ) {
+        if ( zn.team == _myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
+            allowSpawn = true;
+            break;
+        }
+    }
+
+    if ( allowSpawn && _selectedSpawn != 0 && Cl.mouse0Down ) {
         string name = Pawn.defs[_selectedSpawn].name;
         string x = Cellophane.FtoA( Cl.mousePosGame.x );
         string y = Cellophane.FtoA( Cl.mousePosGame.y );
@@ -121,20 +130,24 @@ public static void Tick() {
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
+    if ( _selectedSpawn != 0 ) {
+        Draw.Zones( _myTeam );
+    }
     Draw.PawnSprites();
     if ( _selectedSpawn != 0 ) {
-        Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn );
+        float alpha = allowSpawn ? 1 : 0.45f;
+        Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn, alpha: alpha );
     }
 
-    foreach ( var z in pawn.filter.no_garbage ) {
-        if ( pawn.atkEndTime[z] != 0 ) {
-            // draw projectile to focus that hits at atkEndTime o clock
-        }
-    }
+    //foreach ( var z in pawn.filter.no_garbage ) {
+    //    if ( pawn.atkEndTime[z] != 0 ) {
+    //        // draw projectile to focus that hits at atkEndTime o clock
+    //    }
+    //}
 
     if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
-        WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, align: 6,
-                                                    color: Color.white, fontSize: Draw.textSize );
+        WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
+                                                                        fontSize: Draw.textSize );
     }
 
     // == end == 

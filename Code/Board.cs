@@ -223,6 +223,7 @@ public class Board {
             for ( int i = 0; i < n; i++ ) {
                 fz.polygon.Add( 0 );
             }
+            fz.team = zd.team;
             fz.polygon[zd.polyIdx] = hx;
         }
 
@@ -307,11 +308,13 @@ public class Board {
         return true;
     }
 
+    // filtered out from hexes
     public class Zone {
         public int team;
         public List<ushort> polygon = new List<ushort>();
     }
 
+    // stored in a hex
     public struct ZoneData {
         public int team;
         public int id;

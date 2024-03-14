@@ -330,13 +330,14 @@ public void SetTeam( int z, int team ) {
     }
 }
 
-public void AddZonePoint( int x, int y, int team, int id ) {
+public void SetZonePoint( int x, int y, int id, int team, int polyIdx = -1 ) {
     if ( x < 0 || x >= board.width || y < 0 || y >= board.height ) {
         return;
     }
 
     board.UpdateFilters();
 
+    // id zero means remove a zone vertex
     if ( id == 0 ) {
         int hxA = board.Hex( x, y );
         Board.ZoneData zdA = board.UnpackZoneData( board.zone[hxA] );
@@ -354,7 +355,7 @@ public void AddZonePoint( int x, int y, int team, int id ) {
     board.zone[board.Hex( x, y )] = board.PackZoneData( new Board.ZoneData {
         team = team,
         id = id,
-        polyIdx = board.filter.zones[id].polygon.Count,
+        polyIdx = polyIdx == - 1 ? board.filter.zones[id].polygon.Count : polyIdx,
     } );
 
     board.UpdateFilters();
