@@ -109,7 +109,9 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     ZServer.net.TryExecuteOOB = s => Qonsole.TryExecute( s );
     ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
     ZServer.onTick_f = RRServer.Tick;
-    ZServer.onClientDisconnect_f = zport => {};
+    ZServer.onClientDisconnect_f = zport => {
+        game.player.DestroyByZport( zport );
+    };
     // FIXME: resend the entire universe to everyone?
     ZServer.onClientConnect_f = zport => {
         game.shadow.ClearShadowRows();

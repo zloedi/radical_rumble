@@ -39,6 +39,10 @@ class Player {
         return pl;
     }
 
+    public void DestroyByZport( int zp ) {
+        Destroy( GetByZPort( zp ) );
+    }
+
     public void Destroy( int pl ) {
         Clear( pl );
     }
