@@ -33,33 +33,34 @@ public static Def Turret = Register( new Def {
 } );
 
 public static Def Archer = Register( new Def {
-    range = 4,
-    maxHP = 120,
-    speed = 60,
-    damage = 80,
-    radius = 0.32f,
-    symbol = 'a',
     color = Color.red,
+    damage = 80,
+    maxHP = 120,
+    radius = 0.32f,
+    range = 4,
+    speed = 60,
+    symbol = 'a',
 } );
 
 public static Def Brute = Register( new Def {
-    maxHP = 500,
-    speed = 60,
+    color = Color.green,
+    cost = 4,
     damage = 80,
     loadTime = 870,
+    maxHP = 500,
     radius = 0.4f,
-    color = Color.green,
+    speed = 60,
 } );
 
 public static Def Flyer = Register( new Def {
-    range = 2.5f,
-    flags = Flying,
-    maxHP = 1000,
-    speed = 60,
-    damage = 80,
-    loadTime = 800,
-    radius = 0.5f,
     color = new Color( 0f, 0.4f, 1f ),
+    cost = 5,
+    damage = 80,
+    flags = Flying,
+    loadTime = 800,
+    maxHP = 1000,
+    radius = 0.5f,
+    speed = 60,
 } );
 
 // =============================
@@ -79,6 +80,7 @@ public class Def {
     public string name;
     public char symbol = ' ';
     public Flags flags;
+    public int cost = 3;
     public int maxHP;
     public int speed = 60;
     public int attackTime = 1000;

@@ -112,6 +112,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     ZServer.onClientDisconnect_f = zport => {
         game.player.DestroyByZport( zport );
     };
+
+    // FIXME: move to Game_sv
     // FIXME: resend the entire universe to everyone?
     ZServer.onClientConnect_f = zport => {
         game.shadow.ClearShadowRows();
@@ -127,7 +129,7 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
             return;
         }
 
-        pl = game.player.Create( zport );
+        pl = game.player.Create( zport, ZServer.clock );
         if ( pl != 0 ) {
             Log( $"Created player {pl} of team {game.player.team[pl]}." );
         } else {
@@ -422,15 +424,7 @@ static void SvUndelta_kmd( string [] argv ) {
     }
 }
 
-static void SvSpawn_kmd( string [] argv, int zport ) {
-    if ( argv.Length < 4 ) {
-        Error( $"{argv[0]} <def_name> <x> <y> [team]" );
-        return;
-    }
-    if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
-        Error( $"{argv[0]} Can't find def named {argv[1]}" );
-        return;
-    }
+static void Spawn( string [] argv, int zport, int def ) {
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
     game.Spawn( def, x, y, out int z );
@@ -441,6 +435,37 @@ static void SvSpawn_kmd( string [] argv, int zport ) {
         int pl = game.player.GetByZPort( zport );
         game.SetTeam( z, game.player.team[pl] );
     }
+}
+
+static void SvSpawn_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 4 ) {
+        Error( $"{argv[0]} <def_name> <x> <y> [team]" );
+        return;
+    }
+    if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
+        Error( $"{argv[0]} Can't find def named {argv[1]}" );
+        return;
+    }
+    int cost = Pawn.defs[def].cost;
+    if ( ! game.player.ConsumeMana( game.player.GetByZPort( zport ),
+                                                            amount: cost, clock: ZServer.clock ) ) {
+        Log( $"Can't spawn, not enough mana." );
+        return;
+    }
+    Spawn( argv, zport: zport, def: def );
+}
+
+// ignores mana cost
+static void SvForcedSpawn_kmd( string [] argv, int zport ) {
+    if ( argv.Length < 4 ) {
+        Error( $"{argv[0]} <def_name> <x> <y> [team]" );
+        return;
+    }
+    if ( ! Pawn.FindDefIdxByName( argv[1], out int def ) ) {
+        Error( $"{argv[0]} Can't find def named {argv[1]}" );
+        return;
+    }
+    Spawn( argv, zport: zport, def: def );
 }
 
 static void SvKill_kmd( string [] argv, int zport ) {

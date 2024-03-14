@@ -46,10 +46,7 @@ partial class Pawn {
     public Vector2 [] mvPos = null;
     public Vector2 [] mvEnd = null;
     public Vector2 [] mvStart = null;
-    public int [] mvStartTime = null;
-
-    //public float [] atkPos = null;
-    //public int [] atkStartTime = null;
+    public int [] mvStart_ms = null;
 
     public byte [] state = null;
 
@@ -60,10 +57,10 @@ partial class Pawn {
 
     // transmitted fixed point version of end position
     public int [] mvEnd_tx = null;
-    public int [] mvEndTime = null;
+    public int [] mvEnd_ms = null;
 
     // time of impact/take damage
-    public int [] atkEndTime = null;
+    public int [] atkEnd_ms = null;
 
     public Filter filter = new Filter();
 
@@ -143,6 +140,10 @@ partial class Pawn {
         return defs[def[z]].damage;
     }
 
+    public int Cost( int z ) {
+        return defs[def[z]].cost;
+    }
+
     public int MaxHP( int z ) {
         return defs[def[z]].maxHP;
     }
@@ -208,43 +209,43 @@ partial class Pawn {
 
     // this will generate a delta (clock change)
     public void MvSnapToEnd( int z, int clock ) {
-        mvStartTime[z] = mvEndTime[z] = clock;
+        mvStart_ms[z] = mvEnd_ms[z] = clock;
         MvClamp( z );
     }
 
     // this will generate a delta (clock change)
     public void MvInterrupt( int z, int clock ) {
-        mvStartTime[z] = mvEndTime[z] = clock;
+        mvStart_ms[z] = mvEnd_ms[z] = clock;
         mvStart[z] = mvEnd[z] = mvPos[z];
     }
 
     public bool MvLerp( int z, int clock ) {
-        int duration = mvEndTime[z] - mvStartTime[z];
+        int duration = mvEnd_ms[z] - mvStart_ms[z];
         if ( duration <= 0 ) {
             return true;
         }
 
-        if ( clock >= mvEndTime[z] ) {
+        if ( clock >= mvEnd_ms[z] ) {
             return true;
         }
 
-        int ti = clock - mvStartTime[z];
+        int ti = clock - mvStart_ms[z];
         float t = ( float )ti / duration;
         mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
         return false;
     }
 
     //public bool AtkLerp( int z, int clock ) {
-    //    int duration = atkEndTime[z] - atkStartTime[z];
+    //    int duration = atkEnd_ms[z] - atkStart_ms[z];
     //    if ( duration <= 0 ) {
     //        return true;
     //    }
 
-    //    if ( clock >= atkEndTime[z] ) {
+    //    if ( clock >= atkEnd_ms[z] ) {
     //        return true;
     //    }
 
-    //    int ti = clock - atkStartTime[z];
+    //    int ti = clock - atkStart_ms[z];
     //    atkPos[z] = ( float )ti / duration;
 
     //    return false;
@@ -253,17 +254,17 @@ partial class Pawn {
     public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
         if ( mvPos[z] == Vector2.zero ) {
             mvPos[z] = mvStart[z] = mvEnd[z];
-            mvStartTime[z] = mvEndTime[z] = clock;
+            mvStart_ms[z] = mvEnd_ms[z] = clock;
             return true;
         }
 
-        int duration = mvEndTime[z] - mvStartTime[z];
+        int duration = mvEnd_ms[z] - mvStart_ms[z];
         if ( duration <= 0 ) {
             // FIXME: lerp mvpos to end if they differ
             return true;
         }
 
-        if ( clock >= mvEndTime[z] ) {
+        if ( clock >= mvEnd_ms[z] ) {
             Vector2 v = mvEnd[z] - mvStart[z];
             float sq = v.sqrMagnitude;
             if ( sq < 0.0001f ) {
@@ -284,7 +285,7 @@ partial class Pawn {
             return false;
         }
 
-        int ti = clock - mvStartTime[z];
+        int ti = clock - mvStart_ms[z];
         float t = ( float )ti / duration;
 
         mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );

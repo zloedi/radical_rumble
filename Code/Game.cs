@@ -34,14 +34,15 @@ public Game() {
         player.zport,
         player.state,
         player.team,
+        player.manaFull_ms,
 
         pawn.def,
         pawn.hp,
         pawn.team,
         pawn.focus,
-        pawn.mvEndTime,
+        pawn.mvEnd_ms,
         pawn.mvEnd_tx,
-        pawn.atkEndTime,
+        pawn.atkEnd_ms,
 
         board.size,
         board.terrain,
@@ -68,10 +69,12 @@ public bool Init( bool skipShadowClones = false ) {
     shadow.Log = Log;
     shadow.Error = Error;
 
-    if ( ! shadow.CreateShadows( player, maxRow: 0, skipClone: skipShadowClones ) ) {
+    if ( ! shadow.CreateShadows( player, maxRow: 0, skipClone: skipShadowClones,
+                                                                            // ignored types
+                                                                            typeof( float ) ) ) {
         return false;
     }
-    if ( ! shadow.CreateShadows( pawn, maxRow: 0, skipShadowClones,
+    if ( ! shadow.CreateShadows( pawn, maxRow: 0, skipClone: skipShadowClones,
                                                             // ignored types
                                                             typeof( float ), typeof( Vector2 ) ) ) {
         return false;
@@ -158,7 +161,7 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
                     }
                 }
 
-                if ( row == pawn.atkEndTime && pawnTrig != null ) {
+                if ( row == pawn.atkEnd_ms && pawnTrig != null ) {
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
                         pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Attack;
                     }

@@ -487,7 +487,7 @@ static void ClCenterBoard_kmd( string [] argv ) {
 }
 
 // public to shortwire select-to-spawn
-public static void ClSpawn_kmd( string [] argv ) {
+public static void ClForceSpawn_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
         Error( $"{argv[0]} <def_name> [team]" );
         return;
@@ -503,7 +503,7 @@ public static void ClSpawn_kmd( string [] argv ) {
         team = argv[2];
     }
 
-    SvCmd( $"sv_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
+    SvCmd( $"sv_force_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
 }
 
 static void ClKill_kmd( string [] argv ) {

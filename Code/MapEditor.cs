@@ -102,7 +102,7 @@ static void PlaceStructTick( string structName ) {
             Qonsole.OneShotCmd( $"ed_set_team {z} 0;" );
         } else {
             Vector2 v = game.HexToV( Cl.mouseHex );
-            Cl.SvCmd( $"sv_spawn {structName} {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
+            Cl.SvCmd( $"sv_force_spawn {structName} {Cellophane.FtoA( v.x )} {Cellophane.FtoA( v.y )}" );
         }
     }
 

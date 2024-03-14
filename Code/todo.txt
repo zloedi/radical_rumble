@@ -1,6 +1,3 @@
-] If rejoin, can't get to play, get observer instead...
-] Add a mode to place pawns not-directly: drag at the cursor, then drop
-] Limit the spawn into zones around the towers (editable?)
 ] Mana resource and pawn prices
 ] Game over and winner announce
 ] Set client state to wait-for-ready on connect (send the team number there)

@@ -21,12 +21,15 @@ static Board board => Cl.game.board;
 static Game game => Cl.game;
 
 static int _selectedSpawn;
+static int _myPlayer;
+
 static int _myTeam => Draw.team;
 
 public static void Tick() {
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
-        Draw.team = player.TeamByZPort( Cl.zport );
+        _myPlayer = player.GetByZPort( Cl.zport );
+        Draw.team = player.team[_myPlayer];
     }
 
     int clock = ( int )Cl.clock;
@@ -35,20 +38,27 @@ public static void Tick() {
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
 
+    Pawn.Def selectedDef = Pawn.defs[_selectedSpawn];
     bool allowSpawn = false;
-    foreach ( var zn in board.filter.zones ) {
-        if ( zn.team == _myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
-            allowSpawn = true;
-            break;
+    if ( player.EnoughMana( _myPlayer, selectedDef.cost, clock ) ) {
+        foreach ( var zn in board.filter.zones ) {
+            if ( zn.team == _myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
+                allowSpawn = true;
+                break;
+            }
         }
     }
 
     if ( allowSpawn && _selectedSpawn != 0 && Cl.mouse0Down ) {
-        string name = Pawn.defs[_selectedSpawn].name;
-        string x = Cellophane.FtoA( Cl.mousePosGame.x );
-        string y = Cellophane.FtoA( Cl.mousePosGame.y );
-        Cl.SvCmd( $"sv_spawn {name} {x} {y}" );
-        _selectedSpawn = 0;
+        if ( player.ConsumeMana( _myPlayer, selectedDef.cost, clock ) ) {
+            string name = selectedDef.name;
+            string x = Cellophane.FtoA( Cl.mousePosGame.x );
+            string y = Cellophane.FtoA( Cl.mousePosGame.y );
+            Cl.SvCmd( $"sv_spawn {name} {x} {y}" );
+            _selectedSpawn = 0;
+        } else {
+           Cl.Log( "Can't spawn yet." ); 
+        }
     }
 
     if ( _selectedSpawn != 0 && Cl.mouse1Down ) {
@@ -59,16 +69,16 @@ public static void Tick() {
         if ( Cl.TriggerOn( z, Trig.Move ) ) {
             // new movement segment arrives, plan movement on the client
             pawn.mvStart[z] = pawn.mvPos[z];
-            pawn.mvStartTime[z] = clock;
+            pawn.mvStart_ms[z] = clock;
         }
     }
 
     foreach ( var z in pawn.filter.no_garbage ) {
         int zf = pawn.focus[z];
-        if ( Cl.TriggerOn( z, Trig.Attack ) && zf > 0 && pawn.atkEndTime[z] > 0 ) {
+        if ( Cl.TriggerOn( z, Trig.Attack ) && zf > 0 && pawn.atkEnd_ms[z] > 0 ) {
             // plan attack
             int start = clock;
-            int end = pawn.atkEndTime[z];
+            int end = pawn.atkEnd_ms[z];
             int shoot = Mathf.Max( clock, end - ( pawn.AttackTime( z ) - pawn.LoadTime( z ) ) );
             Vector2 a = pawn.mvPos[z];
             Vector2 b = pawn.mvPos[zf];
@@ -140,11 +150,20 @@ public static void Tick() {
     }
 
     //foreach ( var z in pawn.filter.no_garbage ) {
-    //    if ( pawn.atkEndTime[z] != 0 ) {
-    //        // draw projectile to focus that hits at atkEndTime o clock
+    //    if ( pawn.atkEnd_ms[z] != 0 ) {
+    //        // draw projectile to focus that hits at atkEnd_ms o clock
     //    }
     //}
 
+    float mana = player.Mana( _myPlayer, clock );
+    WrapBox wbox = Draw.wboxScreen.CenterRight( 40 * Draw.pixelSize, Draw.wboxScreen.H );
+    float gap = wbox.W * 0.45f;
+    wbox = wbox.Center( gap, wbox.H - gap );
+    Color manaCol = new Color( 0.9f, 0.2f, 0.9f );
+    Draw.FillRect( wbox, manaCol * 0.5f );
+    Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * mana / 10f ), manaCol );
+    WBUI.QGLTextOutlined( ( ( int )mana ).ToString(), wbox, color: manaCol * 4,
+                                                    fontSize: Draw.textSize + Draw.pixelSize );
     if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
         WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
                                                                         fontSize: Draw.textSize );
@@ -154,15 +173,15 @@ public static void Tick() {
 
     void snapPos( int z ) {
         pawn.mvPos[z] = pawn.mvEnd[z];
-        pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
     }
 
     void updatePos( int z ) {
         // zero delta move means stop
         // FIXME: remove if the pawn state is sent over the network
-        if ( pawn.mvEndTime[z] <= Cl.serverClock ) {
+        if ( pawn.mvEnd_ms[z] <= Cl.serverClock ) {
             // FIXME: should lerp to actual end pos if offshoot
-            pawn.mvStartTime[z] = pawn.mvEndTime[z] = clock;
+            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
             return;
         }
 
@@ -173,7 +192,7 @@ public static void Tick() {
 
 static void ClSelectToSpawn_kmd( string [] argv ) {
     if ( ClSpawnDirectly_kvar ) {
-        Cl.ClSpawn_kmd( argv );
+        Cl.ClForceSpawn_kmd( argv );
         return;
     }
 

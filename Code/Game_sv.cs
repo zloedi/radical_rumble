@@ -40,9 +40,20 @@ static bool SvLogPaths_kvar = false;
 
 public void PostLoadMap() {
     pawn.UpdateFilters();
+
+    // kick off the mana clocks
+    for ( int pl = 1; pl < Player.MAX_PLAYER; pl++ ) {
+    }
 }
 
 public void TickServer() {
+
+    for ( int pl = 1; pl < Player.MAX_PLAYER; pl++ ) {
+        if ( player.zport[pl] != 0 ) {
+            player.Mana( pl, ZServer.clock );
+        }
+    }
+
     pawn.UpdateFilters();
     RegisterIntoGrids();
 
@@ -77,7 +88,7 @@ quit:
     foreach ( var z in pawn.filter.ByState( PS.Idle ) ) {
 
         pawn.focus[z] = 0;
-        pawn.atkEndTime[z] = 0;
+        pawn.atkEnd_ms[z] = 0;
 
         if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
 
@@ -85,7 +96,7 @@ quit:
                 Log( $"{pawn.DN( z )} starts attacking {pawn.DN( zEnemy )}" );
                 pawn.focus[z] = ( byte )zEnemy;
                 // a hack to prevent at least turrets firing like crazy on enemy death
-                pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z );
+                pawn.atkEnd_ms[z] = ZServer.clock + pawn.AttackTime( z );
                 pawn.SetState( z, PS.Attack );
                 continue;
             }
@@ -160,24 +171,24 @@ quit:
 
         float r = DistanceForAttack( z, zEnemy ) + 0.5f;
         if ( pawn.SqDist( z, zEnemy ) > r * r ) {
-            pawn.atkEndTime[z] = 0;
+            pawn.atkEnd_ms[z] = 0;
             charge( z, zEnemy );
             continue;
         }
 
-        if ( pawn.atkEndTime[z] <= 0 ) {
-            pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z ) / 2;
+        if ( pawn.atkEnd_ms[z] <= 0 ) {
+            pawn.atkEnd_ms[z] = ZServer.clock + pawn.AttackTime( z ) / 2;
         }
     }
 
     // any ongoing attacks should keep ticking, no matter if in Attack state or not
     foreach ( var z in pawn.filter.no_garbage ) {
 
-        if ( pawn.atkEndTime[z] == 0 ) {
+        if ( pawn.atkEnd_ms[z] == 0 ) {
             continue;
         }
 
-        if ( pawn.atkEndTime[z] >= ZServer.clock ) {
+        if ( pawn.atkEnd_ms[z] >= ZServer.clock ) {
             continue;
         }
 
@@ -195,8 +206,8 @@ quit:
 
         // if still in attack state, loop another attack
         if ( pawn.state[z] == Pawn.SB( PS.Attack ) ) {
-            int extra = ZServer.clock - pawn.atkEndTime[z];
-            pawn.atkEndTime[z] = ZServer.clock + pawn.AttackTime( z ) - extra;
+            int extra = ZServer.clock - pawn.atkEnd_ms[z];
+            pawn.atkEnd_ms[z] = ZServer.clock + pawn.AttackTime( z ) - extra;
         }
 
         if ( SvShowAttacks_kvar ) {
@@ -249,13 +260,13 @@ quit:
         
         // if dead and couldn't reload, kill off this attack
         int t = pawn.AttackTime( z ) - pawn.LoadTime( z );
-        if ( pawn.atkEndTime[z] - t > ZServer.clock ) {
+        if ( pawn.atkEnd_ms[z] - t > ZServer.clock ) {
             Destroy( z );
             continue;
         }
 
         // the dead pawns attacks may still connect (ranged only?), postpone this a bit
-        if ( pawn.atkEndTime[z] <= ZServer.clock ) {
+        if ( pawn.atkEnd_ms[z] <= ZServer.clock ) {
             Destroy( z );
         }
     }
@@ -751,8 +762,8 @@ void MvChase( int z, int zEnemy ) {
 
     pawn.mvStart[z] = pawn.mvPos[z];
     pawn.mvEnd[z] = chase;
-    pawn.mvStartTime[z] = ZServer.clock;
-    pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
+    pawn.mvStart_ms[z] = ZServer.clock;
+    pawn.mvEnd_ms[z] = pawn.mvStart_ms[z] + MvDuration( z );
 
     if ( SvShowCharge_kvar != 0 ) {
         if ( SvShowCharge_kvar == 1 ) {
@@ -865,15 +876,15 @@ bool NavUpdate( int z ) {
     pawn.mvStart[z] = pawn.mvEnd[z];
     pawn.mvEnd[z] = AvoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
 
-    int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEndTime[z] );
-    pawn.mvStartTime[z] = ZServer.clock;
-    pawn.mvEndTime[z] = pawn.mvStartTime[z] + MvDuration( z );
+    int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEnd_ms[z] );
+    pawn.mvStart_ms[z] = ZServer.clock;
+    pawn.mvEnd_ms[z] = pawn.mvStart_ms[z] + MvDuration( z );
 
     if ( leftover > 0 ) {
         // advance a bit on the next segment if there is time left from the tick
-        if ( ! pawn.MvLerp( z, pawn.mvStartTime[z] + leftover ) ) {
+        if ( ! pawn.MvLerp( z, pawn.mvStart_ms[z] + leftover ) ) {
             pawn.mvStart[z] = pawn.mvPos[z];
-            pawn.mvEndTime[z] -= leftover;
+            pawn.mvEnd_ms[z] -= leftover;
         }
     }
     return true;

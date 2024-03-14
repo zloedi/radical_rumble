@@ -71,9 +71,9 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         bind Alpha2 ""cl_select_to_spawn Archer"" play;
         bind Alpha3 ""cl_select_to_spawn Flyer"" play;
 
-        //bind Alpha4 ""cl_spawn Brute 1"" play;
-        //bind Alpha5 ""cl_spawn Archer 1"" play;
-        //bind Alpha6 ""cl_spawn Flyer 1"" play;
+        //bind Alpha4 ""cl_force_spawn Brute 1"" play;
+        //bind Alpha5 ""cl_force_spawn Archer 1"" play;
+        //bind Alpha6 ""cl_force_spawn Flyer 1"" play;
 
         bind K ""cl_kill"" play;
 
@@ -118,6 +118,11 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind D +client_pan_right;
         //bind S +client_pan_down;
         //bind W +client_pan_up;
+
+        sdl_screen_height 1042;
+        sdl_screen_width 902;
+        sdl_screen_x 513
+        sdl_screen_y 36
     " );
     Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
 }

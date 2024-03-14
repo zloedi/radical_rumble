@@ -1,3 +1,6 @@
+* Limit the spawn into zones around the towers (editable?)
+* Add a mode to place pawns not-directly: drag at the cursor, then drop
+* If rejoin, can't get to play, get observer instead...
 + Make sure charge works
 * The dead never get recycled
 * Implement melee attack.
