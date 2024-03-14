@@ -32,16 +32,6 @@ public static Def Turret = Register( new Def {
     symbol = 'U',
 } );
 
-public static Def Archer = Register( new Def {
-    color = Color.red,
-    damage = 80,
-    maxHP = 120,
-    radius = 0.32f,
-    range = 4,
-    speed = 60,
-    symbol = 'a',
-} );
-
 public static Def Brute = Register( new Def {
     color = Color.green,
     cost = 4,
@@ -50,6 +40,16 @@ public static Def Brute = Register( new Def {
     maxHP = 500,
     radius = 0.4f,
     speed = 60,
+} );
+
+public static Def Archer = Register( new Def {
+    color = Color.red,
+    damage = 80,
+    maxHP = 120,
+    radius = 0.32f,
+    range = 4,
+    speed = 60,
+    symbol = 'a',
 } );
 
 public static Def Flyer = Register( new Def {

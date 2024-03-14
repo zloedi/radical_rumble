@@ -40,7 +40,7 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
     Draw.FillScreen();
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: skipVoidHexes );
-    Draw.Zones();
+    Draw.Zones( allTeams: true );
 
     if ( pawnsAlpha > 0.0001f ) {
         pawn.UpdateFilters();

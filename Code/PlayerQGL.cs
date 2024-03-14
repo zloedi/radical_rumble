@@ -10,6 +10,7 @@ using SDLPorts;
 
 using Cl = RRClient;
 using Trig = Pawn.ClientTrigger;
+using PDF = Pawn.Def.Flags;
 
 public static class PlayerQGL {
 
@@ -22,25 +23,29 @@ static Game game => Cl.game;
 
 static int _selectedSpawn;
 static int _myPlayer;
+static float _mana;
 
 static int _myTeam => Draw.team;
 
 public static void Tick() {
+    int clock = ( int )Cl.clock;
+    int clockDelta = ( int )Cl.clockDelta;
+
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
         _myPlayer = player.GetByZPort( Cl.zport );
+        _mana = player.Mana( _myPlayer, clock );
         Draw.team = player.team[_myPlayer];
+        Draw.mana = _mana;
     }
-
-    int clock = ( int )Cl.clock;
-    int clockDelta = ( int )Cl.clockDelta;
 
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
 
     Pawn.Def selectedDef = Pawn.defs[_selectedSpawn];
     bool allowSpawn = false;
-    if ( player.EnoughMana( _myPlayer, selectedDef.cost, clock ) ) {
+    bool enoughMana = player.EnoughMana( _myPlayer, selectedDef.cost, clock );
+    if ( enoughMana ) {
         foreach ( var zn in board.filter.zones ) {
             if ( zn.team == _myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
                 allowSpawn = true;
@@ -141,12 +146,51 @@ public static void Tick() {
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
     if ( _selectedSpawn != 0 ) {
-        Draw.Zones( _myTeam );
+        Draw.Zones();
     }
     Draw.PawnSprites();
+
+    if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
+        if ( ( clock & 512 ) != 0 ) {
+            WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
+                                                                        fontSize: Draw.textSize );
+        }
+    } else {
+        // mana bar
+        WrapBox wbox = Draw.wboxScreen.CenterRight( 40 * Draw.pixelSize, Draw.wboxScreen.H );
+        WrapBox wbCards = wbox;
+        float gap = wbox.W * 0.45f;
+        wbox = wbox.Center( gap, wbox.H - gap );
+        Color manaCol = new Color( 0.9f, 0.2f, 0.9f );
+        Draw.FillRect( wbox.Center( wbox.W + Draw.pixelSize * 2, wbox.H + Draw.pixelSize * 2 ),
+                                                                                    manaCol * 0.5f );
+        Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * _mana / 10f ), manaCol );
+        WBUI.QGLTextOutlined( ( ( int )_mana ).ToString(), wbox, color: manaCol * 4,
+                                                        fontSize: Draw.textSize + Draw.pixelSize );
+
+        wbCards = wbCards.BottomRight( 20 * Draw.pixelSize, 20 * Draw.pixelSize,
+                                                x: 35 * Draw.pixelSize, y: 20 * Draw.pixelSize );
+        foreach ( var def in Pawn.defs ) {
+            if ( def.symbol != ' '
+                && ( def.flags & ( PDF.Structure
+                                | PDF.PatrolWaypoint
+                                | PDF.WinObjective ) ) == 0 ) {
+                bool enough = player.EnoughMana( _myPlayer, def.cost, clock );
+
+                Draw.PawnDef( wbCards.midPoint, def, alpha: enough ? 1 : 0.65f, false );
+
+                WBUI.QGLTextOutlined( $"   {def.cost}",
+                        wbCards.CenterRight( wbCards.W / 4, wbCards.H / 4 ),
+                        color: enough ? manaCol * 3 : manaCol * 0.7f, fontSize: Draw.textSize );
+
+                wbCards = wbCards.NextUp();
+            }
+        }
+    }
+
     if ( _selectedSpawn != 0 ) {
         float alpha = allowSpawn ? 1 : 0.45f;
-        Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn, alpha: alpha );
+        Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn, alpha: alpha, countDown: ! enoughMana );
     }
 
     //foreach ( var z in pawn.filter.no_garbage ) {
@@ -154,20 +198,6 @@ public static void Tick() {
     //        // draw projectile to focus that hits at atkEnd_ms o clock
     //    }
     //}
-
-    float mana = player.Mana( _myPlayer, clock );
-    WrapBox wbox = Draw.wboxScreen.CenterRight( 40 * Draw.pixelSize, Draw.wboxScreen.H );
-    float gap = wbox.W * 0.45f;
-    wbox = wbox.Center( gap, wbox.H - gap );
-    Color manaCol = new Color( 0.9f, 0.2f, 0.9f );
-    Draw.FillRect( wbox, manaCol * 0.5f );
-    Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * mana / 10f ), manaCol );
-    WBUI.QGLTextOutlined( ( ( int )mana ).ToString(), wbox, color: manaCol * 4,
-                                                    fontSize: Draw.textSize + Draw.pixelSize );
-    if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
-        WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
-                                                                        fontSize: Draw.textSize );
-    }
 
     // == end == 
 

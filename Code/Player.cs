@@ -119,6 +119,9 @@ class Player {
 
     public bool ConsumeMana( int pl, int amount, int clock ) {
         if ( EnoughMana( pl, amount, clock ) ) {
+            if ( manaFull_ms[pl] < clock ) {
+                manaFull_ms[pl] = clock;
+            }
             manaFull_ms[pl] += amount * MANA_SECOND;
             return true;
         }

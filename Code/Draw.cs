@@ -25,6 +25,7 @@ public static int hexPixelSize => 12 * pixelSize;
 public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
 public static int team;
+public static float mana;
 public static bool rotate180 => team != 0;
 
 public static Board board => Cl.game.board;
@@ -71,8 +72,8 @@ public static void FillRect( WrapBox wbox, Color color ) {
 }
 
 public static void OutlinedTextCenter( int x, int y, string text, Color? color = null,
-                                                                                int scale = 1 ) {
-    scale *= pixelSize;
+                                                                                float scale = 1 ) {
+    scale = ( int )( scale * pixelSize + 0.5f );
     color = color != null ? color : Color.white;
     
     int [] offset = {
@@ -172,12 +173,12 @@ public static void TerrainTile( int hx, Color? c = null, float sz = 1 ) {
     TerrainTile( board.Axial( hx ), c, sz );
 }
 
-public static void Zones( int team = -1 ) {
+public static void Zones( bool allTeams = false ) {
     foreach ( var zn in board.filter.zones ) {
         if ( zn.polygon.Count == 0 ) {
             continue;
         }
-        if ( team != -1 && zn.team != team ) {
+        if ( ! allTeams && zn.team != team ) {
             continue;
         }
         Color col = zn.team == 0 ? Color.cyan : Color.red;
@@ -186,16 +187,22 @@ public static void Zones( int team = -1 ) {
     }
 }
 
-public static void PawnDef( Vector2 pos, int def, float alpha ) {
-    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), def, alpha );
+public static void PawnDef( Vector2 pos, int defIdx, float alpha, bool countDown ) {
+    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), defIdx, alpha, countDown );
+}
+
+public static void PawnDef( Vector2 pos, Pawn.Def def, float alpha, bool countDown ) {
+    PawnDef( new Vector2Int( ( int )pos.x, ( int )pos.y ), def, alpha, countDown );
+}
+
+public static void PawnDef( Vector2Int pos, int defIdx, float alpha, bool countDown ) {
+    PawnDef( pos, Pawn.defs[defIdx], alpha, countDown );
 }
 
 static int _floatAnimShadow => ( int )( pixelSize * Mathf.Sin( Time.time * 2 ) - pixelSize );
 static int _floatAnim => ( int )( pixelSize * 1.5f * Mathf.Sin( Time.time * 2 ) );
 static Color _colShadow => Color.black * 0.3f;
-
-public static void PawnDef( Vector2Int pos, int defIdx, float alpha ) {
-    Pawn.Def def = Pawn.defs[defIdx];
+public static void PawnDef( Vector2Int pos, Pawn.Def def, float alpha, bool countDown ) {
 
     float d = def.radius * 2;
     Vector2Int dsprite = new Vector2Int( Hexes.hexSpriteRegularWidth,
@@ -213,6 +220,13 @@ public static void PawnDef( Vector2Int pos, int defIdx, float alpha ) {
     Vector2Int szBob = sz + ( fly ? Vector2Int.one * _floatAnimShadow : Vector2Int.zero );
     QGL.LateBlit( Hexes.hexSpriteRegular, pos - szHalf, szBob, color: _colShadow * alpha );
 
+    if ( countDown ) {
+        Color manaCol = new Color( 0.9f, 0.2f, 0.9f ) * 2;
+        int cd = ( int )( ( def.cost - mana ) * 10 + 1 );
+        OutlinedTextCenter( pos.x, pos.y + ( int )( szHalf.y * 1.5f ),
+                        cd.ToString(), color: Color.white, scale: 0.5f );
+    }
+
     pos -= offShadow;
     pos.y += fly ? _floatAnim : 0;
 
@@ -225,6 +239,9 @@ public static void PawnDef( Vector2Int pos, int defIdx, float alpha ) {
     c = def.color;
     c.a = alpha;
     Vector2Int vv = pos + _pawnSymbolOffset;
+    if ( def.symbol >= 'a' && def.symbol <= 'z' ) {
+        vv.y -= Draw.pixelSize;
+    }
     QGL.LatePrint( def.symbol, vv, color: c, scale: Draw.pixelSize );
 }
 
@@ -304,6 +321,9 @@ public static void PawnSprites( float alpha = 1 ) {
         }
         Pawn.Def def = Pawn.defs[pawn.def[z]];
         Vector2Int v = vpos + szHalf( z ) + offSymbol;
+        if ( def.symbol >= 'a' && def.symbol <= 'z' ) {
+            v.y -= Draw.pixelSize;
+        }
         var c = def.color;
         c.a = alpha;
         c.r += _hurtBlink[z];
@@ -418,8 +438,9 @@ public static void BoardBounds() {
 
 public static void CenterBoardOnScreen() {
     GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
-    //_pan.x = 20 * pixelSize + ( Screen.width - w ) / 2 - x;
-    _pan.x = ( Screen.width - w ) / 2 - x;
+    int gap = 20 * pixelSize;
+    _pan.x = ( Screen.width - w ) / 2 - x - gap;
+    //_pan.x = ( Screen.width - w ) / 2 - x;
     _pan.y = ( Screen.height - h ) / 2 - y;
 }
 
