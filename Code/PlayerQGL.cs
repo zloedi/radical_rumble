@@ -22,21 +22,29 @@ static Board board => Cl.game.board;
 static Game game => Cl.game;
 
 static int _selectedSpawn;
-static int _myPlayer;
-static float _mana;
-
-static int _myTeam => Draw.team;
+// FIXME: wait for the server clock to match the speculated clock then do spawning
+static int _triggerSpawn;
 
 public static void Tick() {
+    float mana = 0;
+    int myPlayer = 0;
+    bool observer = false;
+    int myTeam = 0;
+    bool needPlayers = game.player.AnyTeamNeedsPlayers();
+
     int clock = ( int )Cl.clock;
     int clockDelta = ( int )Cl.clockDelta;
 
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
-        _myPlayer = player.GetByZPort( Cl.zport );
-        _mana = player.Mana( _myPlayer, clock );
-        Draw.team = player.team[_myPlayer];
-        Draw.mana = _mana;
+        
+        myPlayer = player.GetByZPort( Cl.zport );
+        mana = player.Mana( myPlayer, clock );
+
+        Draw.team = myTeam = player.team[myPlayer];
+        Draw.mana = mana;
+    } else {
+        Draw.observer = observer = true;
     }
 
     pawn.UpdateFilters();
@@ -44,10 +52,15 @@ public static void Tick() {
 
     Pawn.Def selectedDef = Pawn.defs[_selectedSpawn];
     bool allowSpawn = false;
-    bool enoughMana = player.EnoughMana( _myPlayer, selectedDef.cost, clock );
-    if ( enoughMana ) {
+
+    // FIXME: using the speculated clock here could lead to a no-spawn
+    // FIXME: we need to kick the server to send us a clock back
+    // FIXME: and postpone a bit before doing any (mana) checks
+    bool enoughMana = player.EnoughMana( myPlayer, selectedDef.cost, clock );
+
+    if ( ! needPlayers && enoughMana ) {
         foreach ( var zn in board.filter.zones ) {
-            if ( zn.team == _myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
+            if ( zn.team == myTeam && Draw.IsPointInZone( zn, Cl.mousePosScreen ) ) {
                 allowSpawn = true;
                 break;
             }
@@ -55,7 +68,7 @@ public static void Tick() {
     }
 
     if ( allowSpawn && _selectedSpawn != 0 && Cl.mouse0Down ) {
-        if ( player.ConsumeMana( _myPlayer, selectedDef.cost, clock ) ) {
+        if ( enoughMana ) {
             string name = selectedDef.name;
             string x = Cellophane.FtoA( Cl.mousePosGame.x );
             string y = Cellophane.FtoA( Cl.mousePosGame.y );
@@ -145,12 +158,16 @@ public static void Tick() {
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );
     Draw.CenterBoardOnScreen();
     Draw.Board( skipVoidHexes: true );
-    if ( _selectedSpawn != 0 ) {
+    if ( observer ) {
+        Draw.Zones( allTeams: true );
+    } else if ( _selectedSpawn != 0 ) {
         Draw.Zones();
     }
     Draw.PawnSprites();
 
-    if ( player.IsObserver( Cl.zport ) && ( clock & 512 ) != 0 ) {
+    if ( needPlayers ) {
+        Draw.centralBigRedMessage = "Waiting for players...";
+    } else if ( observer ) {
         if ( ( clock & 512 ) != 0 ) {
             WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
                                                                         fontSize: Draw.textSize );
@@ -164,8 +181,8 @@ public static void Tick() {
         Color manaCol = new Color( 0.9f, 0.2f, 0.9f );
         Draw.FillRect( wbox.Center( wbox.W + Draw.pixelSize * 2, wbox.H + Draw.pixelSize * 2 ),
                                                                                     manaCol * 0.5f );
-        Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * _mana / 10f ), manaCol );
-        WBUI.QGLTextOutlined( ( ( int )_mana ).ToString(), wbox, color: manaCol * 4,
+        Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * mana / 10f ), manaCol );
+        WBUI.QGLTextOutlined( ( ( int )mana ).ToString(), wbox, color: manaCol * 4,
                                                         fontSize: Draw.textSize + Draw.pixelSize );
 
         wbCards = wbCards.BottomRight( 20 * Draw.pixelSize, 20 * Draw.pixelSize,
@@ -175,7 +192,7 @@ public static void Tick() {
                 && ( def.flags & ( PDF.Structure
                                 | PDF.PatrolWaypoint
                                 | PDF.WinObjective ) ) == 0 ) {
-                bool enough = player.EnoughMana( _myPlayer, def.cost, clock );
+                bool enough = player.EnoughMana( myPlayer, def.cost, clock );
 
                 Draw.PawnDef( wbCards.midPoint, def, alpha: enough ? 1 : 0.65f, false );
 
@@ -192,12 +209,6 @@ public static void Tick() {
         float alpha = allowSpawn ? 1 : 0.45f;
         Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn, alpha: alpha, countDown: ! enoughMana );
     }
-
-    //foreach ( var z in pawn.filter.no_garbage ) {
-    //    if ( pawn.atkEnd_ms[z] != 0 ) {
-    //        // draw projectile to focus that hits at atkEnd_ms o clock
-    //    }
-    //}
 
     // == end == 
 
@@ -222,7 +233,7 @@ public static void Tick() {
 
 static void ClSelectToSpawn_kmd( string [] argv ) {
     if ( ClSpawnDirectly_kvar ) {
-        Cl.ClForceSpawn_kmd( argv );
+        Cl.ClForcedSpawn_kmd( argv );
         return;
     }
 

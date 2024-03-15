@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 #if UNITY_STANDALONE
 using UnityEngine;
@@ -16,12 +17,9 @@ static class SDLApp {
         Qonsole.Init();
         Qonsole.Start();
         Qonsole.Log( Guid.NewGuid() );
+        // SDL ports
         Application.Log = s => Qonsole.Log( "Application: " + s );
         Application.Error = s => Qonsole.Error( "Application: " + s );
-        KeyBinds.Log = s => Qonsole.Log( "Keybinds: " + s );
-        KeyBinds.Error = s => Qonsole.Error( "Keybinds: " + s );
-        QGL.Log = o => Qonsole.Log( "QGL: " + o );
-        QGL.Error = s => Qonsole.Error( "QGL: " + s );
     }
 
     static void Tick() {
@@ -60,20 +58,29 @@ static class SDLApp {
 
 static class Main {
 
+[Description( "Always run the local server no matter if localhost." )]
 static bool LocalServerAlwaysOn_kvar = false;
+
+[Description( "Frame duration in milliseconds." )]
+static bool ShowFrameTime_kvar = false;
 
 static bool _initialized = false;
 
 static void QonsolePreConfig_kmd( string [] argv ) {
-    Cellophane.ConfigVersion_kvar = 2;
+    // change this to wipe cfg to defautlts
+    Cellophane.ConfigVersion_kvar = 4;
+
     Qonsole.TryExecute( @"
         bind Alpha1 ""cl_select_to_spawn Brute"" play;
         bind Alpha2 ""cl_select_to_spawn Archer"" play;
         bind Alpha3 ""cl_select_to_spawn Flyer"" play;
 
-        //bind Alpha4 ""cl_force_spawn Brute 1"" play;
-        //bind Alpha5 ""cl_force_spawn Archer 1"" play;
-        //bind Alpha6 ""cl_force_spawn Flyer 1"" play;
+        //bind Alpha5 ""cl_forced_spawn Brute"" play
+        //bind Alpha6 ""cl_forced_spawn Archer"" play
+        //bind Alpha7 ""cl_forced_spawn Flyer"" play
+        //bind Alpha8 ""cl_forced_spawn Brute 1"" play
+        //bind Alpha9 ""cl_forced_spawn Archer 1"" play
+        //bind Alpha0 ""cl_forced_spawn Flyer 1"" play
 
         bind K ""cl_kill"" play;
 
@@ -104,15 +111,15 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind K       ""gym_steer_kill"" gym_steer;
         //bind Mouse1  ""gym_steer_kill"" gym_steer;
 
-        bind F1 ""cl_set_state play"";
-        bind F2 ""cl_set_state edit ; ed_set_state pather_test"";
-        bind F3 ""cl_set_state edit ; ed_set_state place_towers"";
-        bind F4 ""cl_set_state edit ; ed_set_state place_turrets"";
-        bind F5 ""cl_set_state edit ; ed_set_state atk_pos_solver"";
-        bind F6 ""cl_set_state edit ; ed_set_state place_terrain"";
-        bind F7 ""cl_set_state edit ; ed_set_state place_spawn_zones"";
-
-        bind F8 ""cl_set_state gym ; gym_set_state steer"";
+        bind F1 ""cl_toggle_help"";
+        bind F2 ""cl_set_state play"";
+        bind F3 ""cl_set_state edit ; ed_set_state pather_test"";
+        bind F4 ""cl_set_state edit ; ed_set_state place_towers"";
+        bind F5 ""cl_set_state edit ; ed_set_state place_turrets"";
+        bind F6 ""cl_set_state edit ; ed_set_state atk_pos_solver"";
+        bind F7 ""cl_set_state edit ; ed_set_state place_terrain"";
+        bind F8 ""cl_set_state edit ; ed_set_state place_spawn_zones"";
+        bind F9 ""cl_set_state gym ; gym_set_state steer"";
 
         //bind A +client_pan_left;
         //bind D +client_pan_right;
@@ -124,7 +131,14 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         sdl_screen_x 513
         sdl_screen_y 36
     " );
+
     Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
+
+    KeyBinds.Log = s => Qonsole.Log( "Keybinds: " + s );
+    KeyBinds.Error = s => Qonsole.Error( "Keybinds: " + s );
+    QGL.Log = o => Qonsole.Log( "QGL: " + o );
+    QGL.Error = s => Qonsole.Error( "QGL: " + s );
+
 }
 
 static void QonsolePostStart_kmd( string [] argv ) {
@@ -175,7 +189,10 @@ static void QonsoleTick_kmd( string [] argv ) {
 
     Cl.Tick( timeDelta );
 
-    QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"), Screen.width - 50, 20 );
+    if ( ShowFrameTime_kvar ) {
+        QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"),
+                                                                            Screen.width - 50, 20 );
+    }
 
 #if false
     QGL.LateBlit( AppleFont.GetTexture(), 100, 100, 100, 100, angle: Time.time * 5f );

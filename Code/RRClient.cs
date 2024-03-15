@@ -28,6 +28,7 @@ static int ClPrintIncomingPackets_kvar = 0;
 public static int ClFrameSleep_kvar = 0;
 
 static bool ShowBoardBounds_kvar = false;
+static bool ShowHelp_kvar = false;
 
 public static Game game = new Game();
 
@@ -101,34 +102,38 @@ public static void Done() {
 
 static string _bindsText = "";
 public static void TickKeybinds( string context = null ) {
-    if ( Qonsole.Active || ! Application.isFocused ) {
+    if ( Qonsole.Active ) {
         return;
     }
 
-    foreach ( var kc in KeyBinds.keys ) {
-        if ( ! Input.GetKeyDown( kc ) ) {
-            continue;
+    if ( Application.isFocused ) {
+        foreach ( var kc in KeyBinds.keys ) {
+            if ( ! Input.GetKeyDown( kc ) ) {
+                continue;
+            }
+            KeyBinds.TryExecuteBinds( keyDown: kc, context: context );
+            _holdKeys.Add( kc );
         }
-        KeyBinds.TryExecuteBinds( keyDown: kc, context: context );
-        _holdKeys.Add( kc );
+
+        foreach ( var kc in KeyBinds.keys ) {
+            if ( ! Input.GetKeyUp( kc ) ) {
+                continue;
+            }
+            KeyBinds.TryExecuteBinds( keyUp: kc, context: context );
+            _holdKeys.Remove( kc );
+        } 
+
+        foreach ( var k in _holdKeys ) {
+            KeyBinds.TryExecuteBinds( keyHold: k, context: context );
+        }
     }
 
-    foreach ( var kc in KeyBinds.keys ) {
-        if ( ! Input.GetKeyUp( kc ) ) {
-            continue;
-        }
-        KeyBinds.TryExecuteBinds( keyUp: kc, context: context );
-        _holdKeys.Remove( kc );
-    } 
-
-    foreach ( var k in _holdKeys ) {
-        KeyBinds.TryExecuteBinds( keyHold: k, context: context );
-    }
-
-    _bindsText += $"\ncontext: '{context}'\n";
-    foreach ( var kc in KeyBinds.keys ) {
-        if ( KeyBinds.GetCmd( kc, context, out string cmd ) ) {
-            _bindsText += $"{kc} -- {cmd}\n";
+    if ( ShowHelp_kvar ) {
+        _bindsText += $"\ncontext: '{context}'\n";
+        foreach ( var kc in KeyBinds.keys ) {
+            if ( KeyBinds.GetCmd( kc, context, out string cmd ) ) {
+                _bindsText += $"{kc} -- {cmd}\n";
+            }
         }
     }
 }
@@ -191,10 +196,11 @@ public static void Tick( double timeDeltaDbl ) {
     if ( ZClient.state != ZClient.State.Connected ) {
         Draw.FillScreen( new Color( 0, 0, 0, 0.75f ) );
         Draw.centralBigRedMessage = "Connecting to server...";
-        Draw.BigRedMessage();
     }
     
     SingleShot.TickMs( clockDelta );
+
+    Draw.BigRedMessage();
 }
 
 public static void Execute( string command ) {
@@ -238,6 +244,12 @@ public static void SvCmd( string cmd ) {
         Log( cmd );
     }
     ZClient.RegisterReliableCmd( cmd );
+}
+
+static DateTime _pingStart;
+public static void Ping() {
+    _pingStart = DateTime.UtcNow;
+    SvCmd( "sv_ping" );
 }
 
 static void InputBegin() {
@@ -449,11 +461,9 @@ static void PrintHex_kmd( string [] argv ) {
     Qonsole.Log( $"hx: {mouseHex} axial: {mousePosAxial} game: {mousePosGame}" );
 }
 
-static DateTime _pingStart;
 static void Ping_kmd( string [] argv ) {
     Log( $"pinging {ClServerIpAddress_kvar}" );
-    _pingStart = DateTime.UtcNow;
-    SvCmd( "sv_ping" );
+    Ping();
 }
 
 static void Pong_kmd( string [] argv ) {
@@ -487,7 +497,7 @@ static void ClCenterBoard_kmd( string [] argv ) {
 }
 
 // public to shortwire select-to-spawn
-public static void ClForceSpawn_kmd( string [] argv ) {
+public static void ClForcedSpawn_kmd( string [] argv ) {
     if ( argv.Length < 2 ) {
         Error( $"{argv[0]} <def_name> [team]" );
         return;
@@ -503,7 +513,7 @@ public static void ClForceSpawn_kmd( string [] argv ) {
         team = argv[2];
     }
 
-    SvCmd( $"sv_force_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
+    SvCmd( $"sv_forced_spawn {argv[1]} {Cellophane.FtoA( mousePosGame.x )} {Cellophane.FtoA( mousePosGame.y )} {team}" );
 }
 
 static void ClKill_kmd( string [] argv ) {
@@ -537,6 +547,10 @@ static void ClPrintPawns_kmd( string [] argv ) {
 
 static void ClSetState_kmd( string [] argv ) { 
     TickUtil.SetState( argv, _ticks, _tickNames, ref ClState_kvar );
+}
+
+static void ClToggleHelp_kmd( string [] argv ) { 
+    ShowHelp_kvar = ! ShowHelp_kvar;
 }
 
 

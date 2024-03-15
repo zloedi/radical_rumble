@@ -38,8 +38,7 @@ class Player {
         int team = TeamNeedsPlayers( 0 ) ? 0 : 1;
         this.zport[pl] = ( ushort )zport;
         this.team[pl] = ( byte )team;
-        // kick off the mana clock
-        manaFull_ms[pl] = clock + 10 * MANA_SECOND;
+        ResetMana( pl, clock );
         return pl;
     }
 
@@ -105,6 +104,10 @@ class Player {
     const float MANA_GAIN_SPEED = 1 / 2.8f;
     const int MANA_SECOND = ( int )( 1000 / MANA_GAIN_SPEED );
     const int MANA_MAX = 10 * MANA_SECOND;
+
+    public void ResetMana( int pl, int clock ) {
+        manaFull_ms[pl] = clock + MANA_MAX;
+    }
 
     public float Mana( int pl, int clock ) {
         int empty = Math.Max( 0, manaFull_ms[pl] - clock );

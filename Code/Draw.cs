@@ -26,6 +26,7 @@ public static WrapBox wboxScreen;
 public static string centralBigRedMessage;
 public static int team;
 public static float mana;
+public static bool observer;
 public static bool rotate180 => team != 0;
 
 public static Board board => Cl.game.board;
@@ -181,7 +182,7 @@ public static void Zones( bool allTeams = false ) {
         if ( ! allTeams && zn.team != team ) {
             continue;
         }
-        Color col = zn.team == 0 ? Color.cyan : Color.red;
+        Color col = zn.team == team ? Color.cyan : Color.red;
         GetZoneBuf( zn );
         QGL.LateDrawLineLoop( _zoneBuf, color: col );
     }
@@ -439,8 +440,15 @@ public static void BoardBounds() {
 public static void CenterBoardOnScreen() {
     GetBoardBoundsInPixels( out int x, out int y, out int w, out int h );
     int gap = 20 * pixelSize;
-    _pan.x = ( Screen.width - w ) / 2 - x - gap;
-    //_pan.x = ( Screen.width - w ) / 2 - x;
+    if ( observer ) {
+        _pan.x = ( Screen.width - w ) / 2 - x;
+    } else {
+        if ( rotate180 ) {
+            _pan.x = ( Screen.width - w ) / 2 - x + gap;
+        } else {
+            _pan.x = ( Screen.width - w ) / 2 - x - gap;
+        }
+    }
     _pan.y = ( Screen.height - h ) / 2 - y;
 }
 

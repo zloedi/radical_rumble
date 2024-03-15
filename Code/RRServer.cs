@@ -130,8 +130,13 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
         }
 
         pl = game.player.Create( zport, ZServer.clock );
+
         if ( pl != 0 ) {
             Log( $"Created player {pl} of team {game.player.team[pl]}." );
+            // when a player joins reset the mana to all players
+            for ( int plMana = 1; plMana < Player.MAX_PLAYER; plMana++ ) {
+                game.player.ResetMana( plMana, ZServer.clock );
+            }
         } else {
             Error( $"Failed to create player for client {zport}" );
         }

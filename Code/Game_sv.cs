@@ -40,10 +40,6 @@ static bool SvLogPaths_kvar = false;
 
 public void PostLoadMap() {
     pawn.UpdateFilters();
-
-    // kick off the mana clocks
-    for ( int pl = 1; pl < Player.MAX_PLAYER; pl++ ) {
-    }
 }
 
 public void TickServer() {
