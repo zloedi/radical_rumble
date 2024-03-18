@@ -79,7 +79,6 @@
     <Compile Include="ArrayUtil.cs" />
     <Compile Include="Draw.cs" />
     <Compile Include="Game.cs" />
-    <Compile Include="GameGym.cs" />
     <Compile Include="Game_sv.cs" />
     <Compile Include="Gym.cs" />
     <Compile Include="Main.cs" />
@@ -87,6 +86,7 @@
     <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
+    <Compile Include="Player.cs" />
     <Compile Include="PlayerQGL.cs" />
     <Compile Include="TickUtil.cs" />
     <Compile Include="RRClient.cs" />

@@ -22,8 +22,6 @@ static Board board => Cl.game.board;
 static Game game => Cl.game;
 
 static int _selectedSpawn;
-// FIXME: wait for the server clock to match the speculated clock then do spawning
-static int _triggerSpawn;
 
 public static void Tick() {
     float mana = 0;
