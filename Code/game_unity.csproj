@@ -96,4 +96,11 @@
     <Compile Include="Properties/AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\
+copy $(TargetPath) $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
+copy $(TargetDir)\game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
+copy $(TargetDir)\game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
+copy $(ProjectDir)\*.map $(ProjectDir)..\BuildUnity</PostBuildEvent>
+  </PropertyGroup>
 </Project>

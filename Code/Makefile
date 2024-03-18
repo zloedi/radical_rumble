@@ -31,20 +31,10 @@ all: debug_sdl release_sdl debug_unity release_unity
 ./bin/Debug/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Debug \
 		&& cp ZloediUtils/GLSprites.shader ../RadicalRumbleUnity/Assets/Resources \
-		&& cp bin/Debug/game.dll ../RadicalRumbleUnity/Assets/ \
-		&& cp bin/Debug/game.pdb ../RadicalRumbleUnity/Assets/ \
-		&& cp bin/Debug/game.dll ../BuildUnity/RadicalRumble_Data/Managed/ \
-		&& cp bin/Debug/game.pdb ../BuildUnity/RadicalRumble_Data/Managed/ \
-		&& cp *.map ../BuildUnity \
 
 ./bin/Release/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Release \
 		&& cp ZloediUtils/GLSprites.shader ../RadicalRumbleUnity/Assets/Resources \
-		&& cp ./bin/Release/game.dll ../RadicalRumbleUnity/Assets/ \
-		&& cp ./bin/Release/game.pdb ../RadicalRumbleUnity/Assets/ \
-		&& cp bin/Release/game.dll ../BuildUnity/RadicalRumble_Data/Managed/ \
-		&& cp bin/Release/game.pdb ../BuildUnity/RadicalRumble_Data/Managed/ \
-		&& cp *.map ../BuildUnity \
 
 clean: 
 	dotnet clean game_sdl.csproj \
