@@ -252,16 +252,17 @@ static string DeltaGameState() {
 
 static string MapsDir() {
 #if UNITY_STANDALONE
-    string path;
-    if ( Application.isEditor ) {
-        path = Application.dataPath + "/../../BuildUnity/";
-    } else {
-        path = Application.dataPath + "/../";
-    }
-    return path;
+    string mapsDevLocation = "/../../Code/";
+    string path = Application.dataPath;
+    string mapsBuildLocation = Application.isEditor ? "/../../BuildUnity/" : "/../";
+    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : mapsBuildLocation;
+    return path + maps;
 #else
+    string mapsDevLocation = "/../Code/";
     string exeLocation = System.Reflection.Assembly.GetEntryAssembly().Location;
-    return System.IO.Path.GetDirectoryName( exeLocation );
+    string path = System.IO.Path.GetDirectoryName( exeLocation );
+    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : "/./";
+    return path + maps;
 #endif
 }
 

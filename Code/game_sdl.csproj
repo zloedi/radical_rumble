@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{49ef5c6a-86cf-11ee-beae-088fc30c8592}</ProjectGuid>
+    <ProjectGuid>{49EF5C6A-86CF-11EE-BEAE-088FC30C8592}</ProjectGuid>
     <!--OutputType>Library</OutputType-->
     <OutputType>exe</OutputType>
     <!--OutputType>Exe</OutputType - console exe-->
@@ -39,13 +39,11 @@
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="ZloediUtils/AppleFont.cs" />
     <Compile Include="ZloediUtils/Cellophane.cs" />
@@ -96,4 +94,7 @@
     <Content Include="ZloediUtils/SDL2.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(ProjectDir)*.map $(ProjectDir)..\BuildSDL</PostBuildEvent>
+  </PropertyGroup>
 </Project>

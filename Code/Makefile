@@ -18,7 +18,6 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp bin/Debug/game_sdl.pdb ../BuildSDL/ \
 		&& cp ZloediUtils/SDL/SDL2.dll ../BuildSDL \
 		&& cp ZloediUtils/SDL/SDL2.dll bin/Debug/ \
-		&& cp ../BuildSDL/*.map ./ \
 
 ./bin/Release/game_sdl.exe:
 	dotnet build game_sdl.csproj --nologo --configuration Release \
@@ -26,20 +25,18 @@ all: debug_sdl release_sdl debug_unity release_unity
 		&& cp bin/Release/game_sdl.pdb ../BuildSDL/ \
 		&& cp ZloediUtils/SDL/SDL2.dll ../BuildSDL \
 		&& cp ZloediUtils/SDL/SDL2.dll bin/Release/ \
-		&& cp ../BuildSDL/*.map ./ \
 
 ./bin/Debug/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Debug \
-		&& cp ZloediUtils/GLSprites.shader ../RadicalRumbleUnity/Assets/Resources \
 
 ./bin/Release/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Release \
-		&& cp ZloediUtils/GLSprites.shader ../RadicalRumbleUnity/Assets/Resources \
 
 clean: 
 	dotnet clean game_sdl.csproj \
-	&& rm -rf ./bin/* \
-	&& rm -rf ../RadicalRumbleUnity/Assets/game.exe* \
-	&& rm -rf ../RadicalRumbleUnity/Assets/game.pdb* \
-	&& rm -rf ../RadicalRumbleUnity/Assets/game.dll* \
-	&& rm -rf ../RadicalRumbleUnity/Assets/game.pdb* \
+		&& dotnet clean game_unity.csproj \
+		&& rm -rf ./bin/* \
+		&& rm -rf ../BuildSDL/game_sdl.exe \
+		&& rm -rf ../BuildSDL/game_sdl.exe \
+		&& rm -rf ../RadicalRumbleUnity/Assets/game.dll* \
+		&& rm -rf ../RadicalRumbleUnity/Assets/game.pdb* \

@@ -101,6 +101,6 @@
 copy $(TargetPath) $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
 copy $(TargetDir)\game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
 copy $(TargetDir)\game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
-copy $(ProjectDir)\*.map $(ProjectDir)..\BuildUnity</PostBuildEvent>
+copy $(ProjectDir)*.map $(ProjectDir)..\BuildUnity</PostBuildEvent>
   </PropertyGroup>
 </Project>
