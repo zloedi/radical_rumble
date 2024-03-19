@@ -28,7 +28,7 @@ public static void Tick() {
     Cl.TickKeybinds( context: $"gym_{_tickNames[t]}" );
     _ticks[t]();
 
-    var wbox = Draw.wboxScreen.BottomCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
+    var wbox = Draw.wboxScreen.BottomCenter( Draw.wboxScreen.W, 20 );
     var text = $"Gym {_stateName}";
     WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: Draw.textSize );
 }

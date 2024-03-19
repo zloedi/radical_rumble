@@ -53,7 +53,7 @@ static void TickBegin( float pawnsAlpha = 1, bool skipVoidHexes = false ) {
 }
 
 static void TickEnd() {
-    var wbox = Draw.wboxScreen.BottomCenter( Draw.wboxScreen.W, 20 * Draw.pixelSize );
+    var wbox = Draw.wboxScreen.BottomCenter( Draw.wboxScreen.W, 20 );
     var text = $"'{EdLastSavedMap_kvar}' {_stateName}";
     WBUI.QGLTextOutlined( text, wbox, color: Color.white, fontSize: Draw.textSize );
 }

@@ -149,7 +149,7 @@ public static void Tick( double timeDeltaDbl ) {
 
     clockDelta = ( int )clockDeltaDbl;
 
-    WrapBox.DisableCanvasScale();
+    WrapBox.DisableCanvasScale( fixedScale: Draw.pixelSize );
 
     Draw.wboxScreen = new WrapBox{ w = Screen.width, h = Screen.height };
     Draw.centralBigRedMessage = null;

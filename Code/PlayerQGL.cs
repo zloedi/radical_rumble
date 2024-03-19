@@ -15,6 +15,7 @@ using PDF = Pawn.Def.Flags;
 public static class PlayerQGL {
 
 static bool ClSpawnDirectly_kvar = false;
+static bool SkipWaitForPlayers_kvar = false;
 
 static Player player => Cl.game.player;
 static Pawn pawn => Cl.game.pawn;
@@ -28,7 +29,7 @@ public static void Tick() {
     int myPlayer = 0;
     bool observer = false;
     int myTeam = 0;
-    bool needPlayers = game.player.AnyTeamNeedsPlayers();
+    bool needPlayers = ! SkipWaitForPlayers_kvar && game.player.AnyTeamNeedsPlayers();
 
     int clock = ( int )Cl.clock;
     int clockDelta = ( int )Cl.clockDelta;
@@ -172,19 +173,17 @@ public static void Tick() {
         }
     } else {
         // mana bar
-        WrapBox wbox = Draw.wboxScreen.CenterRight( 40 * Draw.pixelSize, Draw.wboxScreen.H );
+        WrapBox wbox = Draw.wboxScreen.CenterRight( 40, Draw.wboxScreen.H );
         WrapBox wbCards = wbox;
         float gap = wbox.W * 0.45f;
         wbox = wbox.Center( gap, wbox.H - gap );
         Color manaCol = new Color( 0.9f, 0.2f, 0.9f );
-        Draw.FillRect( wbox.Center( wbox.W + Draw.pixelSize * 2, wbox.H + Draw.pixelSize * 2 ),
-                                                                                    manaCol * 0.5f );
+        Draw.FillRect( wbox.Center( wbox.W + 2, wbox.H + 2 ), manaCol * 0.5f );
         Draw.FillRect( wbox.BottomCenter( wbox.W, wbox.H * mana / 10f ), manaCol );
         WBUI.QGLTextOutlined( ( ( int )mana ).ToString(), wbox, color: manaCol * 4,
                                                         fontSize: Draw.textSize + Draw.pixelSize );
 
-        wbCards = wbCards.BottomRight( 20 * Draw.pixelSize, 20 * Draw.pixelSize,
-                                                x: 35 * Draw.pixelSize, y: 20 * Draw.pixelSize );
+        wbCards = wbCards.BottomRight( 20, 20, x: 35, y: 20 );
         foreach ( var def in Pawn.defs ) {
             if ( def.symbol != ' '
                 && ( def.flags & ( PDF.Structure
@@ -194,7 +193,7 @@ public static void Tick() {
 
                 Draw.PawnDef( wbCards.midPoint, def, alpha: enough ? 1 : 0.65f, false );
 
-                WBUI.QGLTextOutlined( $"   {def.cost}",
+                WBUI.QGLTextOutlined( $"  {def.cost}",
                         wbCards.CenterRight( wbCards.W / 4, wbCards.H / 4 ),
                         color: enough ? manaCol * 3 : manaCol * 0.7f, fontSize: Draw.textSize );
 
