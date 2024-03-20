@@ -1,12 +1,20 @@
 ] Game over and winner announce
-] Implement button 'ready'/'not ready'
+
+] Fast clicking leads to no-spawn
+
+] Binary (compressed) deltas.
 ] Turn the cached pather lists into arrays on cache.
+] DNS support
+
 ] Implement Click/Drag on cards.
+] Implement button 'ready'/'not ready'
 ] Use particles for the ranged projectiles instead of lines.
 ] Use some 'vfx' for melees instead of lines.
+
 ] Improve the editor.
-] Binary (compressed) deltas.
 ] Pawn avoidance
+
+] Player (not client) reconnect?
 
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
