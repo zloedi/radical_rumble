@@ -143,6 +143,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
         } else {
             Error( $"Failed to create player for client {zport}" );
         }
+
+        RegisterTrail( $"ed_last_saved_map {SvLastLoadedMap_kvar}" );
     };
 
     return ZServer.Init();
