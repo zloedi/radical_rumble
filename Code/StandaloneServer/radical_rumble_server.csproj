@@ -45,7 +45,6 @@
     <Compile Include="../ZloediUtils/Hexes.cs" />
     <Compile Include="../ZloediUtils/HexPather.cs" />
     <Compile Include="../ZloediUtils/Net.cs" />
-    <Compile Include="../ZloediUtils/QUI.cs" />
     <Compile Include="../ZloediUtils/Qonche.cs" />
     <Compile Include="../ZloediUtils/Qonsole/Qonsole.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Color.cs" />
