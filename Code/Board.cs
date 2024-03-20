@@ -16,14 +16,19 @@ public class Board {
     public int height => size[1];
     public int numItems => width * height;
 
+    // tx
     public byte [] size = new byte[2];
 
     // actual grids
+
+    // tx
     public byte [] terrain = null;
+    public byte [] zone = null;
+
     public byte [] pawnDef = null;
     public byte [] pawnTeam = null;
-    public byte [] zone = null;
-    // FIXME: not sure it's place is here
+
+    // FIXME: not sure it's place is in the board
     public byte [] navMap = null;
 
     public HexPather.Context patherCTX = HexPather.CreateContext( MAX_GRID );

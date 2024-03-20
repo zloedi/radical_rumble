@@ -16,7 +16,7 @@ static class RRClient {
 // 127.0.0.1 -- this is a local game and the host is this machine
 // 89.190.193.149 -- raspberry pi server."
 )]
-public static string ClServerIpAddress_kvar = "127.0.0.1";
+public static string ClServerIpAddress_kvar = "89.190.193.149";
 
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;

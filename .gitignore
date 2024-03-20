@@ -2,7 +2,7 @@
 *.swp
 *.swo
 *.csproj.user
-*.dll
+game.dll
 *.dll.meta
 bin
 obj

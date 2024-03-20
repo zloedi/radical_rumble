@@ -95,9 +95,10 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
       <PostBuildEvent>copy $(ProjectDir)*.map $(ProjectDir)..\BuildSDL
+          copy $(ProjectDir)SDL2.dll $(TargetDir)
+          copy $(ProjectDir)SDL2.dll $(ProjectDir)..\BuildSDL
           copy $(TargetPath) $(ProjectDir)..\BuildSDL
           copy $(TargetDir)game_sdl.pdb $(ProjectDir)..\BuildSDL
-          copy $(ProjectDir)*.map $(ProjectDir)..\BuildSDL
       </PostBuildEvent>
   </PropertyGroup>
 </Project>
