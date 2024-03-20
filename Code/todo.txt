@@ -4,7 +4,9 @@
 ] Implement Click/Drag on cards.
 ] Use particles for the ranged projectiles instead of lines.
 ] Use some 'vfx' for melees instead of lines.
+] Improve the editor.
 ] Binary (compressed) deltas.
+] Pawn avoidance
 
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
