@@ -68,7 +68,7 @@ static bool _initialized = false;
 
 static void QonsolePreConfig_kmd( string [] argv ) {
     // change this to wipe cfg to defautlts
-    Cellophane.ConfigVersion_kvar = 4;
+    Cellophane.ConfigVersion_kvar = 5;
 
     Qonsole.TryExecute( @"
         bind Alpha1 ""cl_select_to_spawn Brute"" play;
@@ -126,10 +126,10 @@ static void QonsolePreConfig_kmd( string [] argv ) {
         //bind S +client_pan_down;
         //bind W +client_pan_up;
 
-        sdl_screen_height 1042;
-        sdl_screen_width 902;
-        sdl_screen_x 513
-        sdl_screen_y 36
+        sdl_screen_height 1000;
+        sdl_screen_width 900;
+        sdl_screen_x 512;
+        sdl_screen_y 40;
     " );
 
     Qonsole.onStoreCfg_f = () => KeyBinds.StoreConfig();
