@@ -1,10 +1,10 @@
 Talking Points
 
-Net -- net chan, zclient, zserver
+Net -- net chan, zclient, zserver, deltas
 Game -- Pawn/PawnDef, Board, Player, Filters, Utils
-RRServer/Game_sv -- game simulation, pawn states
+RRServer/Game_sv -- game simulation, pawn states,
 RRClient/Play/Edit -- WrapBox, QGL, Qonsole, SDLPorts
-RR Server AND Client -- basically sending clocks around:
+RR Server AND Client -- deltas, basically sending clocks around:
     movement + clock,
     attack clock,
     mana full clock
