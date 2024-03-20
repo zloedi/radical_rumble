@@ -1,3 +1,5 @@
+// == server-specific parts of the Game ==
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,19 +38,12 @@ static bool SvAsserts_kvar = false;
 static bool SvInvincibleTowers_kvar = false;
 [Description( "Extra logging for the path cache." )]
 static bool SvLogPaths_kvar = false;
-//static int ChickenBit_kvar = 0;
 
 public void PostLoadMap() {
     pawn.UpdateFilters();
 }
 
 public void TickServer() {
-
-    for ( int pl = 1; pl < Player.MAX_PLAYER; pl++ ) {
-        if ( player.zport[pl] != 0 ) {
-            player.Mana( pl, ZServer.clock );
-        }
-    }
 
     pawn.UpdateFilters();
     RegisterIntoGrids();
