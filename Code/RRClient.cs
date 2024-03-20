@@ -406,11 +406,11 @@ static void OnServerPacket( List<byte> packet ) {
 }
 
 static void Play_tck() {
-    PlayerQGL.Tick();
+    RRClientPlayQGL.Tick();
 }
 
 static void Edit_tck() {
-    MapEditor.Tick();
+    RRClientEdit.Tick();
 }
 
 static void Gym_tck() {

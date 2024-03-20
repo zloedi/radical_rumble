@@ -12,7 +12,7 @@ using Cl = RRClient;
 using Trig = Pawn.ClientTrigger;
 using PDF = Pawn.Def.Flags;
 
-public static class PlayerQGL {
+public static class RRClientPlayQGL {
 
 static bool ClSpawnDirectly_kvar = false;
 static bool SkipWaitForPlayers_kvar = false;
@@ -66,6 +66,8 @@ public static void Tick() {
         }
     }
 
+    // == input ==
+
     if ( allowSpawn && _selectedSpawn != 0 && Cl.mouse0Down ) {
         if ( enoughMana ) {
             string name = selectedDef.name;
@@ -81,6 +83,8 @@ public static void Tick() {
     if ( _selectedSpawn != 0 && Cl.mouse1Down ) {
         _selectedSpawn = 0;
     }
+
+    // == client logic ==
 
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( Cl.TriggerOn( z, Trig.Move ) ) {
@@ -153,6 +157,8 @@ public static void Tick() {
     foreach ( var z in pawn.filter.flying ) {
         updatePos( z );
     }
+
+    // == render ==
 
     Draw.FillScreen( new Color( 0.1f, 0.13f, 0.2f ) );
     Draw.CenterBoardOnScreen();

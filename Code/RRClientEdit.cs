@@ -11,7 +11,7 @@ using GalliumMath;
 
 using Cl = RRClient;
 
-static class MapEditor {
+static class RRClientEdit {
 
 
 static string EdLastSavedMap_kvar = "unnamed";
@@ -20,7 +20,7 @@ static int EdState_kvar = 1;
 static bool EdHexTracingVariant_kvar = false;
 
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( MapEditor ), out _tickNames );
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RRClientEdit ), out _tickNames );
 
 static string _stateName => _tickNames[EdState_kvar % _ticks.Length];
 
