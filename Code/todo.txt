@@ -1,8 +1,10 @@
-] Mana resource and pawn prices
 ] Game over and winner announce
-] Set client state to wait-for-ready on connect (send the team number there)
 ] Implement button 'ready'/'not ready'
-] On map load everyone goes into observer mode
+] Turn the cached pather lists into arrays on cache.
+] Implement Click/Drag on cards.
+] Use particles for the ranged projectiles instead of lines.
+] Use some 'vfx' for melees instead of lines.
+] Binary (compressed) deltas.
 
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
@@ -61,11 +63,6 @@ types of movement:
     pathing
     charge enemy (has directly 'visible' enemy in aggro range)
     avoid teammates
-
-don't use PassableTerrainToTarget while navigating.
-instead
-    always use the pather
-    replace the last segment if actually on the last segment (path has only 2 nodes)
 
 don't use PassableTerrainToTarget while checking opponent for visibility.
     use the pather

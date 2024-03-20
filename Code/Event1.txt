@@ -1,0 +1,7 @@
+Talking Points
+
+Net.cs -- net chan, zclient, zserver, connected here.
+Game -- Pawn, Board, Player, Filters, Utils
+RRServer/Game_sv
+RRClient/Play/Edit -- WrapBox, QGL, Qonsole
+Standalone Server

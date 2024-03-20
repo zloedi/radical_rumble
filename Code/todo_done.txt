@@ -1,3 +1,11 @@
+* don't use PassableTerrainToTarget while navigating.
+* instead
+*     always use the pather
+*     replace the last segment if actually on the last segment (path has only 2 nodes)
+
++ Set client state to wait-for-ready on connect (send the team number there)
+* BUG: On map load everyone goes into observer mode
+* Mana resource and pawn prices
 * Limit the spawn into zones around the towers (editable?)
 * Add a mode to place pawns not-directly: drag at the cursor, then drop
 * If rejoin, can't get to play, get observer instead...
