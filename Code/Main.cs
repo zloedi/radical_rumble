@@ -58,7 +58,7 @@ static class SDLApp {
 
 static class Main {
 
-[Description( "Always run the local server no matter if localhost." )]
+[Description( "Always run the local server no matter if target ip is localhost." )]
 static bool LocalServerAlwaysOn_kvar = false;
 
 [Description( "Frame duration in milliseconds." )]

@@ -110,6 +110,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
     ZServer.onTick_f = RRServer.Tick;
     ZServer.onClientDisconnect_f = zport => {
+        // FIXME: should just erase the zport
+        // FIXME: try to keep going on reconnect
         game.player.DestroyByZport( zport );
     };
 
@@ -134,6 +136,7 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
         if ( pl != 0 ) {
             Log( $"Created player {pl} of team {game.player.team[pl]}." );
             // when a player joins reset the mana to all players
+            // FIXME: reconnect?
             for ( int plMana = 1; plMana < Player.MAX_PLAYER; plMana++ ) {
                 game.player.ResetMana( plMana, ZServer.clock );
             }

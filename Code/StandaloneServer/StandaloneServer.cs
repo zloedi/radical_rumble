@@ -53,9 +53,10 @@ static void Main( string[] args ) {
         DateTime prevTime = DateTime.UtcNow;
         while ( tick > 0 ) {
             // sleep for that many microseconds if no activity
-            // will execute any incoming client reliable commands immediately
             ZServer.Poll( out bool hadCommands, microseconds: 20 * 1000 );
             if ( hadCommands ) {
+                // generate delta when any client command got executed on the server
+                // and send the delta immediately
                 forcePacket = true;
                 break;
             }

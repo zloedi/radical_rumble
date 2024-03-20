@@ -110,6 +110,7 @@ quit:
             // path inflection point, get a new segment to lerp on
             if ( ! NavUpdate( z ) ) {
                 // nothing to focus on for navigation
+                Log( $"{pawn.DN( z )} no navigation target, go to idle." );
                 pawn.SetState( z, PS.Idle );
                 continue;
             }
@@ -214,7 +215,7 @@ quit:
         pawn.hp[zf] = ( ushort )Mathf.Max( 0, pawn.hp[zf] - pawn.Damage( z ) );
 
         if ( pawn.hp[zf] == 0 ) {
-            Log( $"{pawn.DN( z )} is killed." );
+            Log( $"{pawn.DN( zf )} is killed." );
             pawn.SetState( zf, PS.Dead );
 
             // pawns in the list may die while walking the list
@@ -672,6 +673,9 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
     float minEnemy = 9999999;
 
     Vector2Int axialA = VToAxial( pawn.mvPos[z] );
+
+    // == structure needs focus ==
+
     if ( pawn.IsStructure( z ) ) {
         foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
             float sq = pawn.SqDist( z, ze );
@@ -699,6 +703,8 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
         }
         return zEnemy != 0;
     }
+
+    // == non-structure ==
 
     foreach ( var ze in pawn.filter.enemies[pawn.team[z]] ) {
         float sq = pawn.SqDist( z, ze );
@@ -878,6 +884,7 @@ bool NavUpdate( int z ) {
             pawn.mvEnd_ms[z] -= leftover;
         }
     }
+
     return true;
 }
 
