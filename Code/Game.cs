@@ -32,7 +32,6 @@ public Array [] gridRows;
 public Game() {
     syncedRows = new Array [] {
         player.zport,
-        player.state,
         player.team,
         player.manaFull_ms,
 

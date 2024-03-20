@@ -2,17 +2,11 @@ using System;
 using System.Collections.Generic;
 
 class Player {
-    enum State {
-        None,
-        Ready,
-    }
-
     // player 0 is invalid though, bump it up if you need 4 players
     public const int MAX_PLAYER = 4;
 
     // tx-ed
     public ushort [] zport = null;
-    public byte [] state = null;
     public byte [] team = null;
     public int [] manaFull_ms = null;
 
