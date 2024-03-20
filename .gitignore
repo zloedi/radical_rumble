@@ -3,10 +3,12 @@
 *.swo
 *.csproj.user
 game.dll
+
 *.dll.meta
 bin
 obj
 .vsconfig
+BuildUnity/*.dll
 RadicalRumbleUnity/Library
 RadicalRumbleUnity/Logs
 RadicalRumbleUnity/UserSettings
