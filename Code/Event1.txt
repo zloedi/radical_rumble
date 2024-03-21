@@ -1,14 +1,21 @@
-Talking Points
+Net -- msg, chan, common, zclient, zserver, deltas
+    msg -- bytes of fragments
+    chan -- fragments of packets, each client on the server has a chan
+    common -- sockets
+    no 'reliable channel' at all, send data, if out of order -- drop, wait for the proper one
+    common scenarios
 
-Net -- net chan, zclient, zserver, deltas
-    common scenarios:
-        killed client, reconnect from client
-        killed server, rconnect clients from server
-Game -- Pawn/PawnDef, Board, Player, Filters, Utils, serialization driven
+Game -- Pawn/PawnDef, Board, Player, Filters, Utils, "serialization driven design lal"
+
+RR Server AND Client -- deltas, 
+    sending clocks around:
+        movement target + clock,
+        attack clock,
+        mana full clock
+
 RRServer/Game_sv -- game simulation, pawn states,
-RRClient/Play/Edit -- WrapBox, QGL, Qonsole, SDLPorts
-RR Server AND Client -- deltas, basically sending clocks around:
-    movement + clock,
-    attack clock,
-    mana full clock
+RRClient/Play/Edit -- WrapBox, QGL, SDLPorts
+
 Standalone Server
+
+Qonsole
