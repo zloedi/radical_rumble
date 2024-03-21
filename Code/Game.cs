@@ -94,6 +94,20 @@ public void Reset() {
     gridPawn.Clear();
 }
 
+// 0 -- keep running, 1 -- team0 win, 2 -- team1 win, 3 -- draw
+public int IsOver() {
+    for ( int team = 0; team < 2; team++ ) {
+        int otherTeam = ( team + 1 ) & 1;
+        if ( pawn.filter.objectives[team].Count == 0 ) {
+            if ( pawn.filter.objectives[otherTeam].Count == 0 ) {
+                return 3;
+            }
+            return 1 + team;
+        }
+    }
+    return 0;
+}
+
 List<ushort> deltaChange = new List<ushort>();
 List<int> deltaNumbers = new List<int>();
 public bool UndeltaState( string [] argv, int clock, out bool updateBoard,

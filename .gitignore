@@ -1,5 +1,6 @@
 .vs
 *.swp
+*.zip
 *.swo
 *.csproj.user
 game.dll

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 
 #if UNITY_STANDALONE
 using UnityEngine;
@@ -39,14 +40,16 @@ static bool SvInvincibleTowers_kvar = false;
 [Description( "Extra logging for the path cache." )]
 static bool SvLogPaths_kvar = false;
 
-public void PostLoadMap() {
-    pawn.UpdateFilters();
-}
-
-public void TickServer() {
+// 0 -- keep running, 1 -- team0 win, 2 -- team1 win, 3 -- draw
+public int TickServer() {
 
     pawn.UpdateFilters();
     RegisterIntoGrids();
+
+    int gameOver = IsOver();
+    if ( gameOver != 0 ) {
+        return gameOver;
+    }
 
     foreach ( var z in pawn.filter.ByState( PS.None ) ) {
         pawn.MvClamp( z );
@@ -293,6 +296,8 @@ quit:
         Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
         pawn.SetState( z, PS.ChargeEnemy );
     }
+
+    return 0;
 }
 
 public bool Spawn( int def, float x, float y, out int z ) {
@@ -493,6 +498,77 @@ public void SetTerrain( int x, int y, int terrain ) {
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
+    }
+}
+
+static string MapsDir() {
+#if UNITY_STANDALONE
+    string mapsDevLocation = "/../../Code/";
+    string path = Application.dataPath;
+    string mapsBuildLocation = Application.isEditor ? "/../../BuildUnity/" : "/../";
+    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : mapsBuildLocation;
+    return path + maps;
+#else
+    string mapsDevLocation = "/../Code/";
+    string exeLocation = System.Reflection.Assembly.GetEntryAssembly().Location;
+    string path = System.IO.Path.GetDirectoryName( exeLocation );
+    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : "/./";
+    return path + maps;
+#endif
+}
+
+public void LoadMap( string fileName ) {
+    if ( string.IsNullOrEmpty( fileName ) ) {
+        return;
+    }
+    string path = Path.Combine( MapsDir(), fileName );
+    string cmd = "";
+    try {
+        // sv_undelta will do game reset
+        cmd = File.ReadAllText( path );
+        Reset();
+        Cellophane.TryExecuteString( cmd );
+        // the slow board filters will be updated conditinionally in 'undelta'
+        pawn.UpdateFilters();
+        RegisterIntoGrids();
+        Log( $"Loaded '{path}'" );
+    } catch ( Exception ) {
+        Error( $"Failed to read file '{path}'" );
+    }
+}
+
+public void SaveMap( string fileName ) {
+    string path = Path.Combine( MapsDir(), fileName );
+    string storage = "sv_undelta\n";
+    string emitRow( string name, string c, string v ) {
+        return $"{name}{c} :{v} :\n";
+    }
+    foreach ( Array row in persistentRows ) {
+        Shadow.Row shadowRow = shadow.arrayToShadow[row];
+        if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+            byte [] zero = new byte[row.Length];
+            if ( Delta.DeltaBytes( ( byte[] )row, zero, out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+            ushort [] zero = new ushort[row.Length];
+            if ( Delta.DeltaShorts( ( ushort[] )row, zero,
+                                                        out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+            int [] zero = new int[row.Length];
+            if ( Delta.DeltaInts( ( int[] )row, zero, out string changes, out string values ) ) {
+                storage += emitRow( shadowRow.name, changes, values );
+            }
+        }
+    }
+    storage += ";";
+    try {
+        File.WriteAllText( path, storage );
+        Log( $"Saved '{path}'" );
+    } catch ( Exception ) {
+        Error( $"Failed to save '{path}'" );
     }
 }
 

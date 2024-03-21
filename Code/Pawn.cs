@@ -300,9 +300,10 @@ partial class Pawn {
         public List<byte> flying = null, no_flying = null;
         public List<byte> structures = null, no_structures = null;
 
-        // FIXME: obsolete
+        // FIXME: obsolete?
         public List<byte> [] enemies = new List<byte>[2];
         public List<byte> [] team = new List<byte>[2];
+        public List<byte> [] objectives = new List<byte>[2];
         public List<byte> [] byState = new List<byte>[AllStates.Length];
         public List<byte> [] no_byState = new List<byte>[AllStates.Length];
 
@@ -361,6 +362,12 @@ partial class Pawn {
 
         foreach ( int z in filter.no_flying ) {
             filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
+        }
+
+        foreach ( int z in filter.no_garbage ) {
+            if ( IsWinObjective( z ) ) {
+                filter.Assign( z, team[z] == 0, filter.objectives[0], filter.objectives[1] );
+            }
         }
     }
 }

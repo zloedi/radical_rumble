@@ -109,6 +109,7 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     ZServer.net.TryExecuteOOB = s => Qonsole.TryExecute( s );
     ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
     ZServer.onTick_f = RRServer.Tick;
+
     ZServer.onClientDisconnect_f = zport => {
         // FIXME: should just erase the zport
         // FIXME: try to keep going on reconnect
@@ -135,8 +136,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
 
         if ( pl != 0 ) {
             Log( $"Created player {pl} of team {game.player.team[pl]}." );
-            // when a player joins reset the mana to all players
-            // FIXME: reconnect?
+            // when a player joins, reset the mana to all players
+            // FIXME: net chan reconnect?
             for ( int plMana = 1; plMana < Player.MAX_PLAYER; plMana++ ) {
                 game.player.ResetMana( plMana, ZServer.clock );
             }
@@ -189,7 +190,8 @@ public static List<byte> Tick( int dt, bool isForcedSend ) {
 
     // ==
 
-    game.TickServer();
+    // 0 -- keep running, 1 -- team0 win, 2 -- team1 win, 3 -- draw
+    int result = game.TickServer();
 
     // ==
 
@@ -204,6 +206,7 @@ public static List<byte> Tick( int dt, bool isForcedSend ) {
 
     if ( string.IsNullOrEmpty( packet ) && ! isForcedSend ) {
         // no delta nor trailing commands
+        handleGameOver();
         return _sentPacket;
     }
 
@@ -215,6 +218,14 @@ public static List<byte> Tick( int dt, bool isForcedSend ) {
     }
 
     _sentPacket.AddRange( Encoding.UTF8.GetBytes( packet ) );
+
+    handleGameOver();
+
+    void handleGameOver() {
+        if ( result != 0 && ZServer.clients.Count == 0 ) {
+            LoadLastMap();
+        }
+    }
 
     return _sentPacket;
 }
@@ -255,37 +266,9 @@ static string DeltaGameState() {
     return delta;
 }
 
-static string MapsDir() {
-#if UNITY_STANDALONE
-    string mapsDevLocation = "/../../Code/";
-    string path = Application.dataPath;
-    string mapsBuildLocation = Application.isEditor ? "/../../BuildUnity/" : "/../";
-    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : mapsBuildLocation;
-    return path + maps;
-#else
-    string mapsDevLocation = "/../Code/";
-    string exeLocation = System.Reflection.Assembly.GetEntryAssembly().Location;
-    string path = System.IO.Path.GetDirectoryName( exeLocation );
-    string maps = Directory.Exists( path + mapsDevLocation ) ? mapsDevLocation : "/./";
-    return path + maps;
-#endif
-}
-
 static void LoadLastMap() {
-    if ( string.IsNullOrEmpty( SvLastLoadedMap_kvar ) ) {
-        return;
-    }
-    string path = Path.Combine( MapsDir(), SvLastLoadedMap_kvar );
-    string cmd = "";
-    try {
-        // sv_undelta will do game reset
-        cmd = File.ReadAllText( path );
-        game.Reset();
-        Cellophane.TryExecuteString( cmd );
-        game.PostLoadMap();
-        Log( $"Loaded '{path}'" );
-    } catch ( Exception ) {
-        Error( $"Failed to read file '{path}'" );
+    if ( ! string.IsNullOrEmpty( SvLastLoadedMap_kvar ) ) {
+        game.LoadMap( SvLastLoadedMap_kvar );
     }
 }
 
@@ -310,38 +293,7 @@ static void SvSaveMap_kmd( string [] argv, int zport ) {
         return;
     }
     SvLastLoadedMap_kvar = argv[1];
-    string path = Path.Combine( MapsDir(), SvLastLoadedMap_kvar );
-    string storage = "sv_undelta\n";
-    string emitRow( string name, string c, string v ) {
-        return $"{name}{c} :{v} :\n";
-    }
-    foreach ( Array row in game.persistentRows ) {
-        Shadow.Row shadowRow = game.shadow.arrayToShadow[row];
-        if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
-            byte [] zero = new byte[row.Length];
-            if ( Delta.DeltaBytes( ( byte[] )row, zero, out string changes, out string values ) ) {
-                storage += emitRow( shadowRow.name, changes, values );
-            }
-        } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
-            ushort [] zero = new ushort[row.Length];
-            if ( Delta.DeltaShorts( ( ushort[] )row, zero,
-                                                        out string changes, out string values ) ) {
-                storage += emitRow( shadowRow.name, changes, values );
-            }
-        } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
-            int [] zero = new int[row.Length];
-            if ( Delta.DeltaInts( ( int[] )row, zero, out string changes, out string values ) ) {
-                storage += emitRow( shadowRow.name, changes, values );
-            }
-        }
-    }
-    storage += ";";
-    try {
-        File.WriteAllText( path, storage );
-        Log( $"Saved '{path}'" );
-    } catch ( Exception ) {
-        Error( $"Failed to save '{path}'" );
-    }
+    game.SaveMap( SvLastLoadedMap_kvar );
 }
 
 static void SvBroadcastCommand_kmd( string [] argv, int zport ) {

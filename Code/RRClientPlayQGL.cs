@@ -49,6 +49,12 @@ public static void Tick() {
     pawn.UpdateFilters();
     game.RegisterIntoGrids();
 
+    int gameOver = game.IsOver();
+
+    if ( gameOver != 0 ) {
+        _selectedSpawn = 0;
+    }
+
     Pawn.Def selectedDef = Pawn.defs[_selectedSpawn];
     bool allowSpawn = false;
 
@@ -170,7 +176,13 @@ public static void Tick() {
     }
     Draw.PawnSprites();
 
-    if ( needPlayers ) {
+    if ( gameOver != 0 ) {
+        if ( gameOver == 3 ) {
+            Draw.centralBigRedMessage = "Game Over\n\nDraw!";
+        } else {
+            Draw.centralBigRedMessage = $"Game Over\n\nPlayer {gameOver} wins!";
+        }
+    } else if ( needPlayers ) {
         Draw.centralBigRedMessage = "Waiting for players...";
     } else if ( observer ) {
         if ( ( clock & 512 ) != 0 ) {
