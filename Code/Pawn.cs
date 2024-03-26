@@ -29,9 +29,10 @@ partial class Pawn {
     // flags that live for a single tick on the client
     public enum ClientTrigger {
         None,
-        Move        = 1 << 0,
-        Attack      = 1 << 1,
-        HurtVisuals = 1 << 2,
+        Spawn       = 1 << 0,
+        Move        = 1 << 1,
+        Attack      = 1 << 2,
+        HurtVisuals = 1 << 3,
     }
 
     public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
@@ -42,11 +43,10 @@ partial class Pawn {
     public byte [] team = null;
     public byte [] def = null;
 
-    // lerped movement position
+    // movement position (current)
     public Vector2 [] mvPos = null;
+    // movement position (target)
     public Vector2 [] mvEnd = null;
-    public Vector2 [] mvStart = null;
-    public int [] mvStart_ms = null;
 
     public byte [] state = null;
 
@@ -57,9 +57,11 @@ partial class Pawn {
 
     // transmitted fixed point version of end position
     public int [] mvEnd_tx = null;
+
+    // transmitted arrival timestamp
     public int [] mvEnd_ms = null;
 
-    // time of impact/take damage
+    // impact/take damage timestamp
     public int [] atkEnd_ms = null;
 
     public Filter filter = new Filter();
@@ -176,17 +178,6 @@ partial class Pawn {
         return ( GetDef( z ).flags & Pawn.Def.Flags.PatrolWaypoint ) != 0;
     }
 
-    // FIXME: no longer valid
-    public bool IsIdling( int z ) {
-        // if we haven't transmitted any positions yet, don't try to interpolate paths
-        // FIXME: this is a temp solution
-        if ( mvEnd_tx[z] == 0 ) {
-            return false;
-        }
-
-        return focus[z] == 0;
-    }
-
     public bool IsEnemy( int z, int zEnemy ) {
         return team[z] != team[zEnemy];
     }
@@ -203,94 +194,45 @@ partial class Pawn {
         return ( mvPos[zB] - mvPos[zA] ).sqrMagnitude;
     }
 
-    public void MvClamp( int z ) {
-        mvStart[z] = mvPos[z] = mvEnd[z];
+    // instantly teleport to end position
+    // this will potentially generate a delta (clock change)
+    public void MvSnapToEnd( int z ) {
+        MvSnapToEnd( z, 0 );
     }
-
-    // this will generate a delta (clock change)
+    // this will potentially generate a delta (clock change)
     public void MvSnapToEnd( int z, int clock ) {
-        mvStart_ms[z] = mvEnd_ms[z] = clock;
-        MvClamp( z );
+        mvPos[z] = mvEnd[z];
+        mvEnd_ms[z] = clock;
     }
 
+    // snap endpos to current pos and reset the clock
     // this will generate a delta (clock change)
     public void MvInterrupt( int z, int clock ) {
-        mvStart_ms[z] = mvEnd_ms[z] = clock;
-        mvStart[z] = mvEnd[z] = mvPos[z];
+        mvEnd[z] = mvPos[z];
+        mvEnd_ms[z] = clock;
     }
 
-    public bool MvLerp( int z, int clock ) {
-        int duration = mvEnd_ms[z] - mvStart_ms[z];
-        if ( duration <= 0 ) {
-            return true;
-        }
-
+    public bool MvChaseEndPoint( int z, int clock ) {
         if ( clock >= mvEnd_ms[z] ) {
-            return true;
-        }
-
-        int ti = clock - mvStart_ms[z];
-        float t = ( float )ti / duration;
-        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
-        return false;
-    }
-
-    //public bool AtkLerp( int z, int clock ) {
-    //    int duration = atkEnd_ms[z] - atkStart_ms[z];
-    //    if ( duration <= 0 ) {
-    //        return true;
-    //    }
-
-    //    if ( clock >= atkEnd_ms[z] ) {
-    //        return true;
-    //    }
-
-    //    int ti = clock - atkStart_ms[z];
-    //    atkPos[z] = ( float )ti / duration;
-
-    //    return false;
-    //}
-
-    public bool SpeculateMovementPosition( int z, int clock, int deltaTime ) {
-        if ( mvPos[z] == Vector2.zero ) {
-            mvPos[z] = mvStart[z] = mvEnd[z];
-            mvStart_ms[z] = mvEnd_ms[z] = clock;
-            return true;
-        }
-
-        int duration = mvEnd_ms[z] - mvStart_ms[z];
-        if ( duration <= 0 ) {
-            // FIXME: lerp mvpos to end if they differ
-            return true;
-        }
-
-        if ( clock >= mvEnd_ms[z] ) {
-            Vector2 v = mvEnd[z] - mvStart[z];
-            float sq = v.sqrMagnitude;
-            if ( sq < 0.0001f ) {
-                return true;
-            }
-
-            // keep moving in the same general direction until the server correction arrives
-            // this really craps-up for faster pawns, but it is ok for almost everything
-            v /= Mathf.Sqrt( sq );
-            Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime / 1000f;
-            if ( ( newPos - mvEnd[z] ).sqrMagnitude > SpeedSec( z ) ) {
-                // stop if too far from the destination
-                mvPos[z] = mvEnd[z];
-                return true;
-            }
-
-            mvPos[z] = newPos;
             return false;
         }
 
-        int ti = clock - mvStart_ms[z];
-        float t = ( float )ti / duration;
+        Vector2 v = mvPos[z] - mvEnd[z];
+        float sq = v.sqrMagnitude;
+        if ( sq < 0.000001f ) {
+            MvSnapToEnd( z, clock );
+            return false;
+        }
 
-        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+        v /= Mathf.Sqrt( sq );
+        float timeLeft = ( mvEnd_ms[z] - clock ) / 1000f;
+        mvPos[z] = mvEnd[z] + v * SpeedSec( z ) * timeLeft;
 
-        return false;
+        return true;
+    }
+
+    public bool MvLerp( int z, int clock ) {
+        return ! MvChaseEndPoint( z, clock );
     }
 
     public class Filter {

@@ -142,14 +142,26 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( byte [] )row )[deltaChange[i]] = ( byte )deltaNumbers[i];
                 }
+
                 if ( row == pawn.def ) {
-                    // clear garbage pawns on death
+
+                    // clear garbage
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
                         if ( deltaNumbers[i] == 0 ) {
                             pawn.Clear( deltaChange[i] );
                         }
                     }
+
+                    // newly spawned
+                    if ( pawnTrig != null ) {
+                        for ( int i = 0; i < deltaChange.Count; i++ ) {
+                            if ( deltaNumbers[i] != 0 ) {
+                                pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Spawn;
+                            }
+                        }
+                    }
                 }
+
             } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];

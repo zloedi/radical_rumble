@@ -52,7 +52,6 @@ public int TickServer() {
     }
 
     foreach ( var z in pawn.filter.ByState( PS.None ) ) {
-        pawn.MvClamp( z );
         Vector2Int p = VToAxial( pawn.mvPos[z] );
         if ( ! board.IsSolid( p ) ) {
             // snap to solid hex if something bad happens
@@ -62,7 +61,6 @@ public int TickServer() {
                     int iy = ( p.y + y ) % board.height;
                     if ( board.IsSolid( ix, iy ) ) {
                         pawn.mvEnd[z] = AxialToV( new Vector2Int( ix, iy ) );
-                        pawn.MvClamp( z );
                         Log( $"Snapping to grid {pawn.DN( z )}" );
                         goto quit;
                     }
@@ -74,7 +72,7 @@ quit:
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Spawning ) ) {
-        pawn.MvClamp( z );
+        pawn.MvSnapToEnd( z );
         Log( $"{pawn.DN( z )} is idling." );
         pawn.SetState( z, PS.Idle );
     }
@@ -251,7 +249,7 @@ quit:
     }
 
     foreach ( var z in pawn.filter.ByState( PS.Dead ) ) {
-        pawn.MvClamp( z );
+        pawn.MvSnapToEnd( z );
         
         // if dead and couldn't reload, kill off this attack
         int t = pawn.AttackTime( z ) - pawn.LoadTime( z );
@@ -306,7 +304,7 @@ public bool Spawn( int def, float x, float y, out int z ) {
         Error( "Out of pawns, can't create." );
         return false;
     }
-    pawn.mvPos[z] = pawn.mvStart[z] = pawn.mvEnd[z] = new Vector2( x, y );
+    pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
     Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
     if ( pawn.IsStructure( z ) ) {
         int hx = VToHex( pawn.mvPos[z] );
@@ -706,9 +704,9 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
     //Log( $"[ffc000]Stored inverted {path.Count} nodes at {key1}[-]" );
 }
 
-int MvDuration( int z ) {
-    float segmentDist = ( pawn.mvEnd[z] - pawn.mvStart[z] ).magnitude;
-    return ( 60 * ToTx( segmentDist ) / pawn.Speed( z ) * 1000 ) >> FRAC_BITS;
+int MvDurationMs( int z, Vector2 a, Vector2 b ) {
+    float segmentDist = ( b - a ).magnitude;
+    return ( int )( segmentDist / pawn.SpeedSec( z ) * 1000 );
 }
 
 void MvInterrupt( int z ) {
@@ -729,11 +727,6 @@ bool IsReachableEnemy( int z, int zEnemy ) {
     if ( ! MvCanCrossTerrain( z, zEnemy ) ) {
         return false;
     }
-
-    //Vector2 atk = AtkPointOnEnemy( z, zEnemy );
-    //if ( AvoidStructure( pawn.team[z], pawn.mvPos[z], atk, out Vector2 asp ) ) {
-    //    return false;
-    //}
 
     return true;
 }
@@ -833,21 +826,19 @@ void MvChase( int z, int zEnemy ) {
         return;
     }
 
-    pawn.mvStart[z] = pawn.mvPos[z];
     pawn.mvEnd[z] = chase;
-    pawn.mvStart_ms[z] = ZServer.clock;
-    pawn.mvEnd_ms[z] = pawn.mvStart_ms[z] + MvDuration( z );
+    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], chase );
 
     if ( SvShowCharge_kvar != 0 ) {
         if ( SvShowCharge_kvar == 1 ) {
-            DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+            DebugSeg( pawn.mvPos[z], pawn.mvEnd[z] );
         } else if ( SvShowCharge_kvar == 2 ) {
             if ( pawn.team[z] == 0 ) {
-                DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+                DebugSeg( pawn.mvPos[z], pawn.mvEnd[z] );
             }
         } else {
             if ( pawn.team[z] == 1 ) {
-                DebugSeg( pawn.mvStart[z], pawn.mvEnd[z] );
+                DebugSeg( pawn.mvPos[z], pawn.mvEnd[z] );
             }
         }
     }
@@ -926,11 +917,6 @@ bool NavUpdate( int z ) {
                 snapA.y += Mathf.Sign( pawn.mvPos[z].y - snapA.y );
             }
 
-            //SingleShot.Add( dt => {
-            //    Hexes.DrawHexWithLines( Draw.GameToScreenPosition( snapA ),
-            //                                            Draw.hexPixelSize / 4, Color.white );
-            //}, duration: 3 );
-
             GetCachedPathVec( snapA, pawn.mvEnd[zFocus], out path );
         }
     } else {
@@ -946,17 +932,17 @@ bool NavUpdate( int z ) {
         DebugDrawPath( path, Color.white );
     }
 
-    pawn.mvStart[z] = pawn.mvEnd[z];
-    pawn.mvEnd[z] = AvoidStructure( pawn.team[z], pawn.mvStart[z], HexToV( path[1] ) );
+    // just in case
+    pawn.mvPos[z] = pawn.mvEnd[z];
+
+    pawn.mvEnd[z] = HexToV( path[1] );
 
     int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEnd_ms[z] );
-    pawn.mvStart_ms[z] = ZServer.clock;
-    pawn.mvEnd_ms[z] = pawn.mvStart_ms[z] + MvDuration( z );
+    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
 
     if ( leftover > 0 ) {
         // advance a bit on the next segment if there is time left from the tick
-        if ( ! pawn.MvLerp( z, pawn.mvStart_ms[z] + leftover ) ) {
-            pawn.mvStart[z] = pawn.mvPos[z];
+        if ( ! pawn.MvLerp( z, ZServer.clock + leftover ) ) {
             pawn.mvEnd_ms[z] -= leftover;
         }
     }
@@ -964,6 +950,7 @@ bool NavUpdate( int z ) {
     return true;
 }
 
+#if false
 // returns true if the segment was corrected (avoidance was done)
 bool AvoidStructure( int team, Vector2 v0, Vector2 v1, out Vector2 w ) {
     w = AvoidStructure( team, v0, v1 );
@@ -1043,6 +1030,7 @@ Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
     return v1;
 #endif
 }
+#endif
 
 void DebugDrawPath( List<int> path, Color c ) {
 #if UNITY_STANDALONE || SDL
