@@ -13,6 +13,14 @@
 
 ] Improve the editor.
 ] Pawn avoidance
+    Do steering behaviour after the patrol and chase loops.
+    //1. Unclutter on spawn
+    //2. Unclutter 'formations' on patrol -- if collide at endpos and end timestamps are close enough
+    //    if close to eachother, use current offsets as constraints for the endpos unclutter
+    //    put the void hexes as particles in the solver too
+    //3. ?Unclutter attack points?
+    //4. ?Unclutter while moving? ?Speculate it on the client?
+    
 
 ] Player (not client) reconnect?
 

@@ -16,51 +16,57 @@ partial class Pawn {
 public static Def Tower = Register( new Def {
     flags = Structure | PatrolWaypoint | WinObjective,
     range = 7,
-    maxHP = 5000,
+    maxHP = 2400,
     damage = 60,
-    radius = 0.6f,
+    radius = 1.4f,
     color = Color.magenta,
 } );
 
 public static Def Turret = Register( new Def {
+    attackTime = 800,
+    loadTime = 300,
+    damage = 50,
+
     flags = Structure,
-    range = 7,
-    maxHP = 2500,
-    damage = 60,
-    radius = 0.5f,
+    range = 6,
+    maxHP = 1400,
+    radius = 1f,
     color = new Color( 1f, 0.8f, 0 ),
     symbol = 'U',
 } );
 
 public static Def Brute = Register( new Def {
-    color = Color.green,
-    cost = 4,
+    attackTime = 1200,
+    loadTime = 800,
     damage = 80,
-    loadTime = 870,
+
+    color = Color.green,
     maxHP = 500,
     radius = 0.4f,
-    speed = 60,
 } );
 
 public static Def Archer = Register( new Def {
+    attackTime = 900,
+    loadTime = 400,
+    damage = 40,
+    range = 5,
+
     color = Color.red,
-    damage = 80,
     maxHP = 120,
     radius = 0.32f,
-    range = 4,
-    speed = 60,
     symbol = 'a',
 } );
 
 public static Def Flyer = Register( new Def {
-    color = new Color( 0f, 0.4f, 1f ),
+    attackTime = 2000,
+    loadTime = 1700,
+    damage = 400,
+
     cost = 5,
-    damage = 80,
+
+    color = new Color( 0f, 0.4f, 1f ),
     flags = Flying,
-    loadTime = 800,
     maxHP = 1000,
-    radius = 0.5f,
-    speed = 60,
 } );
 
 // =============================

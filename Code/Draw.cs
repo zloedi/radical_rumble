@@ -42,10 +42,6 @@ public static void WireCircleGame( Vector2 gamePos, float r, Color c ) {
     WireCircleScreen( Draw.GTS( gamePos ), r * Draw.hexPixelSize, c );
 }
 
-public static void SegmentGame( Vector2 a, Vector2 b, Color c ) {
-    QGL.LateDrawLine( Draw.GTS( a ), Draw.GTS( b ), color: c );
-}
-
 public static void WireCircleScreen( Vector2 screenPos, float r, Color c ) {
     int max = _circle.Length;
     float step = ( float )( Math.PI * 2f / max );
@@ -54,6 +50,10 @@ public static void WireCircleScreen( Vector2 screenPos, float r, Color c ) {
         _circle[i] = v * r + screenPos;
     }
     QGL.LateDrawLineLoop( _circle, color: c );
+}
+
+public static void SegmentGame( Vector2 a, Vector2 b, Color c ) {
+    QGL.LateDrawLine( Draw.GTS( a ), Draw.GTS( b ), color: c );
 }
 
 public static void FillScreen( Color? color = null ) {
@@ -260,7 +260,7 @@ public static void PawnSprites( float alpha = 1 ) {
     int bobAnim;
 
     Vector2Int sz( int z ) {
-        float d = pawn.Radius( z ) * 2;
+        float d = pawn.Radius( z ) + 0.3f;
         return new Vector2Int( ( int )( size.x * d ), ( int )( size.y * d ) );
     }
 
@@ -349,6 +349,7 @@ public static void PawnSprites( float alpha = 1 ) {
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( z, pos - offShad, color: c );
         symbol( z, pos - offShad );
+        WireCircleGame( pawn.mvPos[z], def.radius, Color.white );
     }
 
     // non-structure ground units
