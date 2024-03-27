@@ -5,9 +5,11 @@ Net -- msg, chan, common, zclient, zserver, deltas
     no 'reliable channel' at all, send data, if out of order -- drop, wait for the proper one
     common scenarios
 
-Game -- Pawn/PawnDef, Board, Player, Filters, Utils, "serialization driven design lal"
+Game -- Pawn/PawnDef, Board, Player, "serialization driven design lal"
 
-RR Server AND Client -- deltas, 
+Filters -- roll the common queries each tick
+
+RR Server AND Client
     sending clocks around:
         movement target + clock,
         attack clock,

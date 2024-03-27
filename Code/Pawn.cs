@@ -48,6 +48,10 @@ partial class Pawn {
     // movement position (target)
     public Vector2 [] mvEnd = null;
 
+    // used on the client to lerp
+    public Vector2 [] mvStart = null;
+    public int [] mvStart_ms = null;
+
     public byte [] state = null;
 
     // == these should be synced ==
@@ -210,6 +214,46 @@ partial class Pawn {
     public void MvInterrupt( int z, int clock ) {
         mvEnd[z] = mvPos[z];
         mvEnd_ms[z] = clock;
+    }
+
+    public void MvLerpClient( int z, int clock, float deltaTime ) {
+        if ( mvPos[z] == Vector2.zero ) {
+            mvPos[z] = mvStart[z] = mvEnd[z];
+            mvStart_ms[z] = mvEnd_ms[z] = clock;
+            return;
+        }
+
+        int duration = mvEnd_ms[z] - mvStart_ms[z];
+        if ( duration <= 0 ) {
+            // FIXME: lerp mvpos to end if they differ
+            return;
+        }
+
+        if ( clock >= mvEnd_ms[z] ) {
+            Vector2 v = mvEnd[z] - mvStart[z];
+            float sq = v.sqrMagnitude;
+            if ( sq < 0.0001f ) {
+                return;
+            }
+
+            // keep moving in the same general direction until the server correction arrives
+            // this really craps-up for faster pawns, but it is ok for almost everything
+            v /= Mathf.Sqrt( sq );
+            Vector2 newPos = mvPos[z] + v * SpeedSec( z ) * deltaTime;
+            if ( ( newPos - mvEnd[z] ).sqrMagnitude > SpeedSec( z ) ) {
+                // stop if too far from the destination
+                mvPos[z] = mvEnd[z];
+                return;
+            }
+
+            mvPos[z] = newPos;
+            return;
+        }
+
+        int ti = clock - mvStart_ms[z];
+        float t = ( float )ti / duration;
+
+        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
     }
 
     public bool MvChaseEndPoint( int z, int clock ) {

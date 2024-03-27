@@ -109,7 +109,7 @@ quit:
     foreach ( var z in pawn.filter.ByState( PS.Patrol ) ) {
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
             // path inflection point, get a new segment to lerp on
-            if ( ! NavUpdate( z ) ) {
+            if ( ! MvPatrolUpdate( z ) ) {
                 // nothing to focus on for navigation
                 Log( $"{pawn.DN( z )} no navigation target, go to idle." );
                 pawn.SetState( z, PS.Idle );
@@ -133,7 +133,7 @@ quit:
         // nothing to chase, go on patrol
         else {
             pawn.focus[z] = 0;
-            NavUpdate( z );
+            MvPatrolUpdate( z );
             Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.SetState( z, PS.Patrol );
             continue;
@@ -880,7 +880,7 @@ bool GetPatrolWaypoint( int z, out int zWaypoint ) {
 }
 
 // movement path inflection point handling
-bool NavUpdate( int z ) {
+bool MvPatrolUpdate( int z ) {
     List<int> path;
     int zFocus = pawn.focus[z];
 

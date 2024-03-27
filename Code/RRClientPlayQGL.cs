@@ -94,7 +94,9 @@ public static void Tick() {
 
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( Cl.TriggerOn( z, Trig.Move ) ) {
-            // ...
+            // new movement segment arrives, plan movement on the client
+            pawn.mvStart[z] = pawn.mvPos[z];
+            pawn.mvStart_ms[z] = clock;
         }
 
         if ( Cl.TriggerOn( z, Trig.Spawn ) ) {
@@ -230,11 +232,21 @@ public static void Tick() {
     // == end == 
 
     void snapPos( int z ) {
-        pawn.MvSnapToEnd( z, clock );
+        pawn.mvPos[z] = pawn.mvEnd[z];
+        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
     }
 
     void updatePos( int z ) {
-        pawn.MvChaseEndPoint( z, clock );
+        // zero delta move means stop
+        // FIXME: remove if the pawn state is sent over the network
+        if ( pawn.mvEnd_ms[z] <= Cl.serverClock ) {
+            // FIXME: should lerp to actual end pos if offshoot
+            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
+            return;
+        }
+
+        // use the unity clock here to keep moving even on crappy synced clock delta
+        pawn.MvLerpClient( z, clock, Time.deltaTime );
     }
 }
 
