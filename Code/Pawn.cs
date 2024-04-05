@@ -203,6 +203,7 @@ partial class Pawn {
     public void MvSnapToEnd( int z ) {
         MvSnapToEnd( z, 0 );
     }
+
     // this will potentially generate a delta (clock change)
     public void MvSnapToEnd( int z, int clock ) {
         mvPos[z] = mvEnd[z];
