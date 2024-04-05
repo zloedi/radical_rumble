@@ -2,4 +2,5 @@
 *.exe
 *.pdb
 *.dll
+libSDL*
 *.cfg
