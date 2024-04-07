@@ -13,7 +13,7 @@
     <Deterministic>true</Deterministic>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
-    <StartupObject>StandaloneServer</StartupObject>
+    <StartupObject>RR.StandaloneServer</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -54,6 +54,7 @@
     <Compile Include="../ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="../ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="../ArrayShadow.cs" />
     <Compile Include="../ArrayUtil.cs" />
     <Compile Include="../Board.cs" />
     <Compile Include="../Game.cs" />
@@ -61,8 +62,7 @@
     <Compile Include="../Pawn.cs" />
     <Compile Include="../PawnDef.cs" />
     <Compile Include="../Player.cs" />
-    <Compile Include="../RRServer.cs" />
-    <Compile Include="../Shadow.cs" />
+    <Compile Include="../Server.cs" />
     <Compile Include="../FilterUtil.cs" />
     <Compile Include="StandaloneServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

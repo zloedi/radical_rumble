@@ -1,5 +1,3 @@
-// == server-specific parts of the Game ==
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,12 +9,16 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-using static Pawn.Def;
+namespace RR {
+    
 
-using Sv = RRServer;
+using static Pawn.Def;
+using Sv = Server;
 using PS = Pawn.State;
 
+
 partial class Game {
+
 
 const float ATK_MIN_DIST = 0.45f;
 
@@ -542,19 +544,19 @@ public void SaveMap( string fileName ) {
         return $"{name}{c} :{v} :\n";
     }
     foreach ( Array row in persistentRows ) {
-        Shadow.Row shadowRow = shadow.arrayToShadow[row];
-        if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+        ArrayShadow.Row shadowRow = shadow.arrayToShadow[row];
+        if ( shadowRow.type == ArrayShadow.DeltaType.Uint8 ) {
             byte [] zero = new byte[row.Length];
             if ( Delta.DeltaBytes( ( byte[] )row, zero, out string changes, out string values ) ) {
                 storage += emitRow( shadowRow.name, changes, values );
             }
-        } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+        } else if ( shadowRow.type == ArrayShadow.DeltaType.Uint16 ) {
             ushort [] zero = new ushort[row.Length];
             if ( Delta.DeltaShorts( ( ushort[] )row, zero,
                                                         out string changes, out string values ) ) {
                 storage += emitRow( shadowRow.name, changes, values );
             }
-        } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+        } else if ( shadowRow.type == ArrayShadow.DeltaType.Int32 ) {
             int [] zero = new int[row.Length];
             if ( Delta.DeltaInts( ( int[] )row, zero, out string changes, out string values ) ) {
                 storage += emitRow( shadowRow.name, changes, values );
@@ -1081,4 +1083,7 @@ void DebugDrawOrigins() {
 }
 
 
-}
+} // Game
+
+
+} // RR

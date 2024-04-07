@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 #if UNITY_STANDALONE
 using UnityEngine;
 #else
@@ -7,8 +8,13 @@ using GalliumMath;
 using SDLPorts;
 #endif
 
-using Cl = RRClient;
+
+namespace RR {
+
+
+using Cl = Client;
 using Trig = Pawn.ClientTrigger;
+
 
 static class Draw {
 
@@ -523,4 +529,6 @@ static Vector2 InvertScreenTransform( Vector2 pos ) {
 }
 
 
-}
+} // Draw
+
+} // RR

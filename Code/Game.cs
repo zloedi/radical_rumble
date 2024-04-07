@@ -7,13 +7,13 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-partial class Game {
+namespace RR { partial class Game {
 
 
 public Action<string> Log = s => Qonsole.Log( s );
 public Action<string> Error = s => Qonsole.Error( s );
 
-public Shadow shadow = new Shadow();
+public ArrayShadow shadow = new ArrayShadow();
 
 public Player player = new Player();
 public Pawn pawn = new Pawn();
@@ -128,7 +128,7 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
             continue;
         }
 
-        if ( ! shadow.arrayToShadow.TryGetValue( row, out Shadow.Row shadowRow ) ) {
+        if ( ! shadow.arrayToShadow.TryGetValue( row, out ArrayShadow.Row shadowRow ) ) {
             Error( $"Undelta: Can't find {rowName} in shadows." );
             continue;
         }
@@ -138,7 +138,7 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
             if ( shadowRow.parentObject == board ) {
                 updateBoard = true;
             }
-            if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+            if ( shadowRow.type == ArrayShadow.DeltaType.Uint8 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( byte [] )row )[deltaChange[i]] = ( byte )deltaNumbers[i];
                 }
@@ -162,11 +162,11 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
                     }
                 }
 
-            } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+            } else if ( shadowRow.type == ArrayShadow.DeltaType.Uint16 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];
                 }
-            } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+            } else if ( shadowRow.type == ArrayShadow.DeltaType.Int32 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];
                 }
@@ -311,4 +311,4 @@ public static bool IsPointInPolygon( List<Vector2> polygon, Vector2 point ) {
 }
 
 
-}
+} }

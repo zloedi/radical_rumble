@@ -10,9 +10,14 @@ using GalliumMath;
 using SDLPorts;
 #endif
 
-using Cl = RRClient;
+namespace RR {
+    
+    
+using Cl = Client;
+
 
 static class Gym {
+
 
 static int GymState_kvar = 0;
 
@@ -910,4 +915,5 @@ static void GymSetState_kmd( string [] argv ) {
     TickUtil.SetState( argv, _ticks, _tickNames, ref GymState_kvar );
 }
 
-}
+
+} }

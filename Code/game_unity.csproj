@@ -87,11 +87,11 @@
     <Compile Include="PawnDef.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="TickUtil.cs" />
-    <Compile Include="RRClient.cs" />
-    <Compile Include="RRClientPlayQGL.cs" />
-    <Compile Include="RRClientEdit.cs" />
-    <Compile Include="RRServer.cs" />
-    <Compile Include="Shadow.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="ClientPlayQGL.cs" />
+    <Compile Include="ClientEdit.cs" />
+    <Compile Include="Server.cs" />
+    <Compile Include="ArrayShadow.cs" />
     <Compile Include="FilterUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />
   </ItemGroup>

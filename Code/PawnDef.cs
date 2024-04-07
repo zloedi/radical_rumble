@@ -9,7 +9,11 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
+namespace RR {
+
+
 using static Pawn.Def.Flags;
+
 
 partial class Pawn {
 
@@ -158,4 +162,4 @@ static void PrintDefs_kmd( string [] argv ) {
 }
 
 
-}
+} }

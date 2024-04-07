@@ -8,8 +8,12 @@ using SDLPorts;
 using GalliumMath;
 #endif
 
-using Cl = RRClient;
-using Sv = RRServer;
+namespace RR {
+
+
+using Cl = Client;
+using Sv = Server;
+
 
 #if SDL
 static class SDLApp {
@@ -56,7 +60,9 @@ static class SDLApp {
 }
 #endif
 
+
 static class Main {
+
 
 [Description( "Always run the local server no matter if target ip is localhost." )]
 static bool LocalServerAlwaysOn_kvar = false;
@@ -216,4 +222,7 @@ static void QonsoleDone_kmd( string [] argv ) {
 }
 
 
-}
+} // Main
+
+
+} // RR

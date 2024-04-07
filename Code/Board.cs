@@ -8,6 +8,9 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
+namespace RR {
+
+
 public class Board {
 
     public const int MAX_GRID = 4 * 1024;
@@ -341,4 +344,7 @@ public class Board {
             polyIdx = ( b >> 0  ) & 15,
         };
     }
+}
+
+
 }

@@ -9,9 +9,13 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-using Cl = RRClient;
+namespace RR {
 
-static class RRClientEdit {
+
+using Cl = Client;
+
+
+static class ClientEdit {
 
 
 static string EdLastSavedMap_kvar = "unnamed";
@@ -20,7 +24,7 @@ static int EdState_kvar = 1;
 static bool EdHexTracingVariant_kvar = false;
 
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RRClientEdit ), out _tickNames );
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RR.ClientEdit ), out _tickNames );
 
 static string _stateName => _tickNames[EdState_kvar % _ticks.Length];
 
@@ -529,4 +533,6 @@ static void EdSetZoneTeam_kmd( string [] argv ) {
 }
 
 
-}
+} // ClientEdit
+
+} // RR

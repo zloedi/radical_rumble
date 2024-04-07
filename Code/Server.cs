@@ -10,7 +10,7 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-static class RRServer {
+namespace RR { static class Server {
 
 enum State {
     None,
@@ -82,8 +82,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     _logTimestamp = logTimestamps;
 
     if ( SvTraceLevel_kvar >= 0 ) {
-        game.Log = RRServer.Log;
-        game.Error = RRServer.Error;
+        game.Log = RR.Server.Log;
+        game.Error = RR.Server.Error;
         ZServer.Error = game.Error;
         ZServer.net.Error = game.Error;
     }
@@ -107,8 +107,8 @@ public static bool Init( string svh = "Server: ", bool logTimestamps = false ) {
     LoadLastMap();
 
     ZServer.net.TryExecuteOOB = s => Qonsole.TryExecute( s );
-    ZServer.onClientCommand_f = (zport,cmd) => RRServer.Execute( zport, cmd );
-    ZServer.onTick_f = RRServer.Tick;
+    ZServer.onClientCommand_f = (zport,cmd) => RR.Server.Execute( zport, cmd );
+    ZServer.onTick_f = RR.Server.Tick;
 
     ZServer.onClientDisconnect_f = zport => {
         // FIXME: should just erase the zport
@@ -244,19 +244,19 @@ public static bool Execute( int zport, string command ) {
 
 static string DeltaGameState() {
     string delta = "";
-    foreach ( var row in game.syncedRows ) {
-        Shadow.Row shadowRow = game.shadow.arrayToShadow[row];
-        if ( shadowRow.type == Shadow.DeltaType.Uint8 ) {
+    foreach ( Array row in game.syncedRows ) {
+        ArrayShadow.Row shadowRow = game.shadow.arrayToShadow[row];
+        if ( shadowRow.type == ArrayShadow.DeltaType.Uint8 ) {
             if ( Delta.DeltaBytes( ( byte[] )row, ( byte[] )shadowRow.array, out string changes,
                                                 out string values, maxInput: shadowRow.maxRow ) ) {
                 delta += shadowRow.name + changes + " :" + values + " : ";
             }
-        } else if ( shadowRow.type == Shadow.DeltaType.Uint16 ) {
+        } else if ( shadowRow.type == ArrayShadow.DeltaType.Uint16 ) {
             if ( Delta.DeltaShorts( ( ushort[] )row, ( ushort[] )shadowRow.array,
                             out string changes, out string values, maxInput: shadowRow.maxRow ) ) {
                 delta += shadowRow.name + changes + " :" + values + " : ";
             }
-        } else if ( shadowRow.type == Shadow.DeltaType.Int32 ) {
+        } else if ( shadowRow.type == ArrayShadow.DeltaType.Int32 ) {
             if ( Delta.DeltaInts( ( int[] )row, ( int[] )shadowRow.array,
                             out string changes, out string values, maxInput: shadowRow.maxRow ) ) {
                 delta += shadowRow.name + changes + " :" + values + " : ";
@@ -451,4 +451,4 @@ static void SvSetTeam_kmd( string [] argv, int zport ) {
 }
 
 
-}
+} }

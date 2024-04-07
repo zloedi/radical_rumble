@@ -1,7 +1,8 @@
 using System;
 using System.Net;
 
-public static class StandaloneServer {
+namespace RR { public static class StandaloneServer {
+
 
 static void Main( string[] args ) {
     const int PULSE_TIME = 3333;
@@ -24,13 +25,13 @@ static void Main( string[] args ) {
 
     try {
 
-    if ( ! RRServer.Init( svh: "RadicalRumbleServer: ", logTimestamps: true ) ) {
+    if ( ! Server.Init( svh: "RadicalRumbleServer: ", logTimestamps: true ) ) {
         ZServer.Error( "Failed to initialize standalone Radical Rumble server, quit." );
         return;
     }
 
-    Cellophane.Log = RRServer.Log;
-    Cellophane.Error = RRServer.Error;
+    Cellophane.Log = Server.Log;
+    Cellophane.Error = Server.Error;
 
     ZServer.onExit_f = Qonsole.FlushConfig;
 
@@ -93,4 +94,4 @@ static void Main( string[] args ) {
 }
 
 
-}
+} }

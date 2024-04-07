@@ -9,7 +9,7 @@ using GalliumMath;
 using SDLPorts;
 #endif
 
-static class RRClient {
+namespace RR { static class Client {
 
 
 [Description( @"Connect to this server for multiplayer.
@@ -61,7 +61,7 @@ static HashSet<KeyCode> _holdKeys = new HashSet<KeyCode>();
 static int ClState_kvar = 0;
 static bool ClPrintOutgoingCommands_kvar = false;
 static string [] _tickNames;
-static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RRClient ), out _tickNames );
+static Action [] _ticks = TickUtil.RegisterTicksOfClass( typeof( RR.Client ), out _tickNames );
 
 static Pawn.ClientTrigger [] _trigger = new Pawn.ClientTrigger[Pawn.MAX_PAWN];
 
@@ -406,11 +406,11 @@ static void OnServerPacket( List<byte> packet ) {
 }
 
 static void Play_tck() {
-    RRClientPlayQGL.Tick();
+    ClientPlayQGL.Tick();
 }
 
 static void Edit_tck() {
-    RRClientEdit.Tick();
+    ClientEdit.Tick();
 }
 
 static void Gym_tck() {
@@ -554,4 +554,4 @@ static void ClToggleHelp_kmd( string [] argv ) {
 }
 
 
-}
+} }

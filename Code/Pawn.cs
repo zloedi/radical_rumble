@@ -9,7 +9,11 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
+namespace RR {
+
+
 using static Pawn.Def;
+
 
 partial class Pawn {
     public enum State {
@@ -358,3 +362,6 @@ partial class Pawn {
         }
     }
 }
+
+
+} // namespace

@@ -8,11 +8,16 @@ using GalliumMath;
 using SDLPorts;
 #endif
 
-using Cl = RRClient;
-using Trig = Pawn.ClientTrigger;
-using PDF = Pawn.Def.Flags;
+namespace RR {
+    
 
-public static class RRClientPlayQGL {
+using Cl = RR.Client;
+using Trig = RR.Pawn.ClientTrigger;
+using PDF = RR.Pawn.Def.Flags;
+
+    
+public static class ClientPlayQGL {
+
 
 static bool ClSpawnDirectly_kvar = false;
 static bool SkipWaitForPlayers_kvar = false;
@@ -270,4 +275,4 @@ static void ClSelectToSpawn_kmd( string [] argv ) {
 }
 
 
-}
+} }
