@@ -81,6 +81,8 @@ The source code comes with a standalone server that could be run on linux this w
 
 `mono --debug radical_rumble_server.exe`
 
+Set the `cl_server_ip_address` cvar to the IP address of the server.
+
 ## What is so Radical about it
 
 **Radical Rumble** is a heavily 'serialization focused' project, where most of the game state is
