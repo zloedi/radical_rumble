@@ -58,3 +58,29 @@ project and the Unity build as a post-build step.
 
 The Visual Studio project will copy the result exe and its' matching .pdb to `BuildSDL` as a
 post-build step.
+
+## What is so Radical about it
+
+**Radical Rumble** is a heavily 'serialization focused' project, where most of the game state is
+transferred over the network.
+The game state is modelled as a bunch of pre-allocated arrays (tables) of plain numerical types,
+which lend themselves to serialization/delta trivially.
+Internaly there are no 'objects', just structs of arrays, each 'column' in these SOAs forming an
+'entity' or 'record'.
+Some of the arrays are registered as 'synced' -- designated for network transfer.
+Each server tick, these arrays are checked against their previous state and this 'delta' is sent
+over to the clients.
+
+Personally I find this way of structuring game data perfect for transformation/filtering/serialization.
+Not to mention the size and performance benefits.
+This project also prefers polling versus events whenever possible.
+Logically, it is a fully 'immediate mode' thing.
+There are no coroutines or other pseudo-multitasking mechanisms.
+I avoid abstractions and use mostly basic C# data structures and rudimentary types.
+The code relies heavily on 'convention' versus 'strong typing'
+
+My aproach to game code and modelling state was jokingly named 'radical' by [invanassen] on some of our previous events.
+
+**Drink more beer!**
+
+[ivanasssen] https://github.com/ivanassen
