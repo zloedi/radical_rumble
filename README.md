@@ -79,7 +79,7 @@ There are no coroutines or other pseudo-multitasking mechanisms.
 I avoid abstractions and use mostly basic C# data structures and rudimentary types.
 The code relies heavily on 'convention' versus 'strong typing'
 
-My aproach to game code and modelling state was jokingly named 'radical' by [invanassen] on some of our previous events.
+My aproach to game code and modelling state was jokingly named 'radical' by [ivanasssen] on some of our previous events.
 
 **Drink more beer!**
 
