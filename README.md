@@ -83,4 +83,4 @@ My aproach to game code and modelling state was jokingly named 'radical' by [inv
 
 **Drink more beer!**
 
-[ivanasssen] https://github.com/ivanassen
+[ivanasssen]: https://github.com/ivanassen
