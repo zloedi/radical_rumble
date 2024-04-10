@@ -11,7 +11,7 @@ You need to populate the `ZloediUtils` git submodule:
 
 * Cloning with populated `ZloediUtils`:
 
-`git clone --recursive git://github.com/zloedi/radical_rumble.git`
+`git clone --recursive https://github.com/zloedi/radical_rumble.git`
 * Alternatively, if you already cloned `radical_rumble.git`, you can get the submodule later:
 
 `git submodule update --init --recursive`
