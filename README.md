@@ -2,13 +2,23 @@
 
 Radical Rumble is a demo of a casual multiplayer clash/rumble-like game, made specifically for the
 **Radical Multiplayer** events at [Prostranstvoto].
-It is an Unity3D project, but can also be build as an SDL app without modification.
+It is a Unity3D project, but could also be built as an SDL app without modifications.
 
 [Prostranstvoto]: https://prostranstvoto.bg
 
 ## General Build info
 
-The project is split into these directories:
+You need to populate the `ZloediUtils` git submodule:
+
+Cloning `radical_rumble.git` with populated `ZloediUtils`:
+
+`git clone --recursive git://github.com/zloedi/radical_rumble.git`
+
+If you already cloned `radical_rumble.git`, update the submodule:
+
+`git submodule update --init --recursive`
+
+The project is split into these subdirectories:
 
 `BuildSDL/` — SDL app binaries
 
@@ -21,11 +31,10 @@ The project is split into these directories:
 
 The ideas behind the 'strange' directory layout:
 * allow working outside of Unity
-* build the standalone SDL app
-* build the headless Standalone Multiplayer Server
+* build the standalone SDL app and Multiplayer Server with Visual Studio
 
 The separation of the code from the Unity project allows for code to be kept under separate
-repository and/or different version control systems.
+repository and/or different version control system.
 Additionaly, the separation allows for the game assembly to be built under Visual Studio and copied
 directly to the Unity Build, leading to faster iteration times.
 The demo doesn't use any assets besides the ones supplied with the code.
