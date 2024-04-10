@@ -6,38 +6,35 @@ It is a Unity3D project, but could also be built as an SDL app without modificat
 
 [Prostranstvoto]: https://prostranstvoto.bg
 
-## General Build info
-
+## Install
 You need to populate the `ZloediUtils` git submodule:
 
-Cloning `radical_rumble.git` with populated `ZloediUtils`:
-
+* Cloning with populated `ZloediUtils`:
+  
 `git clone --recursive git://github.com/zloedi/radical_rumble.git`
-
-If you already cloned `radical_rumble.git`, update the submodule:
-
+* Alternatively, if you already cloned `radical_rumble.git`, you can get the submodule later:
+  
 `git submodule update --init --recursive`
 
+## General Build info
+
 The project is split into these subdirectories:
-
-`BuildSDL/` — SDL app binaries
-
-`BuildUnity/` — Unity app binaries
-
-`Code/` — source code and Visual Studio project files
-
-`RadicalRumbleUnity/` — Unity project
+* `BuildSDL/` — SDL app binaries
+* `BuildUnity/` — Unity app binaries
+* `Code/` — source code and Visual Studio project files
+* `RadicalRumbleUnity/` — Unity project
 
 
-The ideas behind the 'strange' directory layout:
+The ideas behind the 'esoteric' directory layout:
 * allow working outside of Unity
-* build the standalone SDL app and Multiplayer Server with Visual Studio
+* build the standalone SDL app and Multiplayer Server with Visual Studio (no Unity required)
 
 The separation of the code from the Unity project allows for code to be kept under separate
 repository and/or different version control system.
 Additionaly, the separation allows for the game assembly to be built under Visual Studio and copied
 directly to the Unity Build, leading to faster iteration times.
-The demo doesn't use any assets besides the ones supplied with the code.
+
+The demo doesn't use any assets, besides the ones supplied with the code.
 
 ## Building under Unity
 
