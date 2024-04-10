@@ -66,6 +66,9 @@ post-build step.
 
 ## Running the client
 
+Under Unity Editor, the game gives the 'No camera rendering' message which is redundant;
+it doesn't use any cameras, just hide the message.
+
 The game features a command-line console, popped by pressing the `tilde` key.
 
 Type `ls` there to see all the commands and cvars.
@@ -105,7 +108,8 @@ I avoid abstractions and use mostly basic C# data structures and rudimentary typ
 
 The code relies heavily on 'convention' versus 'strong typing'
 
-My aproach to game code and modelling state was jokingly named 'radical' by [ivanasssen] on some of our previous events.
+My aproach to game code and modelling state was jokingly named 'radical' by [ivanasssen] on some of
+our previous events.
 
 **Drink more beer!**
 
