@@ -64,6 +64,13 @@ static class SDLApp {
 static class Main {
 
 
+#if ! QON_IGNORE_ENTRYPOINTS
+static void QonsolePreConfig_kmd( string [] argv ) { PreConfig(); }
+static void QonsolePostStart_kmd( string [] argv ) { PostStart(); }
+static void QonsoleTick_kmd( string [] argv ) { Tick(); }
+static void QonsoleDone_kmd( string [] argv ) { Done(); }
+#endif
+
 [Description( "Always run the local server no matter if target ip is localhost." )]
 static bool LocalServerAlwaysOn_kvar = false;
 
@@ -72,8 +79,8 @@ static bool ShowFrameTime_kvar = false;
 
 static bool _initialized = false;
 
-static void QonsolePreConfig_kmd( string [] argv ) {
-    // change this to wipe cfg to defautlts
+public static void PreConfig() {
+    // change this to wipe cfg to defaults
     Cellophane.ConfigVersion_kvar = 5;
 
     Qonsole.TryExecute( @"
@@ -147,7 +154,7 @@ static void QonsolePreConfig_kmd( string [] argv ) {
 
 }
 
-static void QonsolePostStart_kmd( string [] argv ) {
+public static void PostStart() {
     _initialized = false;
 
     try {
@@ -176,7 +183,7 @@ static void QonsolePostStart_kmd( string [] argv ) {
 }
 
 static DateTime _clockDate, _clockPrevDate;
-static void QonsoleTick_kmd( string [] argv ) {
+public static void Tick() {
     if ( ! _initialized ) {
         return;
     }
@@ -216,7 +223,7 @@ static void QonsoleTick_kmd( string [] argv ) {
     }
 }
 
-static void QonsoleDone_kmd( string [] argv ) {
+public static void Done() {
     Cl.Done();
     Sv.Done();
 }

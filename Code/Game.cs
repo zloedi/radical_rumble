@@ -7,7 +7,10 @@ using UnityEngine;
 using GalliumMath;
 #endif
 
-namespace RR { partial class Game {
+namespace RR {
+
+
+partial class Game {
 
 
 public Action<string> Log = s => Qonsole.Log( s );
@@ -311,4 +314,7 @@ public static bool IsPointInPolygon( List<Vector2> polygon, Vector2 point ) {
 }
 
 
-} }
+} // Game
+
+
+} // RR
