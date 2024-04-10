@@ -1,23 +1,22 @@
 # Radical Rumble
 
 Radical Rumble is a demo of a casual multiplayer clash/rumble-like game, made specifically for the
-**Radical Multiplayer** events at [Prostranstvoto]
+**Radical Multiplayer** events at [Prostranstvoto].
+It is an Unity3D project, but can also be build as an SDL app without modification.
 
 [Prostranstvoto]: https://prostranstvoto.bg
 
 ## General Build info
 
-The demo can be built both as Unity assembly (game.dll) or a standalone SDL app.
-The demo doesn't use any assets besides the ones supplied with the code.
 The project is split into these directories:
 
-`BuildSDL/` -- SDL app binaries
+`BuildSDL/` — SDL app binaries
 
-`BuildUnity/` -- Unity app binaries
+`BuildUnity/` — Unity app binaries
 
-`Code/` -- source code and Visual Studio project files
+`Code/` — source code and Visual Studio project files
 
-`RadicalRumbleUnity/` -- Unity project
+`RadicalRumbleUnity/` — Unity project
 
 
 The ideas behind the 'strange' directory layout:
@@ -29,6 +28,7 @@ The separation of the code from the Unity project allows for code to be kept und
 repository and/or different version control systems.
 Additionaly, the separation allows for the game assembly to be built under Visual Studio and copied
 directly to the Unity Build, leading to faster iteration times.
+The demo doesn't use any assets besides the ones supplied with the code.
 
 ## Building under Unity
 
@@ -45,7 +45,7 @@ project and the Unity build as a post-build step.
 
 ## Building for SDL
 
-1. Open the `Code/game.sln` solution in Visual Studiol
+1. Open the `Code/game.sln` solution in Visual Studio.
 2. Build the `game_sdl` project. 
 
 The Visual Studio project will copy the result exe and its' matching .pdb to `BuildSDL` as a
