@@ -82,10 +82,6 @@ types of movement:
     charge enemy (has directly 'visible' enemy in aggro range)
     avoid teammates
 
-don't use PassableTerrainToTarget while checking opponent for visibility.
-    use the pather
-    if path is only 2 nodes, you can reach by straight line
-
 SOA:
     easy copy
     easy delta
