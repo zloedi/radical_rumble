@@ -59,6 +59,25 @@ project and the Unity build as a post-build step.
 The Visual Studio project will copy the result exe and its' matching .pdb to `BuildSDL` as a
 post-build step.
 
+## Building the Standalone Server
+
+1. Open the `Code/StandaloneServer/radical_rumble_server.sln` solution in Visual Studio.
+2. Build the project there.
+
+## Running the client
+
+The game features a command-line console, popped by pressing the `tilde` key.
+
+Type `ls` there to see all the commands and cvars.
+
+Tweak the the server IP cvar to point to a server of your choice.
+
+## Running your servers
+
+The source code comes with a standalone server that could be run on linux this way:
+
+`mono --debug radical_rumble_server.exe`
+
 ## What is so Radical about it
 
 **Radical Rumble** is a heavily 'serialization focused' project, where most of the game state is
