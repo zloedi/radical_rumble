@@ -81,7 +81,7 @@ static bool _initialized = false;
 
 public static void PreConfig() {
     // change this to wipe cfg to defaults
-    Cellophane.ConfigVersion_kvar = 5;
+    Cellophane.ConfigVersion_kvar = 6;
 
     Qonsole.TryExecute( @"
         bind Alpha1 ""cl_select_to_spawn Brute"" play;

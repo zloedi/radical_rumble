@@ -9,14 +9,17 @@ using GalliumMath;
 using SDLPorts;
 #endif
 
-namespace RR { static class Client {
+namespace RR {
+    
+    
+static class Client {
 
 
 [Description( @"Connect to this server for multiplayer.
 // 127.0.0.1 -- this is a local game and the host is this machine
 // 89.190.193.149 -- raspberry pi server."
 )]
-public static string ClServerIpAddress_kvar = "89.190.193.149";
+public static string ClServerIpAddress_kvar = "127.0.0.1";
 
 [Description( "0 -- minimal network logging, 1 -- some network logging, 2 -- detailed network logging, 3 -- full network logging " )]
 public static int ClTraceLevel_kvar = 1;
@@ -554,4 +557,7 @@ static void ClToggleHelp_kmd( string [] argv ) {
 }
 
 
-} }
+} // Client
+
+
+} // RR
