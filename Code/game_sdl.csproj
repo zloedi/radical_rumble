@@ -96,6 +96,7 @@
   <PropertyGroup>
       <PostBuildEvent>
           copy $(ProjectDir)*.map $(ProjectDir)..\BuildSDL
+          copy $(ProjectDir)*.map $(TargetDir)
           copy $(ProjectDir)ZloediUtils\SDL\SDL2.dll $(TargetDir)
           copy $(ProjectDir)ZloediUtils\SDL\SDL2.dll $(ProjectDir)..\BuildSDL
           copy $(ProjectDir)ZloediUtils\SDL\libSDL* $(ProjectDir)..\BuildSDL
