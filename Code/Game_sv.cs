@@ -357,16 +357,11 @@ quit:
 
                 int zDef = pawn.focus[zAtk];
 
-                float rA = pawn.Radius( zA );
-                float rB = pawn.Radius( zB );
-                float rAB = rA + rB;
-
                 Vector2 dir = ( pawn.mvEnd[zAvoid] - pawn.mvPos[zAvoid] ).normalized;
-                float feelerRadius = pawn.Radius( zAvoid ) * 0.25f;
-                Vector2 feeler = pawn.mvPos[zAvoid] + dir * 2 * pawn.Radius( zAvoid );
+                float feelerRadius = pawn.Radius( zAvoid );
+                Vector2 feeler = pawn.mvPos[zAvoid] + dir * pawn.Radius( zAvoid );
 
                 float dr = pawn.Radius( zAtk ) + feelerRadius;
-                //if ( ( pawn.mvPos[zAtk] - feeler ).sqrMagnitude >= rAB * rAB ) {
                 if ( ( pawn.mvPos[zAtk] - feeler ).sqrMagnitude >= dr * dr ) {
                     continue;
                 }
@@ -387,7 +382,6 @@ quit:
                 {
                     var xx = feeler;
                     var rr = feelerRadius;
-                    //var rr = pawn.Radius( zAvoid );//feelerRadius;
                     SingleShot.Add( dt => {
                         Draw.WireCircleGame( xx, rr, Color.magenta );
                     }, duration: 0.5f );
@@ -403,7 +397,6 @@ quit:
         List<float> r = new List<float>();
         List<int> map = new List<int>();
 
-#if true
         for ( int i = 0; i < avZ.Count; i++ ) {
             int z = avZDefend[i];
 
@@ -417,7 +410,6 @@ quit:
             // remap later
             map.Add( -1 );//avZ[i] );
         }
-#endif
 
         foreach ( var z in pawn.filter.team[team] ) {
 
@@ -440,6 +432,13 @@ quit:
             Vector2 feeler = pawn.mvPos[z]
                                 + ( pawn.mvEnd[z] - pawn.mvPos[z] ).normalized * pawn.Radius( z );
 
+            if ( avZ.Contains( z ) ) {
+                float sign = ( z & 1 ) == 0 ? 1f : -1f;
+                feeler = pawn.mvPos[z]
+                            + Vector2.Perpendicular( ( pawn.mvEnd[z] - pawn.mvPos[z] ).normalized )
+                                * sign * pawn.Radius( z );
+            }
+
             zl.Add( z );
             x.Add( feeler );
             xo.Add( feeler );
@@ -448,7 +447,7 @@ quit:
             map.Add( -1 );
         }
 
-        Gym.SolveOverlapping( x, w, r, map, numSubsteps: 8, overshoot: 0.001f );
+        Gym.SolveOverlapping( x, w, r, map, numSubsteps: 4, overshoot: 0.001f );
 
         for ( int i = 0; i < zl.Count; i++ ) {
             if ( w[i] == 0 ) {
@@ -456,6 +455,7 @@ quit:
             }
 
             if ( x[i] == xo[i] ) {
+                Qonsole.Log( "no change" );
                 continue;
             }
 
@@ -464,8 +464,8 @@ quit:
             Vector2 d = x[i] - pawn.mvPos[z];
 
             if ( d.sqrMagnitude < 0.05f ) {
-                float sign = ( z & 1 ) == 0 ? 1f : -1f;
-                d = Vector2.Perpendicular( sign * ( pawn.mvEnd[z] - pawn.mvPos[z] ) );
+                //float sign = ( z & 1 ) == 0 ? 1f : -1f;
+                //d = Vector2.Perpendicular( sign * ( pawn.mvEnd[z] - pawn.mvPos[z] ) );
                 if ( d.sqrMagnitude < 0.0001f ) {
                     continue;
                 }
@@ -476,7 +476,7 @@ quit:
 
             if ( SvShowSplits_kvar ) {
 #if UNITY_STANDALONE || SDL
-                Qonsole.Log( ( x[i] - pawn.mvPos[z] ).sqrMagnitude );
+                //Qonsole.Log( ( x[i] - pawn.mvPos[z] ).sqrMagnitude );
                 var xx = x[i];//pawn.mvEnd[z];
                 var rr = r[i];
                 SingleShot.Add( dt => {

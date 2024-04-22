@@ -46,10 +46,10 @@ public static void SolveOverlapping( List<Vector2> x, List<float> w, List<float>
     float minrl = Mathf.Max( eps, overshoot * 0.1f );
 
     for ( int i = 0; i < numSubsteps; i++ ) {
-        for ( int z1 = 0; z1 < x.Count; z1++ ) {
-            for ( int z2 = 0; z2 < x.Count; z2++ ) {
-        //for ( int z1 = 0; z1 < x.Count - 1; z1++ ) {
-        //    for ( int z2 = z1 + 1; z2 < x.Count; z2++ ) {
+        //for ( int z1 = 0; z1 < x.Count; z1++ ) {
+        //    for ( int z2 = 0; z2 < x.Count; z2++ ) {
+        for ( int z1 = 0; z1 < x.Count - 1; z1++ ) {
+            for ( int z2 = z1 + 1; z2 < x.Count; z2++ ) {
                 if ( z1 == z2 ) {
                     continue;
                 }
