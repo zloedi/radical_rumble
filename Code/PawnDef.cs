@@ -21,7 +21,7 @@ public static Def Tower = Register( new Def {
     flags = Structure | PatrolWaypoint | WinObjective,
     range = 7,
     maxHP = 2400,
-    damage = 60,
+    damage = 0,//60,
     radius = 1.4f,
     color = Color.magenta,
 } );
@@ -43,6 +43,8 @@ public static Def Brute = Register( new Def {
     attackTime = 1200,
     loadTime = 800,
     damage = 80,
+
+    speed = 120,
 
     color = Color.green,
     maxHP = 500,

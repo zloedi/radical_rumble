@@ -25,6 +25,10 @@ const float ATK_MIN_DIST = 0.45f;
 #if UNITY_STANDALONE || SDL
 [Description( "Show pawn origins on the server." )]
 static bool SvShowOrigins_kvar = false;
+[Description( "Show pawn radiuses on the server." )]
+static bool SvShowRadiuses_kvar = false;
+[Description( "Show separation solver debug." )]
+static bool SvShowSplits_kvar = false;
 //[Description( "Show structure avoidance debug." )]
 //static bool SvShowAvoidance_kvar = false;
 #endif
@@ -70,6 +74,26 @@ public int TickServer() {
             }
         }
 quit:
+        var teammates = pawn.filter.team[pawn.team[z]];
+        for ( int i = 0; i < 2; i++ ) {
+            foreach ( var zTeammate in teammates ) {
+                if ( z == zTeammate ) {
+                    continue;
+                }
+                if ( ! pawn.IsStructure( zTeammate ) ) {
+                    continue;
+                }
+                Vector2 x1 = pawn.mvEnd[z];
+                Vector2 x2 = pawn.mvPos[zTeammate];
+                float w1 = 1;
+                float w2 = 0;
+                float r1 = pawn.Radius( z );
+                float r2 = pawn.Radius( zTeammate );
+                SeparatePoints( x1, x2, w1, w2, r1, r2, out pawn.mvEnd[z], out x2 );
+            }
+        }
+        pawn.mvPos[z] = pawn.mvEnd[z];
+        pawn.mvEnd_ms[z] = ZServer.clock;
         pawn.SetState( z, PS.Spawning );
     }
 
@@ -121,9 +145,21 @@ quit:
 
         if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
             charge( z, zEnemy );
-            continue;
         }
     }
+
+#if false
+    foreach ( var z in pawn.filter.ByState( PS.Avoid ) ) {
+        if ( pawn.MvLerp( z, ZServer.clock ) ) {
+            if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
+                charge( z, zEnemy );
+            } else {
+                MvPatrolUpdate( z );
+                pawn.SetState( z, PS.Patrol );
+            }
+        }
+    }
+#endif
 
     foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) ) {
 
@@ -134,12 +170,19 @@ quit:
 
         // nothing to chase, go on patrol
         else {
+            Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.focus[z] = 0;
             MvPatrolUpdate( z );
-            Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.SetState( z, PS.Patrol );
             continue;
         }
+
+        // get the 'feeler' sphere pointing at the enemy
+        // if the feeler clips with a teammate currently attacking an enemy,
+        //   form a sphere containing the teammate and the enemy
+        //   split-solve the feeler against that sphere
+        // else
+        //   do regular charge
 
         // we need to lerp before the chase routine changes our end point
         if ( pawn.MvLerp( z, ZServer.clock ) ) {
@@ -266,7 +309,187 @@ quit:
         }
     }
 
+#if true // general avoidance
+
+    for ( int team = 0; team < 2; team++ ) {
+
+        // check if an attacker tries to reach a blocked pawn
+        // collect attacked but obstructed pawns
+        // inflate their sphere to contain to obstructing attacker(s), 
+        // allowing blocked attackers to go around
+        // later, push this sphere to the general solver and solve only for the blocked attacker
+
+        // moving pawn that cannot reach target
+        List<int> avZ = new List<int>();
+        // the (defending) target
+        List<int> avZDefend = new List<int>();
+        // obstruct radius
+        List<float> avR = new List<float>();
+
+        var tl = pawn.filter.team[team];
+        for ( int iA = 0; iA < tl.Count - 1; iA++ ) {
+            for ( int iB = iA + 1; iB < tl.Count; iB++ ) {
+                int zA = tl[iA];
+                int zB = tl[iB];
+
+                int zAtk = 0;
+                int zAvoid = 0;
+
+                if ( pawn.GetState( zA ) == PS.Attack ) {
+                    zAtk = zA;
+                } else if ( pawn.GetState( zB ) == PS.Attack ) {
+                    zAtk = zB;
+                }
+
+                if ( pawn.GetState( zA ) != PS.Attack ) {
+                    zAvoid = zA;
+                } else if ( pawn.GetState( zB ) != PS.Attack ) {
+                    zAvoid = zB;
+                }
+
+                if ( zAtk == 0 || zAvoid == 0 ) {
+                    continue;
+                }
+
+                if ( ( pawn.mvPos[zAvoid] - pawn.mvEnd[zAvoid] ).sqrMagnitude < 0.000001f ) {
+                    continue;
+                }
+
+                int zDef = pawn.focus[zAtk];
+
+                float rA = pawn.Radius( zA );
+                float rB = pawn.Radius( zB );
+                float rAB = rA + rB;
+
+                Vector2 dir = ( pawn.mvEnd[zAvoid] - pawn.mvPos[zAvoid] ).normalized;
+                float feelerRadius = pawn.Radius( zAvoid ) * 0.25f;
+                Vector2 feeler = pawn.mvPos[zAvoid] + dir * 2 * pawn.Radius( zAvoid );
+
+                float dr = pawn.Radius( zAtk ) + feelerRadius;
+                //if ( ( pawn.mvPos[zAtk] - feeler ).sqrMagnitude >= rAB * rAB ) {
+                if ( ( pawn.mvPos[zAtk] - feeler ).sqrMagnitude >= dr * dr ) {
+                    continue;
+                }
+
+                avZ.Add( zAvoid );
+                avZDefend.Add( zDef );
+                Vector2 d = pawn.mvPos[zDef] - pawn.mvPos[zAtk];
+                avR.Add( d.magnitude + pawn.Radius( zAtk ) );
+
+                {
+                var xx = pawn.mvPos[zDef];
+                var rr = avR[avR.Count - 1];
+                SingleShot.Add( dt => {
+                    Draw.WireCircleGame( xx, rr, Color.cyan );
+                }, duration: 0.1f );
+                }
+
+                {
+                    var xx = feeler;
+                    var rr = feelerRadius;
+                    //var rr = pawn.Radius( zAvoid );//feelerRadius;
+                    SingleShot.Add( dt => {
+                        Draw.WireCircleGame( xx, rr, Color.magenta );
+                    }, duration: 0.5f );
+                }
+
+            }
+        }
+
+        List<int> zl = new List<int>();
+        List<Vector2> x = new List<Vector2>();
+        List<Vector2> xo = new List<Vector2>();
+        List<float> w = new List<float>();
+        List<float> r = new List<float>();
+        List<int> map = new List<int>();
+
+#if true
+        for ( int i = 0; i < avZ.Count; i++ ) {
+            int z = avZDefend[i];
+
+            zl.Add( 0 );
+            w.Add( 0 );
+
+            x.Add( pawn.mvPos[z] );
+            xo.Add( pawn.mvPos[z] );
+            r.Add( avR[i] );
+
+            // remap later
+            map.Add( -1 );//avZ[i] );
+        }
+#endif
+
+        foreach ( var z in pawn.filter.team[team] ) {
+
+            var state = pawn.GetState( z );
+
+            if ( state != PS.Patrol && state != PS.Avoid && state != PS.ChargeEnemy ) {
+                zl.Add( z );
+                x.Add( pawn.mvPos[z] );
+                xo.Add( pawn.mvPos[z] );
+                w.Add( 0 );
+                r.Add( pawn.Radius( z ) );
+                map.Add( -1 );
+                continue;
+            }
+
+            if ( ( pawn.mvPos[z] - pawn.mvEnd[z] ).sqrMagnitude < 0.000001f ) {
+                continue;
+            }
+
+            Vector2 feeler = pawn.mvPos[z]
+                                + ( pawn.mvEnd[z] - pawn.mvPos[z] ).normalized * pawn.Radius( z );
+
+            zl.Add( z );
+            x.Add( feeler );
+            xo.Add( feeler );
+            w.Add( 1 );
+            r.Add( pawn.Radius( z ) );
+            map.Add( -1 );
+        }
+
+        Gym.SolveOverlapping( x, w, r, map, numSubsteps: 8, overshoot: 0.001f );
+
+        for ( int i = 0; i < zl.Count; i++ ) {
+            if ( w[i] == 0 ) {
+                continue;
+            }
+
+            if ( x[i] == xo[i] ) {
+                continue;
+            }
+
+            int z = zl[i];
+
+            Vector2 d = x[i] - pawn.mvPos[z];
+
+            if ( d.sqrMagnitude < 0.05f ) {
+                float sign = ( z & 1 ) == 0 ? 1f : -1f;
+                d = Vector2.Perpendicular( sign * ( pawn.mvEnd[z] - pawn.mvPos[z] ) );
+                if ( d.sqrMagnitude < 0.0001f ) {
+                    continue;
+                }
+            }
+
+            pawn.mvEnd[z] = pawn.mvPos[z] + d.normalized * pawn.Radius( z );
+            pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
+
+            if ( SvShowSplits_kvar ) {
+#if UNITY_STANDALONE || SDL
+                Qonsole.Log( ( x[i] - pawn.mvPos[z] ).sqrMagnitude );
+                var xx = x[i];//pawn.mvEnd[z];
+                var rr = r[i];
+                SingleShot.Add( dt => {
+                    Draw.WireCircleGame( xx, rr, Color.cyan );
+                }, duration: 0.1f );
+#endif
+            }
+        }
+    }
+#endif
+
     DebugDrawOrigins();
+    DebugDrawRadiuses();
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
@@ -413,6 +636,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
+        // FIXME: no server dependencies please!
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
 
         x -= minx;
@@ -497,6 +721,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
+        // FIXME: no server dependencies please!
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
     }
 }
@@ -597,8 +822,14 @@ int GetCachedPathVec( Vector2 vSrc, Vector2 vTarget, out List<int> path ) {
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
 List<int> _pathError = new List<int>();
 int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
-    if ( hxSrc == 0 || hxTarget == 0 ) {
-        Error( "Trying to find path to/from 0" );
+    if ( hxSrc == 0 ) {
+        Error( "Trying to find path from 0" );
+        path = _pathError;
+        return 0;
+    }
+
+    if ( hxTarget == 0 ) {
+        Error( "Trying to find path to 0" );
         path = _pathError;
         return 0;
     }
@@ -829,7 +1060,7 @@ void MvChase( int z, int zEnemy ) {
     }
 
     pawn.mvEnd[z] = chase;
-    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], chase );
+    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
 
     if ( SvShowCharge_kvar != 0 ) {
         if ( SvShowCharge_kvar == 1 ) {
@@ -937,7 +1168,63 @@ bool MvPatrolUpdate( int z ) {
     // just in case
     pawn.mvPos[z] = pawn.mvEnd[z];
 
-    pawn.mvEnd[z] = HexToV( path[1] );
+    pawn.mvHex[z] = ( ushort )path[1];
+
+    Vector2 endPos = HexToV( pawn.mvHex[z] );
+    pawn.mvEnd[z] = endPos;
+
+#if false
+    foreach ( var zOther in pawn.filter.team[pawn.team[z]] ) {
+        if ( zOther == z ) {
+            continue;
+        }
+
+        Vector2 x1 = pawn.mvEnd[z];
+        Vector2 x2 = pawn.mvEnd[zOther];
+
+        Vector2 d = x2 - x1;
+        float r1 = pawn.Radius( z );
+        float r2 = pawn.Radius( zOther );
+        float l = d.magnitude;
+        float l0 = r1 + r2 + 0.25f;
+
+        if ( l > l0 ) {
+            // too far
+            continue;
+        }
+
+        if ( l < 0.00001f ) {
+            Vector2 mp1 = pawn.mvPos[z];
+            Vector2 mp2 = pawn.mvPos[zOther];
+            x1 += ( mp1 - mp2 ).normalized * 0.01f;
+            d = x2 - x1;
+            l = d.magnitude;
+        }
+
+        if ( SvShowSplits_kvar ) {
+#if UNITY_STANDALONE || SDL
+            var p = pawn.mvEnd[zOther];
+            var r = pawn.Radius( zOther );
+            SingleShot.Add( dt => {
+                Draw.WireCircleGame( p, r, Color.magenta );
+            }, duration: 5 );
+#endif
+        }
+
+        pawn.mvEnd[z] += ( l - l0 ) * d / l;
+    }
+
+    if ( SvShowSplits_kvar && pawn.mvEnd[z] != endPos ) {
+#if UNITY_STANDALONE || SDL
+        var p = pawn.mvEnd[z];
+        var r = pawn.Radius( z );
+        SingleShot.Add( dt => {
+            Draw.WireCircleGame( p, r, Color.magenta );
+        }, duration: 5 );
+#endif
+    }
+
+#endif
 
     int leftover = Mathf.Max( 0, ZServer.clock - pawn.mvEnd_ms[z] );
     pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
@@ -952,87 +1239,45 @@ bool MvPatrolUpdate( int z ) {
     return true;
 }
 
-#if false
-// returns true if the segment was corrected (avoidance was done)
-bool AvoidStructure( int team, Vector2 v0, Vector2 v1, out Vector2 w ) {
-    w = AvoidStructure( team, v0, v1 );
-    return ( v1 - w ).sqrMagnitude > 0.0001f;
-}
+void SeparatePoints( Vector2 x1, Vector2 x2, float w1, float w2, float r1, float r2,
+                                                            out Vector2 x1new, out Vector2 x2new ) {
+    const float eps = 0.00001f;
 
-Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
-#if true
-    return v1;
-#else
-    Vector2 ab = v1 - v0;
-    float sq = ab.sqrMagnitude;
-    if ( sq < 0.5f ) {
-        return v1;
+    // the actual distance
+    float l = ( x2 - x1 ).magnitude;
+
+    if ( l < eps ) {
+        float a = ZServer.clock / 1000f;
+        x1 += new Vector2( Mathf.Cos( a ), Mathf.Sin( a ) ) * 0.0001f;
+        l = ( x2 - x1 ).magnitude;
     }
 
-    float dvLen = Mathf.Sqrt( sq );
-    Vector2 abn = ab / dvLen;
-
-    float min = 9999999;
-
-    foreach ( var z in pawn.filter.structures ) {
-        // enemy structures are not avoided, get attacked instead
-        if ( pawn.team[z] != team ) {
-            continue;
-        }
-
-        Vector2 c = pawn.mvPos[z];
-        Vector2 ac = c - v0;
-        Vector2 bc = c - v1;
-
-        float acac = Vector2.Dot( ac, ac );
-
-        // only care about the closest structure intersecting the path
-        if ( acac >= min ) {
-            continue;
-        }
-
-        float sqDist;
-
-        float e = Vector2.Dot( ac, ab );
-        if ( e <= 0 ) {
-            sqDist = Vector2.Dot( ac, ac );
-        } else {
-            float f = Vector2.Dot( ab, ab );
-            if ( e >= f ) {
-                sqDist = Vector2.Dot( bc, bc );
-            } else {
-                sqDist = acac - e * e / f;
-            }
-        }
-
-        const float avoidRadius = 1;
-
-        // this structure doesn't intersect the path
-        if ( sqDist > avoidRadius * avoidRadius ) {
-            continue;
-        }
-
-        Vector2 p = Vector2.Perpendicular( abn );
-
-        float sign = Vector2.Dot( ac, p ) >= 0 ? -1 : 1;
-        v1 = c + sign * p * avoidRadius * 1.25f;
-        min = acac;
-
-#if UNITY_STANDALONE || SDL
-        if ( SvShowAvoidance_kvar ) {
-            SingleShot.Add( dt => {
-                float sz = Draw.hexPixelSize / 4;
-                Hexes.DrawHexWithLines( Draw.GTS( c ), sz, Color.green );
-                Hexes.DrawHexWithLines( Draw.GTS( v1 ), sz, Color.white );
-                QGL.LateDrawLine( Draw.GTS( v0 ), Draw.GTS( v1 ), color: Color.green );
-            }, duration: 3 );
-        }
-#endif
+    // too far, don't bother
+    if ( l - ( r1 + r2 ) > 0.001f ) {
+        x1new = x1;
+        x2new = x2;
+        return;
     }
-    return v1;
-#endif
+
+    // desired (rest) distance, make sure we overshoot
+    float l0 = r1 + r2 + 0.01f;
+
+    // inverted masses sum
+    float sw = w1 + w2;
+    if ( sw < eps ) {
+        x1new = x1;
+        x2new = x2;
+        return;
+    }
+
+    // solve
+    Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
+    Vector2 dx1 = +w1 / sw * s;
+    Vector2 dx2 = -w2 / sw * s;
+
+    x1new = x1 + dx1;
+    x2new = x2 + dx2;
 }
-#endif
 
 void DebugDrawPath( List<int> path, Color c ) {
 #if UNITY_STANDALONE || SDL
@@ -1076,7 +1321,20 @@ void DebugDrawOrigins() {
     foreach ( var z in pawn.filter.no_garbage ) {
         SingleShot.Add( dt => {
             Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ),
-                                                            Draw.hexPixelSize / 2, Color.white );
+                                                            Draw.hexPixelSize / 4, Color.white );
+        }, duration: 1 );
+    }
+#endif
+}
+
+void DebugDrawRadiuses() {
+#if UNITY_STANDALONE || SDL
+    if ( ! SvShowRadiuses_kvar ) {
+        return;
+    }
+    foreach ( var z in pawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Draw.WireCircleGame( pawn.mvPos[z], pawn.Radius( z ), Color.white );
         }, duration: 1 );
     }
 #endif

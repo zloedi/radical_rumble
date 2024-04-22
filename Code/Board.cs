@@ -102,7 +102,7 @@ public class Board {
     }
 
     public int Hex( int x, int y ) {
-        return x + y * width;
+        return Mathf.Clamp( x + y * width, 0, numItems - 1 );
     }
 
     // hxTarget may be a void hex

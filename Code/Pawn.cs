@@ -23,6 +23,7 @@ partial class Pawn {
 
         // usually move to enemy tower
         Patrol,
+        Avoid,
 
         ChargeEnemy,
         Attack,
@@ -51,6 +52,8 @@ partial class Pawn {
     public Vector2 [] mvPos = null;
     // movement position (target)
     public Vector2 [] mvEnd = null;
+    // pather targer
+    public ushort [] mvHex = null;
 
     // used on the client to lerp
     public Vector2 [] mvStart = null;
@@ -354,6 +357,33 @@ partial class Pawn {
         foreach ( int z in filter.no_flying ) {
             filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
         }
+
+#if false
+        filter.no_clip.AddRange( filter.no_garbage );
+        for ( int i = filter.no_clip.Count - 1; i >= 0; ) {
+            for ( int j = filter.no_clip.Count - 1; j >= 0; j-- ) {
+                if ( i == j ) {
+                    continue;
+                }
+                int zA = filter.no_garbage[i];
+                int zB = filter.no_garbage[j];
+                var a = mvPos[zA];
+                var b = mvPos[zB];
+                var ra = Radius( zA );
+                var rb = Radius( zB );
+                var r = ra + rb;
+                if ( ( b - a ).sqrMagnitude < r * r ) {
+                    filter.clip.Add( ( byte )zA );
+                    filter.clip.Add( ( byte )zB );
+                    filter.no_clip.RemoveAt( i );
+                    filter.no_clip.RemoveAt( j > i ? j - 1 : j );
+                    i--;
+                    break;
+                }
+            }
+            i--;
+        }
+#endif
 
         foreach ( int z in filter.no_garbage ) {
             if ( IsWinObjective( z ) ) {

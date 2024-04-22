@@ -39,6 +39,7 @@ public static void Tick() {
 }
 
 public static void SolveOverlapping( List<Vector2> x, List<float> w, List<float> r,
+                                                    List<int> map = null,
                                                     int numSubsteps = 4,
                                                     float overshoot = 0.001f,
                                                     float eps = 0.0001f ) {
@@ -47,6 +48,23 @@ public static void SolveOverlapping( List<Vector2> x, List<float> w, List<float>
     for ( int i = 0; i < numSubsteps; i++ ) {
         for ( int z1 = 0; z1 < x.Count; z1++ ) {
             for ( int z2 = 0; z2 < x.Count; z2++ ) {
+        //for ( int z1 = 0; z1 < x.Count - 1; z1++ ) {
+        //    for ( int z2 = z1 + 1; z2 < x.Count; z2++ ) {
+                if ( z1 == z2 ) {
+                    continue;
+                }
+
+                if ( map != null ) {
+                    if ( map[z1] != -1 && map[z1] != z2 ) {
+                        continue;
+                    }
+
+                    // FIXME: redundant?
+                    if ( map[z2] != -1 && map[z2] != z1 ) {
+                        continue;
+                    }
+                }
+
                 Vector2 x1 = x[z1];
                 Vector2 x2 = x[z2];
 
@@ -87,6 +105,8 @@ public static void SolveOverlapping( List<Vector2> x, List<float> w, List<float>
         }
     }
 }
+
+//bool 
 
 // == RTS STILE MOVEMENT AND CONTROL == 
 
