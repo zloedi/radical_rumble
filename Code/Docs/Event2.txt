@@ -1,0 +1,12 @@
+General notes on movement in Radical Rumble
+    -= non-synced =-
+    Pawn.mvPos
+    Pawn.mvEnd 
+
+    -= synced =-
+    Pawn.mvEnd_tx
+    Pawn.mvEnd_ms
+
+    -= client-only =-
+    Pawn.mvStart
+    Pawn.mvStart_ms
