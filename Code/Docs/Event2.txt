@@ -23,7 +23,7 @@
 
 
 
-    Why the Radical
+    Why the Radical (launch four clients)
     
     
     
@@ -36,7 +36,7 @@
 
 
 
-    Structs of Arrays, clocks and more
+    SDL/Unity, Structs of Arrays, clocks and more
     
     
 
@@ -125,29 +125,19 @@
 
 
 
-    // tick in general
+    // tick in general:
     if ( pawn.ChaseEndPoint( z, serverClock ) ) {
         // decide again when segment is done (end point is reached and the timestamp is hit)
     }
-
-
-
-
-
-
-
-
-
-
-
-
     // at the end of server tick, move to 8:8 fixed point to be transferred
     pawn.mvEnd_tx = ToTx( pawn.mvEnd );
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
     
     
     
@@ -193,10 +183,58 @@
     // client tick
     // 
     // ... for all pawn.filter.no_strucutres and pawn.filter.flying ...
-    mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+
+
+
+
+
+
+
+
+
+    // server clock here
+    if ( pawn.mvEnd_ms[z] <= Cl.serverClock ) {
+        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
+    }
+
+
+
+
+
+
+
+
+
+    // unity clock here
+    else if ( pawn.mvEnd_ms[z] <= unityClock  ) {
+        // hide the lag at inflection points by keep moving
+        // in the same direction until a new segment arrives
+    }
+
+
+
+
+
+
+
+
+
+
+    else {
+        mvPos[z] = Vector2.Lerp( mvStart[z], mvEnd[z], t );
+    }
     
     
     
+
+
+    
+
+
+    
+
+
+    The rest is server only
 
 
     
@@ -205,17 +243,10 @@
     
     
     
-    Hide the lag at inflection points by keep moving in the same direction until a seg arrives
-    
     
     
 
 
-
-
-    
-    
-    
    Pathing -- the HexPather (what astar?)
    1. Fill the navmap with blocked tiles.
    2. Flood the scoremap with score according to the navmap.
@@ -342,7 +373,7 @@
 
 
 
-    Demo of the Editor F3 (ed_load crazy)
+    Demo of the Editor F3 -- pather test (draw_skip_big_red_message ; ed_load crazy)
 
 
 
@@ -368,6 +399,8 @@
 
 
 
+    -= the cache data =-
+
     // should be a list of ushorts here
     // key is end points
     Dictionary<int,List<int>> _pathCache;
@@ -382,6 +415,8 @@
 
 
 
+
+    -= multiple ranges =-
 
     if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 5 ) ) {
         if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 10 ) ) {
@@ -447,6 +482,7 @@
 
 
 
+    // 'true' result means end-point-reached here
     if ( pawn.MvLerp( z, serverClock ) ) {
         // path inflection point, get a new segment to lerp on
         if ( ! MvPatrolUpdate( z ) ) {
@@ -513,8 +549,11 @@
 
 
     if ( pawn.MvLerp( z, serverClock ) ) {
+        // this will notify the client by sending a fresh clock
+        // it will make the pawn stop
+        pawn.MvSnapToEnd( z, ZServer.clock );
+
         // reached attack position, transition to attack
-        pawn.MvSnapToEnd( z, serverClock );
         Log( $"{pawn.DN( z )} starts attacking {pawn.DN( pawn.focus[z] )}" );
         pawn.SetState( z, PS.Attack );
     } else {
@@ -533,7 +572,7 @@
 
 
 
-    Demo of adaptive chase (ed_load chase ; sv_show_charge 1)
+    Demo of adaptive chase (ed_load chase ; cl_spawn_directly ; sv_show_charge 1)
 
 
 
@@ -545,4 +584,68 @@
 
 
 
-    Navigation -- avoidance
+    Navigation -- avoidance (wip)
+
+
+
+
+
+
+
+
+    
+
+
+
+    RR's Steering Behaviour (sorta) overview
+        * Separate (colinear) and avoid (orthogonal)
+        * Put a sphere (in the future) of the pawn.
+        * Try to keep the spheres separated.
+
+
+
+
+
+
+    
+
+
+    Steering spheres
+        1. velocity -- the 'feeler' ahead of the pawn
+        2. detour -- when clipping with attacking teammate, place it around the attack target
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Single solver for all spheres (distance constraints pic).
+
+
+
+
+
+
+
+
+
+
+
+
+    Demo avoidance (draw_skip_pawns 1 ; sv_show_radiuses 1 // sv_show_splits 1 );
+
+
+
+
+
+
+
+
+
