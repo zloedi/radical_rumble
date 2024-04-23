@@ -1,3 +1,29 @@
+
+
+
+
+
+
+
+
+
+
+    Who am I
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Why the Radical
     
     
     
@@ -5,7 +31,23 @@
     
     
     
+
+
+
+
+
+    Structs of Arrays, clocks and more
     
+    
+
+
+
+
+
+
+
+
+
     Movement Logic -- data
     
     
@@ -72,7 +114,7 @@
     
     // setting up a new segment
     pawn.mvEnd[z] = chase;
-    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
+    pawn.mvEnd_ms[z] = serverClock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
 
 
 
@@ -83,9 +125,9 @@
 
 
 
-    // general tick outlook
-    if ( pawn.MvChaseEndPoint( z, serverClock ) ) {
-        // decide again when segment is crossed
+    // tick in general
+    if ( pawn.ChaseEndPoint( z, serverClock ) ) {
+        // decide again when segment is done (end point is reached and the timestamp is hit)
     }
 
 
@@ -99,7 +141,7 @@
 
 
 
-    // at the end of server tick, move to 8:8 fixed point
+    // at the end of server tick, move to 8:8 fixed point to be transferred
     pawn.mvEnd_tx = ToTx( pawn.mvEnd );
     
     
@@ -224,11 +266,11 @@
 
 
 
-    byte [] terrain = null;
-    byte [] navMap = null;
-    HexPather.Context patherCTX;
-    List<int> path;
-    List<int> strippedPath;
+    byte [] terrain = null
+    byte [] navMap = null
+    HexPather.Context patherCTX
+    List<int> path
+    List<int> strippedPath
 
 
 
@@ -254,7 +296,8 @@
 
 
 
-    // fill the obstacle map
+    -= fill the obstacle map =-
+
     // passable
     foreach ( var hx in filter.solid ) navMap[hx] = 0;
 
@@ -272,6 +315,7 @@
 
 
 
+    -= find path =-
 
     // flood the map with score
     HexPather.FloodMap( hxSrc, maxPath, width, navMap, numItems, patherCTX );
@@ -298,7 +342,7 @@
 
 
 
-    Demo of the Editor F3
+    Demo of the Editor F3 (ed_load crazy)
 
 
 
@@ -325,6 +369,7 @@
 
 
     // should be a list of ushorts here
+    // key is end points
     Dictionary<int,List<int>> _pathCache;
 
 
@@ -354,7 +399,7 @@
 
 
 
-    Demo of sv_show_paths 2
+    Demo of sv_show_paths 2 (ed_load crazy)
 
 
 
@@ -380,7 +425,7 @@
 
     1. Idle
     2. Patrol
-    3. Charge
+    3. ChargeEnemy
     4. Attack
 
 
@@ -393,14 +438,21 @@
 
     -= patrol =-
 
-    foreach ( var z in pawn.filter.ByState( PS.Patrol ) ) {
-        if ( pawn.MvLerp( z, ZServer.clock ) ) {
-            // path inflection point, get a new segment to lerp on
-            if ( ! MvPatrolUpdate( z ) ) {
-                // nothing to focus on for navigation
-                Log( $"{pawn.DN( z )} no navigation target, go to Idle." );
-                pawn.SetState( z, PS.Idle );
-            }
+    foreach ( var z in pawn.filter.ByState( PS.Patrol ) )
+
+
+
+
+
+
+
+
+    if ( pawn.MvLerp( z, serverClock ) ) {
+        // path inflection point, get a new segment to lerp on
+        if ( ! MvPatrolUpdate( z ) ) {
+            // nothing to focus on for navigation
+            Log( $"{pawn.DN( z )} no navigation target, go to Idle." );
+            pawn.SetState( z, PS.Idle );
         }
     }
 
@@ -410,21 +462,80 @@
 
 
 
-    foreach ( var z in pawn.filter.ByState( PS.Patrol ) ) {
-        // if there is something attackable, move to a special state
-        if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
 
-            pawn.focus[z] = ( byte )zEnemy;
 
-            // change route segment before next movement lerp
-            // so the lerp has proper position
-            // the closer to target, the more traffic is generated
-            MvChase( z, zEnemy );
 
-            Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
-            pawn.SetState( z, PS.ChargeEnemy );
-        }
+
+
+    else if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
+        pawn.focus[z] = ( byte )zEnemy;
+        Log( $"{pawn.DN( z )} charges {pawn.DN( zEnemy )}" );
+        pawn.SetState( z, PS.ChargeEnemy );
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    -= chase enemy =-
+
+    foreach ( var z in pawn.filter.ByState( PS.ChargeEnemy ) )
+
+
+
+
+
+
+
+
+
+
+    
+    // keep polling for enemies
+    if ( AtkGetFocusPawn( z, out int ze ) ) {
+        pawn.focus[z] = ( byte )ze;
+    } else {
+        pawn.focus[z] = 0;
+        Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
+        pawn.SetState( z, PS.Patrol );
+    }
+
+
+
+
+
+
+    if ( pawn.MvLerp( z, serverClock ) ) {
+        // reached attack position, transition to attack
+        pawn.MvSnapToEnd( z, serverClock );
+        Log( $"{pawn.DN( z )} starts attacking {pawn.DN( pawn.focus[z] )}" );
+        pawn.SetState( z, PS.Attack );
+    } else {
+        // chase enemy, updating end position, frequency depending on distance
+        MvChase( z, pawn.focus[z] );
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    Demo of adaptive chase (ed_load chase ; sv_show_charge 1)
+
+
 
 
 
