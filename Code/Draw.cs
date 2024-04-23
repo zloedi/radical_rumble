@@ -356,7 +356,6 @@ public static void PawnSprites( float alpha = 1 ) {
         Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
         blit( z, pos - offShad, color: c );
         symbol( z, pos - offShad );
-        //WireCircleGame( pawn.mvPos[z], def.radius, Color.white );
     }
 
     // non-structure ground units
