@@ -127,8 +127,12 @@
 
     // tick in general:
     if ( pawn.ChaseEndPoint( z, serverClock ) ) {
-        // decide again when segment is done (end point is reached and the timestamp is hit)
+        // decide again
+        // (end point is reached and the timestamp is hit)
     }
+
+    // ...
+
     // at the end of server tick, move to 8:8 fixed point to be transferred
     pawn.mvEnd_tx = ToTx( pawn.mvEnd );
 
@@ -196,7 +200,7 @@
     if ( pawn.mvEnd_ms[z] <= Cl.serverClock ) {
         // if the end timestamp is behind the server clock, stop
         // may end up a bit off the actual position (do we care)
-        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
+        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = unityClock;
     }
 
 
@@ -270,7 +274,7 @@
    // before being able to trace paths, you need to flood the map
    // origin and target are indices, not coordinates
    bool FloodMap( int origin, int maxRange, int navMapPitch,
-                                                byte [] navMap, int navMapLength, Context ctx );
+                                        byte [] navMap, int navMapLength, Context ctx );
 
    // origin is already stored in context by Flood
    bool TracePath( int target, int floodMapPitch, Context ctx, List<int> ioResult );
