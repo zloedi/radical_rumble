@@ -424,8 +424,8 @@
 
 
     1. Idle
-    2. Patrol
-    3. ChargeEnemy
+    2. Patrol *
+    3. ChargeEnemy *
     4. Attack
 
 
@@ -543,3 +543,6 @@
 
 
 
+
+
+    Navigation -- avoidance
