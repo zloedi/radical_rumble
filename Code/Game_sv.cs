@@ -358,7 +358,7 @@ quit:
                 int zDef = pawn.focus[zAtk];
 
                 Vector2 dir = ( pawn.mvEnd[zAvoid] - pawn.mvPos[zAvoid] ).normalized;
-                float feelerRadius = pawn.Radius( zAvoid );
+                float feelerRadius = pawn.Radius( zAvoid ) * 0.5f;
                 Vector2 feeler = pawn.mvPos[zAvoid] + dir * pawn.Radius( zAvoid );
 
                 float dr = pawn.Radius( zAtk ) + feelerRadius;
@@ -455,7 +455,6 @@ quit:
             }
 
             if ( x[i] == xo[i] ) {
-                Qonsole.Log( "no change" );
                 continue;
             }
 
@@ -464,8 +463,10 @@ quit:
             Vector2 d = x[i] - pawn.mvPos[z];
 
             if ( d.sqrMagnitude < 0.05f ) {
-                //float sign = ( z & 1 ) == 0 ? 1f : -1f;
-                //d = Vector2.Perpendicular( sign * ( pawn.mvEnd[z] - pawn.mvPos[z] ) );
+                if ( ! avZ.Contains( z ) ) {
+                    float sign = ( z & 1 ) == 0 ? 1f : -1f;
+                    d = Vector2.Perpendicular( sign * ( pawn.mvEnd[z] - pawn.mvPos[z] ) );
+                }
                 if ( d.sqrMagnitude < 0.0001f ) {
                     continue;
                 }
