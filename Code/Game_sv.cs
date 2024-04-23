@@ -41,6 +41,8 @@ static bool SvAsserts_kvar = false;
 static bool SvInvincibleTowers_kvar = false;
 [Description( "Extra logging for the path cache." )]
 static bool SvLogPaths_kvar = false;
+[Description( "At this distance PS.Charge is triggered." )]
+static float SvAggroRange_kvar = 6;
 
 // 0 -- keep running, 1 -- team0 win, 2 -- team1 win, 3 -- draw
 public int TickServer() {
@@ -784,7 +786,7 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
             continue;
         }
         
-        const float minDist = 6f;
+        float minDist = SvAggroRange_kvar;
         if ( sq > minDist * minDist ) {
             continue;
         }
