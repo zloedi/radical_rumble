@@ -23,6 +23,7 @@ static class Draw {
 const int FLYERS_SHADOW_OFFSET = 5;
 
 static bool SkipPawns_cvar = false;
+static bool SkipBigRedMessage_cvar = false;
 
 public static int pixelSize => Mathf.Max( 1, Mathf.Min( Screen.height, Screen.width ) / 300 );
 public static int textSize => Mathf.Max( 1, pixelSize * 2 / 3 );
@@ -68,7 +69,7 @@ public static void FillScreen( Color? color = null ) {
 }
 
 public static void BigRedMessage() {
-    if ( ! string.IsNullOrEmpty( centralBigRedMessage ) ) {
+    if ( ! SkipBigRedMessage_cvar && ! string.IsNullOrEmpty( centralBigRedMessage ) ) {
         OutlinedTextCenter( Screen.width / 2, Screen.height / 2, Draw.centralBigRedMessage,
                                                                       color: Color.red, scale: 2 );
     }
