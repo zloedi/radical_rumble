@@ -25,8 +25,8 @@ const float ATK_MIN_DIST = 0.45f;
 #if UNITY_STANDALONE || SDL
 [Description( "Show pawn origins on the server." )]
 static bool SvShowOrigins_kvar = false;
-//[Description( "Show structure avoidance debug." )]
-//static bool SvShowAvoidance_kvar = false;
+[Description( "Show pawn radiuses on the server." )]
+static bool SvShowRadiuses_kvar = false;
 #endif
 
 [Description( "1 -- Show navigation (patrol) nav lines. 2 -- Show all uncached pather lines on caching." )]
@@ -123,7 +123,6 @@ quit:
 
         if ( AtkGetFocusPawn( z, out int zEnemy ) ) {
             charge( z, zEnemy );
-            continue;
         }
     }
 
@@ -136,9 +135,9 @@ quit:
 
         // nothing to chase, go on patrol
         else {
+            Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.focus[z] = 0;
             MvPatrolUpdate( z );
-            Log( $"{pawn.DN( z )} nothing to charge, go to Patrol." );
             pawn.SetState( z, PS.Patrol );
             continue;
         }
@@ -269,6 +268,7 @@ quit:
     }
 
     DebugDrawOrigins();
+    DebugDrawRadiuses();
 
     foreach ( var z in pawn.filter.no_garbage ) {
         pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
@@ -415,6 +415,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
+        // FIXME: no server dependencies please!
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
 
         x -= minx;
@@ -499,6 +500,7 @@ public void SetTerrain( int x, int y, int terrain ) {
         }
 
         Log( $"Resized grid. w: {newW} h: {newH}" );
+        // FIXME: no server dependencies please!
         Sv.RegisterTrail( $"cl_board_moved {minx} {miny}" );
     }
 }
@@ -831,7 +833,7 @@ void MvChase( int z, int zEnemy ) {
     }
 
     pawn.mvEnd[z] = chase;
-    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], chase );
+    pawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, pawn.mvPos[z], pawn.mvEnd[z] );
 
     if ( SvShowCharge_kvar != 0 ) {
         if ( SvShowCharge_kvar == 1 ) {
@@ -954,88 +956,6 @@ bool MvPatrolUpdate( int z ) {
     return true;
 }
 
-#if false
-// returns true if the segment was corrected (avoidance was done)
-bool AvoidStructure( int team, Vector2 v0, Vector2 v1, out Vector2 w ) {
-    w = AvoidStructure( team, v0, v1 );
-    return ( v1 - w ).sqrMagnitude > 0.0001f;
-}
-
-Vector2 AvoidStructure( int team, Vector2 v0, Vector2 v1 ) {
-#if true
-    return v1;
-#else
-    Vector2 ab = v1 - v0;
-    float sq = ab.sqrMagnitude;
-    if ( sq < 0.5f ) {
-        return v1;
-    }
-
-    float dvLen = Mathf.Sqrt( sq );
-    Vector2 abn = ab / dvLen;
-
-    float min = 9999999;
-
-    foreach ( var z in pawn.filter.structures ) {
-        // enemy structures are not avoided, get attacked instead
-        if ( pawn.team[z] != team ) {
-            continue;
-        }
-
-        Vector2 c = pawn.mvPos[z];
-        Vector2 ac = c - v0;
-        Vector2 bc = c - v1;
-
-        float acac = Vector2.Dot( ac, ac );
-
-        // only care about the closest structure intersecting the path
-        if ( acac >= min ) {
-            continue;
-        }
-
-        float sqDist;
-
-        float e = Vector2.Dot( ac, ab );
-        if ( e <= 0 ) {
-            sqDist = Vector2.Dot( ac, ac );
-        } else {
-            float f = Vector2.Dot( ab, ab );
-            if ( e >= f ) {
-                sqDist = Vector2.Dot( bc, bc );
-            } else {
-                sqDist = acac - e * e / f;
-            }
-        }
-
-        const float avoidRadius = 1;
-
-        // this structure doesn't intersect the path
-        if ( sqDist > avoidRadius * avoidRadius ) {
-            continue;
-        }
-
-        Vector2 p = Vector2.Perpendicular( abn );
-
-        float sign = Vector2.Dot( ac, p ) >= 0 ? -1 : 1;
-        v1 = c + sign * p * avoidRadius * 1.25f;
-        min = acac;
-
-#if UNITY_STANDALONE || SDL
-        if ( SvShowAvoidance_kvar ) {
-            SingleShot.Add( dt => {
-                float sz = Draw.hexPixelSize / 4;
-                Hexes.DrawHexWithLines( Draw.GTS( c ), sz, Color.green );
-                Hexes.DrawHexWithLines( Draw.GTS( v1 ), sz, Color.white );
-                QGL.LateDrawLine( Draw.GTS( v0 ), Draw.GTS( v1 ), color: Color.green );
-            }, duration: 3 );
-        }
-#endif
-    }
-    return v1;
-#endif
-}
-#endif
-
 void DebugDrawPath( List<int> path, Color c ) {
 #if UNITY_STANDALONE || SDL
     List<Vector2> pathLine = new List<Vector2>();
@@ -1078,7 +998,20 @@ void DebugDrawOrigins() {
     foreach ( var z in pawn.filter.no_garbage ) {
         SingleShot.Add( dt => {
             Hexes.DrawHexWithLines( Draw.GameToScreenPosition( pawn.mvPos[z] ),
-                                                            Draw.hexPixelSize / 2, Color.white );
+                                                            Draw.hexPixelSize / 4, Color.white );
+        }, duration: 1 );
+    }
+#endif
+}
+
+void DebugDrawRadiuses() {
+#if UNITY_STANDALONE || SDL
+    if ( ! SvShowRadiuses_kvar ) {
+        return;
+    }
+    foreach ( var z in pawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Draw.WireCircleGame( pawn.mvPos[z], pawn.Radius( z ), Color.white );
         }, duration: 1 );
     }
 #endif
