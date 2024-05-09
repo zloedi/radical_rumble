@@ -1,5 +1,7 @@
 # Radical Rumble
 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/zXZ-K3xs2Gs/0.jpg)](https://www.youtube.com/watch?v=zXZ-K3xs2Gs)
+
 Radical Rumble is a demo of a casual multiplayer clash/rumble-like game, made specifically for the
 **Radical Multiplayer** events at [Prostranstvoto].
 It is a Unity3D project, but could also be built as an SDL app without modifications.
