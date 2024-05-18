@@ -939,6 +939,14 @@ static List<byte> no_avdFocused = new List<byte>();
 
 static List<Pair> [] avdClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
 
+/*
+TODO:
+1. Stop when in attack distance, become inert (w = 0)
+2. Go around attacking teammates -- see todo.txt
+3. Avoid non-passable terrain -- make the feelers of pawns on void inert?
+4. Split moving teammates 
+5. Split matching focus points for less traffic
+*/
 public static int TickServer() {
     svPawn.UpdateFilters();
     AvdFilter();
@@ -947,15 +955,15 @@ public static int TickServer() {
         svPawn.SetState( z, Pawn.State.Idle );
     }
 
-    foreach ( var z in avdFocused ) {
-        svPawn.MvLerp( z, ZServer.clock );
-    }
-
     foreach ( var z in no_avdFocused ) {
         int zE = NearestAttackableEnemy( z );
         mvFocus[z] = svPawn.mvPos[zE];
         svPawn.mvEnd[z] = mvFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
+    }
+
+    foreach ( var z in avdFocused ) {
+        svPawn.MvLerp( z, ZServer.clock );
     }
 
     foreach ( var z in svPawn.filter.no_garbage ) {
@@ -1001,6 +1009,7 @@ static void AvdFilter() {
         avdClip[team].Clear();
     }
 
+    // we need to let the client snap the position on spawn, do nothing for a tick
     foreach ( var z in svPawn.filter.no_structures ) {
         assign( z, svPawn.GetState( z ) == Pawn.State.None, avdNew, no_avdNew );
     }

@@ -1,3 +1,4 @@
+* Game over and winner announce
 * don't use PassableTerrainToTarget while navigating.
 * instead
 *     always use the pather

@@ -1,5 +1,3 @@
-] Game over and winner announce
-
 ] Fast clicking leads to no-spawn
 
 ] Binary (compressed) deltas.
@@ -14,15 +12,26 @@
 ] Improve the editor.
 ] Pawn avoidance
     Do steering behaviour after the patrol and chase loops.
-    //1. Unclutter on spawn
-    //2. Unclutter 'formations' on patrol -- if collide at endpos and end timestamps are close enough
-    //    if close to eachother, use current offsets as constraints for the endpos unclutter
-    //    put the void hexes as particles in the solver too
-    //3. ?Unclutter attack points?
-    //4. ?Unclutter while moving? ?Speculate it on the client?
+    Go around inert/attacking teammates
+        - each pawn has a 'feeler' -- sphere in the direction of the focus, defines 'velocity'
+        - feeler is radius-away from z
+        - when avoiding inerts, moving feeler is offset by perpendicular to focus
+            -- nope? better check if really compressed distance constraint
+            -- and take care of it there?
+        - direction of perpendicular is the least-sig-bit of z to give it some noise
+        - collect all feelers and do separation and distance constraint solve
+            - inerts z and z_feeler match
+            - use distance constraint on the z -> z_feeler pairs with z being inert in the constraint
+
+    1. Unclutter on spawn
+    2. Unclutter 'formations' on patrol -- if collide at endpos and end timestamps are close enough
+        if close to eachother, use current offsets as constraints for the endpos unclutter
+        put the void hexes as particles in the solver too
+    3. ?Unclutter attack points?
+    4. ?Unclutter while moving? ?Speculate it on the client?
     
 
-] Player (not client) reconnect?
+] Player (not client) reconnect.
 
 == Implement a routine to get a proper attack position for given attacker and defender. ==
     ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
