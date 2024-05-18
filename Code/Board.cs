@@ -76,10 +76,6 @@ public class Board {
         return IsSolid( Hex( x, y ) );
     }
 
-    public int Clamp( int hx ) {
-        return Mathf.Clamp( hx, 0, numItems - 1 );
-    }
-
     public bool IsInBounds( int hx ) {
         return hx >= 0 && hx < numItems;
     }
