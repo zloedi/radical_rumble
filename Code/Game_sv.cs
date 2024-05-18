@@ -43,9 +43,18 @@ static bool SvInvincibleTowers_kvar = false;
 static bool SvLogPaths_kvar = false;
 [Description( "At this distance PS.Charge is triggered." )]
 static float SvAggroRange_kvar = 6;
+[Description( "Switch to the Gym server logic for tests" )]
+static bool SvTickGym_kvar = false;
 
 // 0 -- keep running, 1 -- team0 win, 2 -- team1 win, 3 -- draw
 public int TickServer() {
+
+    if ( SvTickGym_kvar ) {
+        int result = Gym.TickServer();
+        DebugDrawOrigins();
+        DebugDrawRadiuses();
+        return result;
+    }
 
     pawn.UpdateFilters();
     RegisterIntoGrids();
