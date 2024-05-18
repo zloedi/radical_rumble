@@ -14,6 +14,7 @@ namespace RR {
     
     
 using Cl = Client;
+using Sv = Server;
 
 
 static class Gym {
@@ -914,6 +915,125 @@ static void RTS_Spawn_kmd( string [] argv ) {
 static void GymSetState_kmd( string [] argv ) {
     TickUtil.SetState( argv, _ticks, _tickNames, ref GymState_kvar );
 }
+
+
+
+enum Flags {
+    None,
+}
+
+static Pawn svPawn => Sv.game.pawn;
+
+static byte [] avdW = new byte[Pawn.MAX_PAWN]; 
+static Vector2 [] mvFocus = new Vector2[Pawn.MAX_PAWN]; 
+
+struct Pair {
+    public byte a;
+    public byte b;
+}
+
+static List<byte> avdNew = new List<byte>();
+static List<byte> no_avdNew = new List<byte>();
+static List<byte> avdFocused = new List<byte>();
+static List<byte> no_avdFocused = new List<byte>();
+
+static List<Pair> [] avdClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
+
+public static int TickServer() {
+    svPawn.UpdateFilters();
+    AvdFilter();
+
+    foreach ( var z in avdNew ) {
+        svPawn.SetState( z, Pawn.State.Idle );
+    }
+
+    foreach ( var z in avdFocused ) {
+        svPawn.MvLerp( z, ZServer.clock );
+    }
+
+    foreach ( var z in no_avdFocused ) {
+        int zE = NearestAttackableEnemy( z );
+        mvFocus[z] = svPawn.mvPos[zE];
+        svPawn.mvEnd[z] = mvFocus[z];
+        svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
+    }
+
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        svPawn.mvEnd_tx[z] = Game.ToTx( svPawn.mvEnd[z] );
+    }
+
+    return 0;
+}
+
+// FIXME: in Pawn.cs
+static int MvDurationMs( int z, Vector2 a, Vector2 b ) {
+    float sq = ( b - a ).sqrMagnitude;
+    if ( sq < 0.000001f ) {
+        return 0;
+    }
+    return ( int )( Mathf.Sqrt( sq ) / svPawn.SpeedSec( z ) * 1000 );
+}
+
+static bool HasFocusPos( int z ) {
+    return mvFocus[z] != Vector2.zero;
+}
+
+static int NearestAttackableEnemy( int z ) {
+    var enemies = svPawn.filter.enemies[svPawn.team[z]];
+    int zClose = 0;
+    float min = 99999999;
+    foreach ( var zE in enemies ) {
+        float sq = ( svPawn.mvPos[zE] - svPawn.mvPos[z] ).sqrMagnitude;
+        if ( sq < min ) {
+            min = sq;
+            zClose = zE;
+        }
+    }
+    return zClose;
+}
+
+static void AvdFilter() {
+    avdNew.Clear();
+    no_avdNew.Clear();
+    avdFocused.Clear();
+    no_avdFocused.Clear();
+    for ( int team = 0; team < 2; team++ ) {
+        avdClip[team].Clear();
+    }
+
+    foreach ( var z in svPawn.filter.no_structures ) {
+        assign( z, svPawn.GetState( z ) == Pawn.State.None, avdNew, no_avdNew );
+    }
+
+    foreach ( var z in svPawn.filter.flying ) {
+        assign( z, svPawn.GetState( z ) == Pawn.State.None, avdNew, no_avdNew );
+    }
+
+    foreach ( var z in no_avdNew ) {
+        assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
+    }
+
+    for ( int team = 0; team < 2; team++ ) {
+        var clip = avdClip[team];
+        var tl = svPawn.filter.team[team];
+
+        for ( int zA = 0; zA < tl.Count - 1; zA++ ) {
+            for ( int zB = zA + 1; zB < tl.Count; zB++ ) {
+                float r = svPawn.Radius( zA ) + svPawn.Radius( zB );
+                Vector2 d = svPawn.mvPos[zB] - svPawn.mvPos[zA];
+                if ( d.sqrMagnitude < r * r ) {
+                    clip.Add( new Pair { a = ( byte )zA, b = ( byte )zB } );
+                }
+            }
+        }
+    }
+    
+     void assign( int z, bool condition, List<byte> la, List<byte> lb ) {
+         var l = condition ? la : lb;
+         l.Add( ( byte )z );
+     }
+}
+
 
 
 } }
