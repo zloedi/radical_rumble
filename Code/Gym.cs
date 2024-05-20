@@ -941,9 +941,9 @@ static List<Pair> [] avdClip = new List<Pair>[2] { new List<Pair>(), new List<Pa
 
 /*
 TODO:
-1. Stop when in attack distance, become inert (w = 0)
+1. Stop when in attack distance and become inert (w = 0)
 2. Go around attacking teammates -- see todo.txt
-3. Avoid non-passable terrain -- make the feelers of pawns on void inert?
+3. Avoid non-passable terrain -- make the feelers of pawns on void terrain inert?
 4. Split moving teammates 
 5. Split matching focus points for less traffic
 */
@@ -1022,6 +1022,7 @@ static void AvdFilter() {
         assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
     }
 
+    // FIXME: we need the feelers clips, not pawns
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdClip[team];
         var tl = svPawn.filter.team[team];

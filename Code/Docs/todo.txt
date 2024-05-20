@@ -16,7 +16,9 @@
         - each pawn has a 'feeler' -- sphere in the direction of the focus, defines 'velocity'
         - feeler is radius-away from z
         - when avoiding inerts, moving feeler is offset by perpendicular to focus
-            -- nope? better check if really compressed distance constraint
+            -- nope? better check if badly compressed distance constraint
+                -- nope nope: the feeler may go away, in the opposite direction from focus
+                        and constraint still not compressed?
             -- and take care of it there?
         - direction of perpendicular is the least-sig-bit of z to give it some noise
         - collect all feelers and do separation and distance constraint solve
