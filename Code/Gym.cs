@@ -924,8 +924,9 @@ enum Flags {
 
 static Pawn svPawn => Sv.game.pawn;
 
-static byte [] avdW = new byte[Pawn.MAX_PAWN]; 
-static Vector2 [] mvFocus = new Vector2[Pawn.MAX_PAWN]; 
+static float [] avdW = new float[Pawn.MAX_PAWN]; 
+static Vector2 [] avdFocus = new Vector2[Pawn.MAX_PAWN]; 
+static Vector2 [] avdFeeler = new Vector2[Pawn.MAX_PAWN]; 
 
 struct Pair {
     public byte a;
@@ -937,11 +938,13 @@ static List<byte> no_avdNew = new List<byte>();
 static List<byte> avdFocused = new List<byte>();
 static List<byte> no_avdFocused = new List<byte>();
 
-static List<Pair> [] avdClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
+static List<Pair> avdPairEnemy = new List<Pair>();
+static List<Pair> [] avdPairClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
+static List<byte> [] avdCrntDist = new List<byte>[2] { new List<byte>(), new List<byte>() };
 
 /*
 TODO:
-1. Stop when in attack distance and become inert (w = 0)
+* 1. Stop when in attack distance and become inert (w = 0)
 2. Go around attacking teammates -- see todo.txt
 3. Avoid non-passable terrain -- make the feelers of pawns on void terrain inert?
 4. Split moving teammates 
@@ -951,19 +954,115 @@ public static int TickServer() {
     svPawn.UpdateFilters();
     AvdFilter();
 
-    foreach ( var z in avdNew ) {
-        svPawn.SetState( z, Pawn.State.Idle );
-    }
-
-    foreach ( var z in no_avdFocused ) {
-        int zE = NearestAttackableEnemy( z );
-        mvFocus[z] = svPawn.mvPos[zE];
-        svPawn.mvEnd[z] = mvFocus[z];
-        svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
+    for ( int team = 0; team < 2; team++ ) {
+        var clip = avdPairClip[team];
+        const int numSubsteps = 3;
+        for ( int i = 0; i < numSubsteps; i++ ) {
+            foreach ( var pr in clip ) {
+                Vector2 x1 = avdFeeler[pr.a];
+                Vector2 x2 = avdFeeler[pr.b];
+                float w1 = avdW[pr.a];
+                float w2 = avdW[pr.b];
+                float r1 = svPawn.Radius( pr.a );
+                float r2 = svPawn.Radius( pr.b );
+                float l = ( x2 - x1 ).magnitude;
+                if ( l - ( r1 + r2 ) > 0.001f ) {
+                    continue;
+                }
+                if ( l < 0.00001f ) {
+                    continue;
+                }
+                float l0 = r1 + r2 + 0.0011f;
+                float sw = w1 + w2;
+                if ( sw < 0.00001f ) {
+                    continue;
+                }
+                Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
+                Vector2 dx1 = +w1 / sw * s;
+                Vector2 dx2 = -w2 / sw * s;
+                avdFeeler[pr.a] += dx1;
+                avdFeeler[pr.b] += dx2;
+            }
+            foreach ( var z in avdCrntDist[team] ) {
+                Vector2 x1 = svPawn.mvPos[z];
+                Vector2 x2 = avdFeeler[z];
+                float w1 = 0;
+                float w2 = 1;
+                float r1 = svPawn.Radius( z );
+                float r2 = svPawn.Radius( z );
+                float l = ( x2 - x1 ).magnitude;
+                if ( l < 0.00001f ) {
+                    // FIXME: ???!?!??!
+                    continue;
+                }
+                float l0 = r1 * 1.25f;
+                float sw = w1 + w2;
+                Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
+                Vector2 dx1 = +w1 / sw * s;
+                Vector2 dx2 = -w2 / sw * s;
+                //svPawn.mvPos[z] += dx1;
+                avdFeeler[z] += dx2;
+            }
+        }
     }
 
     foreach ( var z in avdFocused ) {
         svPawn.MvLerp( z, ZServer.clock );
+    }
+
+    for ( int team = 0; team < 2; team++ ) {
+        var clip = avdPairClip[team];
+        foreach ( var pr in clip ) {
+            int [] za = { pr.a, pr.b };
+            for ( int i = 0; i < 2; i++ ) {
+                int z = za[i];
+                if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
+                    continue;
+                }
+                if ( avdW[z] == 0 ) {
+                    continue;
+                }
+                svPawn.mvEnd[z] = avdFeeler[z];
+                svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z],
+                                                                                svPawn.mvEnd[z] );
+            }
+        }
+    }
+
+    foreach ( var z in avdNew ) {
+        svPawn.SetState( z, Pawn.State.Idle );
+        avdW[z] = svPawn.IsStructure( z ) ? 0 : 1;
+        avdFocus[z] = Vector2.zero;
+    }
+
+    foreach ( var z in no_avdFocused ) {
+        if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
+            continue;
+        }
+        int zE = NearestAttackableEnemy( z );
+        avdFocus[z] = svPawn.mvPos[zE];
+        svPawn.mvEnd[z] = avdFocus[z];
+        svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
+    }
+
+    foreach ( var pr in avdPairEnemy ) {
+        float datkAB = svPawn.IsStructure( pr.a ) || svPawn.GetState( pr.a ) == Pawn.State.Attack
+                                                        ? 0
+                                                        : svPawn.DistanceForAttack( pr.a, pr.b );
+        float datkBA = svPawn.IsStructure( pr.b ) || svPawn.GetState( pr.b ) == Pawn.State.Attack
+                                                        ? 0
+                                                        : svPawn.DistanceForAttack( pr.b, pr.a );
+        float sq = svPawn.SqDist( pr.a, pr.b );
+        if ( sq <= datkAB * datkAB ) {
+            svPawn.MvInterrupt( pr.a, ZServer.clock );
+            svPawn.SetState( pr.a, Pawn.State.Attack );
+            avdW[pr.a] = 0;
+        } 
+        if ( sq <= datkBA * datkBA ) {
+            svPawn.MvInterrupt( pr.b, ZServer.clock );
+            svPawn.SetState( pr.b, Pawn.State.Attack );
+            avdW[pr.b] = 0;
+        } 
     }
 
     foreach ( var z in svPawn.filter.no_garbage ) {
@@ -971,6 +1070,13 @@ public static int TickServer() {
     }
 
     return 0;
+}
+
+static void PrintPairEnemy_cmd( string [] argv ) {
+    foreach ( var pr in avdPairEnemy ) {
+        float d = Mathf.Sqrt( svPawn.SqDist( pr.a, pr.b ) );
+        Qonsole.Log( $"{pr.a} [{svPawn.team[pr.a]}] : {pr.b} [{svPawn.team[pr.b]}] -- {d}" );
+    }
 }
 
 // FIXME: in Pawn.cs
@@ -983,7 +1089,7 @@ static int MvDurationMs( int z, Vector2 a, Vector2 b ) {
 }
 
 static bool HasFocusPos( int z ) {
-    return mvFocus[z] != Vector2.zero;
+    return avdFocus[z] != Vector2.zero;
 }
 
 static int NearestAttackableEnemy( int z ) {
@@ -1005,8 +1111,10 @@ static void AvdFilter() {
     no_avdNew.Clear();
     avdFocused.Clear();
     no_avdFocused.Clear();
+    avdPairEnemy.Clear();
     for ( int team = 0; team < 2; team++ ) {
-        avdClip[team].Clear();
+        avdPairClip[team].Clear();
+        avdCrntDist[team].Clear();
     }
 
     // we need to let the client snap the position on spawn, do nothing for a tick
@@ -1022,18 +1130,80 @@ static void AvdFilter() {
         assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
     }
 
-    // FIXME: we need the feelers clips, not pawns
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        avdFeeler[z] = svPawn.mvEnd[z];
+
+        if ( avdW[z] == 0 ) {
+            continue;
+        }
+
+        Vector2 toLerp = svPawn.mvEnd[z] - svPawn.mvPos[z];
+        Vector2 toFocus = avdFocus[z] - svPawn.mvPos[z];
+        if ( toLerp.sqrMagnitude < 0.00001f || toFocus.sqrMagnitude < 0.00001f ) {
+            // FIXME: is there a situation where no more to lerp, but still have focus?
+            continue;
+        }
+
+        Vector2 v = toLerp.normalized + toFocus.normalized;
+        if ( v.sqrMagnitude < 0.00001f ) {
+            continue;
+        }
+
+        avdFeeler[z] = svPawn.mvPos[z] + v.normalized * svPawn.Radius( z ) * 1.25f;
+    }
+
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Draw.WireCircleGame( avdFeeler[z], svPawn.Radius( z ), Color.cyan );
+            QGL.LatePrint( avdW[z], Draw.GTS( avdFeeler[z] ), color: Color.cyan );
+        }, duration: 0.1f );
+    }
+
+    {
+
+    var l = svPawn.filter.no_garbage;
+    for ( int i = 0; i < l.Count - 1; i++ ) {
+        for ( int j = i + 1; j < l.Count; j++ ) {
+            int zA = l[i];
+            int zB = l[j];
+            if ( svPawn.team[zA] != svPawn.team[zB] ) {
+                avdPairEnemy.Add( new Pair {
+                    a = ( byte )zA,
+                    b = ( byte )zB,
+                } );
+            }
+        }
+    }
+
+    }
+
     for ( int team = 0; team < 2; team++ ) {
-        var clip = avdClip[team];
+        var clip = avdPairClip[team];
         var tl = svPawn.filter.team[team];
 
-        for ( int zA = 0; zA < tl.Count - 1; zA++ ) {
-            for ( int zB = zA + 1; zB < tl.Count; zB++ ) {
+        for ( int i = 0; i < tl.Count - 1; i++ ) {
+            for ( int j = i + 1; j < tl.Count; j++ ) {
+                int zA = tl[i];
+                int zB = tl[j];
                 float r = svPawn.Radius( zA ) + svPawn.Radius( zB );
-                Vector2 d = svPawn.mvPos[zB] - svPawn.mvPos[zA];
-                if ( d.sqrMagnitude < r * r ) {
+                Vector2 d = avdFeeler[zB] - avdFeeler[zA];
+                if ( d.sqrMagnitude <= r * r ) {
                     clip.Add( new Pair { a = ( byte )zA, b = ( byte )zB } );
                 }
+            }
+        }
+    }
+
+    for ( int team = 0; team < 2; team++ ) {
+        var clip = avdPairClip[team];
+
+        // keep feeler at desired distance
+        foreach ( var pr in clip ) {
+            if ( avdW[pr.a] != 0 ) {
+                avdCrntDist[team].Add( pr.a );
+            }
+            if ( avdW[pr.b] != 0 ) {
+                avdCrntDist[team].Add( pr.b );
             }
         }
     }

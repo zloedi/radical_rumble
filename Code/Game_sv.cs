@@ -20,8 +20,6 @@ using PS = Pawn.State;
 partial class Game {
 
 
-const float ATK_MIN_DIST = 0.45f;
-
 #if UNITY_STANDALONE || SDL
 [Description( "Show pawn origins on the server." )]
 static bool SvShowOrigins_kvar = false;
@@ -174,7 +172,7 @@ quit:
             continue;
         }
 
-        float r = DistanceForAttack( z, zEnemy ) + 0.5f;
+        float r = pawn.DistanceForAttack( z, zEnemy ) + 0.5f;
         if ( pawn.SqDist( z, zEnemy ) > r * r ) {
             pawn.atkEnd_ms[z] = 0;
             charge( z, zEnemy );
@@ -746,12 +744,6 @@ bool IsReachableEnemy( int z, int zEnemy ) {
     return true;
 }
 
-float DistanceForAttack( int zAttacker, int zDefender ) {
-    return pawn.Radius( zAttacker )
-            + pawn.Radius( zDefender )
-            + Mathf.Max( ATK_MIN_DIST, pawn.Range( zAttacker ) );
-}
-
 bool AtkGetFocusPawn( int z, out int zEnemy ) {
     zEnemy = 0;
     float minEnemy = 9999999;
@@ -771,7 +763,7 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
                 continue;
             }
 
-            float r = DistanceForAttack( z, ze );
+            float r = pawn.DistanceForAttack( z, ze );
 
             // don't care about pawns outside of attack range when structure
             if ( sq > r * r ) {
@@ -814,7 +806,7 @@ bool AtkGetFocusPawn( int z, out int zEnemy ) {
 }
 
 Vector2 AtkPointOnEnemy( int z, int zEnemy ) {
-    float dist = DistanceForAttack( z, zEnemy );
+    float dist = pawn.DistanceForAttack( z, zEnemy );
     Vector2 d = pawn.mvPos[z] - pawn.mvPos[zEnemy];
     float sq = d.sqrMagnitude;
     if ( sq < 0.00001f ) {
@@ -1021,7 +1013,7 @@ void DebugDrawRadiuses() {
     foreach ( var z in pawn.filter.no_garbage ) {
         SingleShot.Add( dt => {
             Draw.WireCircleGame( pawn.mvPos[z], pawn.Radius( z ), Color.white );
-        }, duration: 1 );
+        }, duration: 0.1f );
     }
 #endif
 }

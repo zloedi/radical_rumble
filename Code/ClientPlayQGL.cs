@@ -246,9 +246,10 @@ public static void Tick() {
     void updatePos( int z ) {
         // zero delta move means stop
         // FIXME: remove if the pawn state is sent over the network
-        if ( pawn.mvEnd_ms[z] <= Cl.serverClock ) {
+        if ( pawn.mvEnd_ms[z] <= Cl.serverClock && pawn.mvStart_ms[z] != pawn.mvEnd_ms[z] ) {
             // FIXME: should lerp to actual end pos if offshoot
             pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
+            Cl.Log( $"{pawn.DN( z )} stops." ); 
             return;
         }
 

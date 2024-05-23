@@ -42,6 +42,7 @@ partial class Pawn {
     public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
 
     public const int MAX_PAWN = 256;
+    public const float ATK_MIN_DIST = 0.45f;
 
     public ushort [] hp = null;
     public byte [] team = null;
@@ -216,6 +217,7 @@ partial class Pawn {
 
     // snap endpos to current pos and reset the clock
     // this will generate a delta (clock change)
+    // on the client, this is a nice stop signal
     public void MvInterrupt( int z, int clock ) {
         mvEnd[z] = mvPos[z];
         mvEnd_ms[z] = clock;
@@ -282,6 +284,11 @@ partial class Pawn {
 
     public bool MvLerp( int z, int clock ) {
         return ! MvChaseEndPoint( z, clock );
+    }
+
+    public float DistanceForAttack( int zAttacker, int zDefender ) {
+        return Radius( zAttacker ) + Radius( zDefender )
+                + Mathf.Max( ATK_MIN_DIST, Range( zAttacker ) );
     }
 
     public class Filter {
