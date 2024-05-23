@@ -1024,7 +1024,7 @@ public static int TickServer() {
             continue;
         }
 
-        svPawn.mvEnd[z] = avdFeeler[z];
+        svPawn.mvEnd[z] = avdFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
     }
 
