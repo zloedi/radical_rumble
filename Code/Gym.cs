@@ -1006,10 +1006,29 @@ public static int TickServer() {
         }
     }
 
-    foreach ( var z in avdFocused ) {
-        svPawn.MvLerp( z, ZServer.clock );
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Draw.WireCircleGame( avdFeeler[z], svPawn.Radius( z ), Color.cyan );
+            QGL.LatePrint( avdW[z], Draw.GTS( avdFeeler[z] ), color: Color.cyan );
+        }, duration: 0.1f );
     }
 
+    foreach ( var z in avdFocused ) {
+        svPawn.MvLerp( z, ZServer.clock );
+
+        if ( svPawn.mvEnd[z] == avdFocus[z] ) {
+            continue;
+        }
+
+        if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
+            continue;
+        }
+
+        svPawn.mvEnd[z] = avdFeeler[z];
+        svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
+    }
+
+    // make sure we lerped (moved, so next avoidance solver has new position)
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdPairClip[team];
         foreach ( var pr in clip ) {
@@ -1150,13 +1169,6 @@ static void AvdFilter() {
         }
 
         avdFeeler[z] = svPawn.mvPos[z] + v.normalized * svPawn.Radius( z ) * 1.25f;
-    }
-
-    foreach ( var z in svPawn.filter.no_garbage ) {
-        SingleShot.Add( dt => {
-            Draw.WireCircleGame( avdFeeler[z], svPawn.Radius( z ), Color.cyan );
-            QGL.LatePrint( avdW[z], Draw.GTS( avdFeeler[z] ), color: Color.cyan );
-        }, duration: 0.1f );
     }
 
     {

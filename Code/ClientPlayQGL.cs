@@ -102,7 +102,7 @@ public static void Tick() {
             // new movement segment arrives, plan movement on the client
             pawn.mvStart[z] = pawn.mvPos[z];
             pawn.mvStart_ms[z] = clock;
-            Cl.Log( $"Plan move for {pawn.DN( z )}." ); 
+            //Cl.Log( $"Plan move for {pawn.DN( z )}." ); 
         }
 
         if ( Cl.TriggerOn( z, Trig.Spawn ) ) {

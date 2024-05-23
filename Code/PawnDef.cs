@@ -43,6 +43,7 @@ public static Def Brute = Register( new Def {
     attackTime = 1200,
     loadTime = 800,
     damage = 80,
+    speed = 120,
 
     color = Color.green,
     maxHP = 500,
