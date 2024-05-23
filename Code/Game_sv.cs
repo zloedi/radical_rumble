@@ -278,7 +278,7 @@ quit:
     DebugDrawRadiuses();
 
     foreach ( var z in pawn.filter.no_garbage ) {
-        pawn.mvEnd_tx[z] = ToTx( pawn.mvEnd[z] );
+        pawn.mvEnd_tx[z] = VToTx( pawn.mvEnd[z] );
     }
 
     if ( SvAsserts_kvar ) {

@@ -1085,8 +1085,21 @@ public static int TickServer() {
     }
 
     foreach ( var z in svPawn.filter.no_garbage ) {
-        svPawn.mvEnd_tx[z] = Game.ToTx( svPawn.mvEnd[z] );
+        svPawn.mvEnd_tx[z] = Game.VToTx( svPawn.mvEnd[z] );
     }
+
+#if false
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        Vector2 d = Game.TxToV( svPawn.mvEnd_tx[z] ) - svPawn.mvEnd[z];
+        if ( d.sqrMagnitude > 0.01f * 0.01f ) {
+            Sv.Error( "Broken tx:"
+                    + " " + svPawn.mvEnd[z]
+                    + " " + Game.TxToV( svPawn.mvEnd_tx[z] )
+                    + " " + svPawn.mvEnd_tx[z].ToString( "X" )
+            );
+        }
+    }
+#endif
 
     return 0;
 }

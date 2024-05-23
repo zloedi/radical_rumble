@@ -263,23 +263,19 @@ public bool BoardHasDef( int hx, Pawn.Def def ) {
 }
 
 const int FRAC_BITS = 8;
-public static int ToTx( float f ) {
-    int dec = ( int )f;
-    int frac = ( int )( ( f - dec ) * ( 1 << FRAC_BITS ) );
-    return dec << FRAC_BITS | frac;
+const float FRAC_DENOM = 1 << FRAC_BITS;
+
+public static int FToTx( float f ) {
+    return ( int )( f * FRAC_DENOM ) & 0xffff;
 }
 
-public static int ToTx( Vector2 v ) {
-    return ( ToTx( v.x ) << 16 ) | ToTx( v.y );
+public static int VToTx( Vector2 v ) {
+    return ( FToTx( v.x ) << 16 ) | FToTx( v.y );
 }
 
 public static float TxToF( int tx ) {
-    const float fracDenom = 1 << FRAC_BITS;
-
-    tx &= 0xffff;
-    float dec = tx >> FRAC_BITS;
-    float frac = ( tx & ( ( 1 << FRAC_BITS ) - 1 ) ) / fracDenom;
-    return dec + frac;
+    short fxd = ( short )( tx & 0xffff );
+    return fxd / FRAC_DENOM;
 }
 
 public static Vector2 TxToV( int tx ) {
@@ -300,6 +296,23 @@ public static Vector2 AxialToV( Vector2Int axial ) {
 
 public Vector2 HexToV( int hx ) {
     return AxialToV( board.Axial( hx ) );
+}
+
+static void F_To_Tx_kmd( string [] argv ) {
+    float f = 0;
+    if ( argv.Length > 1 ) {
+        f = Cellophane.AtoF( argv[1] );
+    }
+    int tx = FToTx( f );
+    Qonsole.Log( tx + " " + ( tx & 0xffff ).ToString( "X" ) );
+}
+
+static void Tx_To_F_kmd( string [] argv ) {
+    int i = 0;
+    if ( argv.Length > 1 ) {
+        int.TryParse( argv[1], out i );
+    }
+    Qonsole.Log( TxToF( i ) );
 }
 
 // https://dominoc925.blogspot.com/2012/02/c-code-snippet-to-determine-if-point-is.html
