@@ -43,7 +43,7 @@ public static Def Brute = Register( new Def {
     attackTime = 1200,
     loadTime = 800,
     damage = 80,
-    speed = 120,
+    speed = 60,
 
     color = Color.green,
     maxHP = 500,
@@ -66,6 +66,7 @@ public static Def Flyer = Register( new Def {
     attackTime = 2000,
     loadTime = 1700,
     damage = 400,
+    speed = 45,
 
     cost = 5,
 
@@ -78,7 +79,7 @@ public static Def Undead = Register( new Def {
     attackTime = 900,
     loadTime = 400,
     damage = 40,
-    speed = 120, // slow = 45, medium = 60, fast = 90, very fast = 120 (tiles per minute)
+    speed = 90, // slow = 45, medium = 60, fast = 90, very fast = 120 (tiles per minute)
 
     cost = 1,
     count = 1,

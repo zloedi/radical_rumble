@@ -950,6 +950,7 @@ TODO:
 4. Split moving teammates 
 5. Split matching focus points for less traffic
 */
+const float SEPARATE = 0.3f;
 public static int TickServer() {
     svPawn.UpdateFilters();
     AvdFilter();
@@ -966,13 +967,13 @@ public static int TickServer() {
                 float r1 = svPawn.Radius( pr.a );
                 float r2 = svPawn.Radius( pr.b );
                 float l = ( x2 - x1 ).magnitude;
-                if ( l - ( r1 + r2 ) > 0.001f ) {
+                if ( l - ( r1 + r2 ) > SEPARATE ) {
                     continue;
                 }
                 if ( l < 0.00001f ) {
                     continue;
                 }
-                float l0 = r1 + r2 + 0.0011f;
+                float l0 = r1 + r2 + SEPARATE + 0.01f;
                 float sw = w1 + w2;
                 if ( sw < 0.00001f ) {
                     continue;
@@ -983,6 +984,7 @@ public static int TickServer() {
                 avdFeeler[pr.a] += dx1;
                 avdFeeler[pr.b] += dx2;
             }
+
             foreach ( var z in avdCrntDist[team] ) {
                 Vector2 x1 = svPawn.mvPos[z];
                 Vector2 x2 = avdFeeler[z];
@@ -992,10 +994,10 @@ public static int TickServer() {
                 float r2 = svPawn.Radius( z );
                 float l = ( x2 - x1 ).magnitude;
                 if ( l < 0.00001f ) {
-                    // FIXME: ???!?!??!
+                    // FIXME: ?!
                     continue;
                 }
-                float l0 = r1 * 1.25f;
+                float l0 = r1 * svPawn.SpeedSec( z );
                 float sw = w1 + w2;
                 Vector2 s = ( l - l0 ) * ( x2 - x1 ) / l;
                 Vector2 dx1 = +w1 / sw * s;
@@ -1181,7 +1183,7 @@ static void AvdFilter() {
             continue;
         }
 
-        avdFeeler[z] = svPawn.mvPos[z] + v.normalized * svPawn.Radius( z ) * 1.25f;
+        avdFeeler[z] = svPawn.mvPos[z] + v.normalized * svPawn.Radius( z ) * svPawn.SpeedSec( z );
     }
 
     {
@@ -1210,7 +1212,7 @@ static void AvdFilter() {
             for ( int j = i + 1; j < tl.Count; j++ ) {
                 int zA = tl[i];
                 int zB = tl[j];
-                float r = svPawn.Radius( zA ) + svPawn.Radius( zB );
+                float r = svPawn.Radius( zA ) + svPawn.Radius( zB ) + SEPARATE;
                 Vector2 d = avdFeeler[zB] - avdFeeler[zA];
                 if ( d.sqrMagnitude <= r * r ) {
                     clip.Add( new Pair { a = ( byte )zA, b = ( byte )zB } );
