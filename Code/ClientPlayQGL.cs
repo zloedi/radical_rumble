@@ -20,7 +20,8 @@ public static class ClientPlayQGL {
 
 
 static bool ClSpawnDirectly_kvar = false;
-static bool SkipWaitForPlayers_kvar = false;
+static bool ClSkipWaitForPlayers_kvar = false;
+static bool ClSkipUI_kvar = false;
 
 static Player player => Cl.game.player;
 static Pawn pawn => Cl.game.pawn;
@@ -34,7 +35,7 @@ public static void Tick() {
     int myPlayer = 0;
     bool observer = false;
     int myTeam = 0;
-    bool needPlayers = ! SkipWaitForPlayers_kvar && game.player.AnyTeamNeedsPlayers();
+    bool needPlayers = ! ClSkipWaitForPlayers_kvar && game.player.AnyTeamNeedsPlayers();
 
     int clock = ( int )Cl.clock;
     int clockDelta = ( int )Cl.clockDelta;
@@ -200,7 +201,7 @@ public static void Tick() {
             WBUI.QGLTextOutlined( "Observer\n", Draw.wboxScreen, color: Color.white,
                                                                         fontSize: Draw.textSize );
         }
-    } else {
+    } else if ( ! ClSkipUI_kvar ) {
         // mana bar
         WrapBox wbox = Draw.wboxScreen.CenterRight( 40, Draw.wboxScreen.H );
         WrapBox wbCards = wbox;
