@@ -945,10 +945,10 @@ static List<byte> [] avdCrntDist = new List<byte>[2] { new List<byte>(), new Lis
 /*
 TODO:
 * 1. Stop when in attack distance and become inert (w = 0)
-2. Go around attacking teammates -- see todo.txt
-3. Avoid non-passable terrain -- make the feelers of pawns on void terrain inert?
-4. Split moving teammates 
-5. Split matching focus points for less traffic
+* 2. Go around attacking teammates -- see todo.txt
+. 3. Avoid non-passable terrain -- make the feelers of pawns on void terrain inert?
+* 4. Split moving teammates 
+?? 5. Split matching focus points for less traffic
 */
 const float SEPARATE = 0.3f;
 public static int TickServer() {
@@ -1016,7 +1016,7 @@ public static int TickServer() {
     }
 
     foreach ( var z in avdFocused ) {
-        svPawn.MvLerp( z, ZServer.clock );
+        svPawn.MvChaseEndPoint( z, ZServer.clock );
 
         if ( svPawn.mvEnd[z] == avdFocus[z] ) {
             continue;
@@ -1051,7 +1051,7 @@ public static int TickServer() {
     }
 
     foreach ( var z in avdNew ) {
-        svPawn.SetState( z, Pawn.State.Idle );
+        svPawn.SetState( z, Pawn.State.Patrol );
         avdW[z] = svPawn.IsStructure( z ) ? 0 : 1;
         avdFocus[z] = Vector2.zero;
     }
@@ -1165,7 +1165,7 @@ static void AvdFilter() {
     }
 
     foreach ( var z in svPawn.filter.no_garbage ) {
-        avdFeeler[z] = svPawn.mvEnd[z];
+        avdFeeler[z] = svPawn.mvPos[z];
 
         if ( avdW[z] == 0 ) {
             continue;
@@ -1178,6 +1178,7 @@ static void AvdFilter() {
             continue;
         }
 
+        // add weights here, if you want to change the behaviour
         Vector2 v = toLerp.normalized + toFocus.normalized;
         if ( v.sqrMagnitude < 0.00001f ) {
             continue;
