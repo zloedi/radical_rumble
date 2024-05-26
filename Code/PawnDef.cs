@@ -82,11 +82,11 @@ public static Def Undead = Register( new Def {
     speed = 90, // slow = 45, medium = 60, fast = 90, very fast = 120 (tiles per minute)
 
     cost = 1,
-    count = 1,
+    count = 5,
     radius = 0.32f,
     symbol = 'z',
 
-    color = new Color( 0.8f, 0.8f, 0.8f ),
+    color = new Color( 0.9f, 0.9f, 0.9f ),
     maxHP = 40,
 } );
 
