@@ -313,6 +313,7 @@ public bool Spawn( int def, float x, float y, int team ) {
 
     int spawnCount = Pawn.defs[def].count;
 
+    Vector2 noise = Vector2.zero;
     for ( int i = 0; i < spawnCount; i++ ) {
         int z = pawn.Create( def );
         if ( z == 0 ) {
@@ -320,7 +321,7 @@ public bool Spawn( int def, float x, float y, int team ) {
             return false;
         }
         pawn.team[z] = ( byte )team;
-        pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
+        pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y ) + noise;
         Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
         // FIXME: is this just a hack for the editor?
         if ( pawn.IsStructure( z ) ) {
@@ -329,6 +330,7 @@ public bool Spawn( int def, float x, float y, int team ) {
             board.pawnTeam[hx] = pawn.team[z];
             Log( $"Placing a structure on the grid." );
         }
+        noise = new Vector2( Mathf.Cos( z * 20 ), Mathf.Sin( z * 20 ) ).normalized * 0.3f;
     }
 
     return true;
