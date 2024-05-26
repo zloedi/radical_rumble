@@ -309,19 +309,28 @@ quit:
     return 0;
 }
 
-public bool Spawn( int def, float x, float y, out int z ) {
-    z = pawn.Create( def );
-    if ( z == 0 ) {
-        Error( "Out of pawns, can't create." );
-        return false;
+public bool Spawn( int def, float x, float y, int team ) {
+
+    int spawnCount = Pawn.defs[def].count;
+
+    for ( int i = 0; i < spawnCount; i++ ) {
+        int z = pawn.Create( def );
+        if ( z == 0 ) {
+            Error( "Out of pawns, can't create." );
+            return false;
+        }
+        pawn.team[z] = ( byte )team;
+        pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
+        Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
+        // FIXME: is this just a hack for the editor?
+        if ( pawn.IsStructure( z ) ) {
+            int hx = VToHex( pawn.mvPos[z] );
+            board.pawnDef[hx] = pawn.def[z];
+            board.pawnTeam[hx] = pawn.team[z];
+            Log( $"Placing a structure on the grid." );
+        }
     }
-    pawn.mvPos[z] = pawn.mvEnd[z] = new Vector2( x, y );
-    Log( $"Spawned {Pawn.defs[def].name} at idx: {z} pos: {pawn.mvPos[z]}" );
-    if ( pawn.IsStructure( z ) ) {
-        int hx = VToHex( pawn.mvPos[z] );
-        board.pawnDef[hx] = pawn.def[z];
-        Log( $"Placing a structure on the grid." );
-    }
+
     return true;
 }
 
@@ -338,8 +347,9 @@ public void Destroy( int z ) {
     pawn.Destroy( z );
 }
 
-public void SetTeam( int z, int team ) {
+public void EditorSetTeam( int z, int team ) {
     pawn.team[z] = ( byte )team;
+    // FIXME: only structures?
     if ( pawn.IsStructure( z ) ) {
         int hx = VToHex( pawn.mvPos[z] );
         board.pawnTeam[hx] = pawn.team[z];

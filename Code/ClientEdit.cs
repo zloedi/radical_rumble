@@ -402,7 +402,7 @@ static void EdSetTeam_kmd( string [] argv ) {
     int.TryParse( argv[1], out int z );
     int.TryParse( argv[2], out int team );
     Cl.Log( $"Setting team on {z} to {team}..." );
-    Cl.SvCmd( $"sv_set_team {z} {team}" );
+    Cl.SvCmd( $"sv_ed_set_team {z} {team}" );
 }
 
 static void EdSetState_kmd( string [] argv ) {

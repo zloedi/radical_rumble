@@ -74,6 +74,21 @@ public static Def Flyer = Register( new Def {
     maxHP = 1000,
 } );
 
+public static Def Undead = Register( new Def {
+    attackTime = 900,
+    loadTime = 400,
+    damage = 40,
+    speed = 120, // slow = 45, medium = 60, fast = 90, very fast = 120 (tiles per minute)
+
+    cost = 1,
+    count = 1,
+    radius = 0.32f,
+    symbol = 'z',
+
+    color = new Color( 0.8f, 0.8f, 0.8f ),
+    maxHP = 40,
+} );
+
 // =============================
 
 public class Def {
@@ -89,6 +104,7 @@ public class Def {
     public static float MaxRadius;
 
     public string name;
+    public int count = 1;
     public char symbol = ' ';
     public Flags flags;
     public int cost = 3;

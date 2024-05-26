@@ -378,11 +378,10 @@ static void SvUndelta_kmd( string [] argv ) {
     string [] cpargv = new string[argv.Length - 1];
     Array.Copy( argv, 1, cpargv, 0, cpargv.Length );
     if ( game.UndeltaState( cpargv, 0, out bool updateBoard ) && updateBoard ) {
+        // fixed spawners placed on the board from editor i.e. towers
         foreach ( var hx in game.board.filter.spawners ) {
             Vector2 v = game.HexToV( hx );
-            if ( game.Spawn( game.board.pawnDef[hx], v.x, v.y, out int z ) ) {
-                game.pawn.team[z] = game.board.pawnTeam[hx];
-            }
+            game.Spawn( game.board.pawnDef[hx], v.x, v.y, game.board.pawnTeam[hx] );
         }
     }
 }
@@ -390,14 +389,14 @@ static void SvUndelta_kmd( string [] argv ) {
 static void Spawn( string [] argv, int zport, int def ) {
     float x = Cellophane.AtoF( argv[2] );
     float y = Cellophane.AtoF( argv[3] );
-    game.Spawn( def, x, y, out int z );
+    int team;
     if ( argv.Length > 4 ) {
-        int.TryParse( argv[4], out int team );
-        game.SetTeam( z, team );
+        int.TryParse( argv[4], out team );
     } else {
         int pl = game.player.GetByZPort( zport );
-        game.SetTeam( z, game.player.team[pl] );
+        team = game.player.team[pl];
     }
+    game.Spawn( def, x, y, team );
 }
 
 static void SvSpawn_kmd( string [] argv, int zport ) {
@@ -440,14 +439,14 @@ static void SvKill_kmd( string [] argv, int zport ) {
     game.Destroy( z );
 }
 
-static void SvSetTeam_kmd( string [] argv, int zport ) {
+static void SvEdSetTeam_kmd( string [] argv, int zport ) {
     if ( argv.Length < 3 ) {
         Error( $"{argv[0]} <z> <team>" );
         return;
     }
     int.TryParse( argv[1], out int z );
     int.TryParse( argv[2], out int team );
-    game.SetTeam( z, team );
+    game.EditorSetTeam( z, team );
 }
 
 
