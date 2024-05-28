@@ -653,7 +653,12 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
 
     log( $"[ffc000]Num nodes crossed: {n}[-]" );
 
-    CachePathSubpaths( hxSrc, hxTarget, board.strippedPath );
+    if ( board.strippedPath.Count == 0 ) {
+        _pathCache[key] = _pathError;
+    } else {
+        PatchWithCached( board.strippedPath );
+        CachePathSubpaths( board.strippedPath );
+    }
 
     path = _pathCache[key];
 
@@ -673,43 +678,50 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
     return path.Count;
 }
 
-void CachePathSubpaths( int hxA, int hxB, List<int> path ) {
-    // make sure we use as much as possible of existing paths
-    // when navigating i.e. from the opposite side
-    for ( int i = 1; i < path.Count; i++ ) {
-        int key = ( path[i] << 16 ) | hxB;
-        if ( _pathCache.TryGetValue( key, out List<int> tmp ) ) {
-            if ( SvLogPaths_kvar ) {
-                Log( $"[ffc000]Patching {tmp.Count} nodes out of {path.Count}[-]" );
+void PatchWithCached( List<int> path ) {
+    var orig = new List<int>( path );
+    var cached = new List<int>();
+
+    path.Clear();
+
+    path.Add( orig[0] );
+    for ( int i = 1; i < orig.Count - 1; i++ ) {
+        cached = null;
+        int j;
+        for ( j = orig.Count - 2; j >= i + 1; j-- ) {
+            var sub = orig.GetRange( i, j - i + 1 );
+            int hxA = sub[0];
+            int hxB = sub[sub.Count - 1];
+            int key = ( hxA << 16 ) | hxB;
+            if ( _pathCache.TryGetValue( key, out cached ) ) {
+                break;
             }
-            path.RemoveRange( i, path.Count - i );
-            path.AddRange( tmp );
-            break;
+        }
+        if ( cached == null ) {
+            path.Add( orig[i] );
+        } else {
+            path.AddRange( cached );
+            i = j;
         }
     }
+    path.Add( orig[orig.Count - 1] );
+}
 
-    CachePathBothWays( hxA, hxB, path );
-    
-    // both way mock traversal of the path
-
-    var p = new List<int>( path );
-    for ( int i = p.Count - 1; i >= 3; i-- ) {
-        p.RemoveAt( i );
-        CachePathBothWays( p[0], p[p.Count-1], p );
-    }
-
-    p.Clear();
-    p.AddRange( path );
-    p.Reverse();
-    for ( int i = p.Count - 1; i >= 3; i-- ) {
-        p.RemoveAt( i );
-        CachePathBothWays( p[0], p[p.Count-1], p );
+void CachePathSubpaths( List<int> path ) {
+    for ( int i = 0; i < path.Count - 1; i++ ) {
+        for ( int j = path.Count - 1; j >= i + 1; j-- ) {
+            CachePathBothWays( path.GetRange( i, j - i + 1 ) );
+        }
     }
 }
 
-void CachePathBothWays( int hxA, int hxB, List<int> path ) {
+void CachePathBothWays( List<int> path ) {
+    int hxA = path[0];
+    int hxB = path[path.Count - 1];
+
     if ( hxA == hxB ) {
-        Error( "Trying to cache zero path" );
+        Error( $"Trying to cache zero path {hxB}:{hxA}, path count: {path.Count}" );
+        path = _pathError;
         return;
     }
     
@@ -718,7 +730,7 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
         return;
     }
     _pathCache[key0] = new List<int>( path );
-    //Log( $"[ffc000]Stored {path.Count} nodes at {key0}[-]" );
+    Log( $"[ffc000]Stored {path.Count} nodes at {hxA}:{hxB}[-]" );
 
     int key1 = ( hxB << 16 ) | hxA;
     if ( _pathCache.TryGetValue( key1, out p ) ) {
@@ -726,7 +738,7 @@ void CachePathBothWays( int hxA, int hxB, List<int> path ) {
     }
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
-    //Log( $"[ffc000]Stored inverted {path.Count} nodes at {key1}[-]" );
+    Log( $"[ffc000]Stored {path.Count} nodes at {hxB}:{hxA} [i][-]" );
 }
 
 int MvDurationMs( int z, Vector2 a, Vector2 b ) {

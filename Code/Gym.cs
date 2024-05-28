@@ -959,6 +959,8 @@ public static int TickServer() {
         var clip = avdPairClip[team];
         const int numSubsteps = 3;
         for ( int i = 0; i < numSubsteps; i++ ) {
+
+            // split any clipping feelers
             foreach ( var pr in clip ) {
                 Vector2 x1 = avdFeeler[pr.a];
                 Vector2 x2 = avdFeeler[pr.b];
@@ -985,6 +987,7 @@ public static int TickServer() {
                 avdFeeler[pr.b] += dx2;
             }
 
+            // keep the feeler at desired distance 
             foreach ( var z in avdCrntDist[team] ) {
                 Vector2 x1 = svPawn.mvPos[z];
                 Vector2 x2 = avdFeeler[z];

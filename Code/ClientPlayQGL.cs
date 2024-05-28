@@ -250,7 +250,7 @@ public static void Tick() {
         if ( pawn.mvEnd_ms[z] <= Cl.serverClock && pawn.mvStart_ms[z] != pawn.mvEnd_ms[z] ) {
             // FIXME: should lerp to actual end pos if offshoot
             pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
-            Cl.Log( $"{pawn.DN( z )} stops." ); 
+            //Cl.Log( $"{pawn.DN( z )} stops." ); 
             return;
         }
 
