@@ -547,13 +547,24 @@ public void LoadMap( string fileName ) {
     string path = Path.Combine( MapsDir(), fileName );
     string cmd = "";
     try {
-        // sv_undelta will do game reset
         cmd = File.ReadAllText( path );
+
         Reset();
+
+        // mostly 'sv_undelta'
         Cellophane.TryExecuteString( cmd );
-        // the slow board filters will be updated conditinionally in 'undelta'
+
+        // the slow board filters will be updated conditinionally in 'undelta' command above
         pawn.UpdateFilters();
         RegisterIntoGrids();
+
+        // precache some paths
+        foreach ( int zA in pawn.filter.team[0] ) {
+            foreach ( int zB in pawn.filter.team[1] ) {
+                GetCachedPathEndPos( zA, zB, out List<int> pfPath );
+            }
+        }
+
         Log( $"Loaded '{path}'" );
     } catch ( Exception ) {
         Error( $"Failed to read file '{path}'" );
