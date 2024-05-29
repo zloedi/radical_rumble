@@ -1063,8 +1063,8 @@ public static int TickServer() {
         if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
             continue;
         }
-        int zE = NearestAttackableEnemy( z );
-        avdFocus[z] = svPawn.mvPos[zE];
+        int zEnemy = NearestAttackableEnemy( z );
+        avdFocus[z] = svPawn.mvPos[zEnemy];
         svPawn.mvEnd[z] = avdFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
     }

@@ -1,0 +1,163 @@
+
+
+
+
+
+
+
+
+
+
+    Who am I
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Why the Radical (launch four clients)
+    https://github.com/zloedi/radical_rumble
+    https://github.com/zloedi/ZloediUtils
+        * Learn new stuff.
+        * Meet other programmers and talk about real programming.
+        * De-indoctrinate devs, give alternative approaches to coding games.
+        * To promote prostranstvoto.bg (there is a donation pot, please donate)
+        * ?To create and promote useful software?
+        * Drink alcohol.
+    
+    
+    
+    
+    
+
+
+
+
+
+    Revisit SDL/Unity, Structs of Arrays, clocks and more
+        * Compile as Unity assembly, SDL exe and headless standalone server
+        * SOA of primitive types exclusively on game state (class Game)
+            - Pawn
+            - Board
+            - Player
+        * Same mechanism to serialize deltas everywhere (network, map editor, /savegames/)
+        * Use future timestamps to sync lerps, don't send packets inbetween. Server clock always sent.
+        * Single tick (yap the local server runs in the same tick too)
+        * Use UDP stack ('inspired by' Quake3)
+            Each tick potentially generates delta
+            64 deltas per client in a circular buffer
+            Constantly resend deltas from last ack to current
+            Currently deltas are string, too lazy to make them compressed bytes
+        * Extensive Qonsole/Cellophane usage (thank you C# reflection):
+            Use the Cellophane for client commands, server can push 'tail' commands in packets.
+            Map keys to Cellophane commands, store in Cellophane cfg
+            Cellophane on the standalone
+    
+    
+    
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+    The Gym -- adding fields and functionality to the server
+        * Split avoidance work-in-progress from the currently working server tick.
+        * Not a fan of branches -- chickenbits instead (cvars).
+        * The game is extended only on the local server so we can draw debug stuff.
+            - still can compile the standalone, no dependencies!
+        * Adding new fields to the pawn by simply adding arrays to Gym /may be synced too/.
+        * Adding new filters to pawn.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Separate pawns:
+        * Setup feelers on z-s:
+            pos + steer v * radius * speed (maybe dt here somewhere?)
+                where steer v = ( lerp segment + to focus ) normalized
+                will keep us in the current direction when going around inert teammates,
+                but still try to get to focus can add weights to either vector to change behaviour.
+        * Gather clipping feelers (in filters once per tick) -- avdPairClip (per team).
+        * Separate clipping feelers (in tick) -- avdPairClip.
+            use 'separation' constraint, can add different masses there
+        * Lerp z position NOW (otherwise will get balanced out, everyone stops)
+        * Set feelers as endpoints of clipping z-s
+
+
+
+
+
+
+
+
+
+
+
+
+    Problem -- around inert teammates the constraint can squash feeler towards pawn origin;
+        either stuck or wandering.
+
+
+
+
+
+
+
+
+
+
+    Avoid inert pawns -- avdCrntDist
+        * Use distance constraint between position and feeler.
+        * Put it in the same substeps loop.
+
+
+
+
+
+
+
+
+
+
+
+
+    The layered target position -- focus and lerp-end points
+
+
+
+
+
+
+
+
+
+
+
+

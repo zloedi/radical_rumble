@@ -11,11 +11,10 @@
 
 ] Improve the editor.
 ] Pawn avoidance
-    Do steering behaviour after the patrol and chase loops.
-    Go around inert/attacking teammates
+    + Go around inert/attacking teammates
         - each pawn has a 'feeler' -- sphere in the direction of movement, defines 'velocity'
-        - feeler is radius-away from z
-        - when avoiding inerts, moving feeler is offset by perpendicular to focus
+        - feeler is radius-times-speed away from z
+        - when avoiding inerts, moving feeler is offset by xx perpendicular to focus xx current direction
             -- nope? better check if badly compressed distance constraint
                 -- nope nope: the feeler may go away, in the opposite direction from focus
                         and constraint still not compressed?
@@ -27,7 +26,7 @@
             - inerts z and z_feeler match
             - use distance constraint on the z -> z_feeler pairs with z being inert in the constraint
 
-    1. Unclutter on spawn
+    * Unclutter on spawn
     2. Unclutter 'formations' on patrol -- if collide at endpos and end timestamps are close enough
         if close to eachother, use current offsets as constraints for the endpos unclutter
         put the void hexes as particles in the solver too
