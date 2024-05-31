@@ -8,6 +8,16 @@
 
 
 
+   RADICAL MULTIPLAYER       prostranstvoto_guest : prostranstvoto789
+
+
+
+
+
+
+
+
+
     Who am I
 
 
@@ -24,14 +34,15 @@
 
 
     Why the Radical (launch four clients)
-    https://github.com/zloedi/radical_rumble
-    https://github.com/zloedi/ZloediUtils
+        * De-indoctrinate, alternative approach to code games.
+        * Meet other programmers and talk about real programming. (group therapy?)
         * Learn new stuff.
-        * Meet other programmers and talk about real programming.
-        * De-indoctrinate devs, give alternative approaches to coding games.
+        * To create ?useful? software.
         * To promote prostranstvoto.bg (there is a donation pot, please donate)
-        * ?To create and promote useful software?
         * Drink alcohol.
+        * Source code
+            https://github.com/zloedi/radical_rumble
+            https://github.com/zloedi/ZloediUtils
     
     
     
@@ -43,23 +54,23 @@
 
 
     Revisit SDL/Unity, Structs of Arrays, clocks and more
-        * Compile as Unity assembly, SDL exe and headless standalone server
-        * SOA of primitive types exclusively on game state (class Game)
-            - Pawn
-            - Board
-            - Player
+        * Compile as Unity assembly, SDL exe and headless standalone server.
+        * SOA of primitive types exclusively on game state (class Game):
+            Pawn, Board, Player
+        * Filters
         * Same mechanism to serialize deltas everywhere (network, map editor, /savegames/)
-        * Use future timestamps to sync lerps, don't send packets inbetween. Server clock always sent.
-        * Single tick (yap the local server runs in the same tick too)
-        * Use UDP stack ('inspired by' Quake3)
-            Each tick potentially generates delta
-            64 deltas per client in a circular buffer
-            Constantly resend deltas from last ack to current
-            Currently deltas are string, too lazy to make them compressed bytes
+        * Use future timestamps to sync lerps, don't send packets inbetween. Server clock always
+            piggybacked.
+        * Single tick/monobehaviour (the local server runs in the same tick too)
+        * Use unreliable UDP stack ('inspired by' Quake3)
+            Each tick potentially generates delta.
+            64 deltas per client in a circular buffer.
+            Resend deltas from last ack to current.
+            Currently deltas are string, too lazy to make them compressed bytes.
         * Extensive Qonsole/Cellophane usage (thank you C# reflection):
             Use the Cellophane for client commands, server can push 'tail' commands in packets.
-            Map keys to Cellophane commands, store in Cellophane cfg
-            Cellophane on the standalone
+            Map keys to Cellophane commands, store in the Cellophane cfg.
+            Cellophane on the standalone.
     
     
     
@@ -78,10 +89,9 @@
 
 
     The Gym -- adding fields and functionality to the server
-        * Split avoidance work-in-progress from the currently working server tick.
+        * Split the avoidance work-in-progress from the currently working server tick.
         * Not a fan of branches -- chickenbits instead (cvars).
         * The game is extended only on the local server so we can draw debug stuff.
-            - still can compile the standalone, no dependencies!
         * Adding new fields to the pawn by simply adding arrays to Gym /may be synced too/.
         * Adding new filters to pawn.
 
@@ -98,17 +108,34 @@
 
 
 
+    The layered target position -- focus and lerp-end points
+        * Introduce 'focus point', another layer above move-end
+        * Decide state on reaching focus instead of move-end
+
+
+
+
+
+
+
+
+
+
+
+
+
     Separate pawns:
-        * Setup feelers on z-s:
+        * Setup feelers on pawns:
             pos + steer v * radius * speed (maybe dt here somewhere?)
                 where steer v = ( lerp segment + to focus ) normalized
-                will keep us in the current direction when going around inert teammates,
-                but still try to get to focus can add weights to either vector to change behaviour.
+                will stick to current direction when going around inert teammates,
+                    but try to get to focus;
+                    can add weights to either vector to change behaviour.
         * Gather clipping feelers (in filters once per tick) -- avdPairClip (per team).
         * Separate clipping feelers (in tick) -- avdPairClip.
-            use 'separation' constraint, can add different masses there
-        * Lerp z position NOW (otherwise will get balanced out, everyone stops)
-        * Set feelers as endpoints of clipping z-s
+            use 'separation' constraint, can add different masses there.
+        * Lerp z position NOW (otherwise will get balanced out, everyone stops).
+        * Set feelers as endpoints of clipping z-s.
 
 
 
@@ -135,7 +162,7 @@
 
     Avoid inert pawns -- avdCrntDist
         * Use distance constraint between position and feeler.
-        * Put it in the same substeps loop.
+        * Put it in the same 'substep' loop.
 
 
 
@@ -147,8 +174,6 @@
 
 
 
-
-    The layered target position -- focus and lerp-end points
 
 
 

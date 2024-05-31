@@ -48,10 +48,14 @@ static bool SvTickGym_kvar = false;
 public int TickServer() {
 
     if ( SvTickGym_kvar ) {
+#if UNITY_STANDALONE || SDL
         int result = Gym.TickServer();
         DebugDrawOrigins();
         DebugDrawRadiuses();
         return result;
+#else
+        return 0;
+#endif
     }
 
     pawn.UpdateFilters();
@@ -627,6 +631,12 @@ int GetCachedPathVec( Vector2 vSrc, Vector2 vTarget, out List<int> path ) {
     return GetCachedPathHex( VToHex( vSrc ), VToHex( vTarget ), out path );
 }
 
+void PfLog( string s ) {
+    if ( SvLogPaths_kvar ) {
+        Log( s );
+    }
+}
+
 // target can be a void hex bordering the solids
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
 List<int> _pathError = new List<int>();
@@ -650,7 +660,7 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
         return path.Count;
     }
 
-    log( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
+    PfLog( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
 
     int n = 0;
     if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 5 ) ) {
@@ -662,7 +672,7 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
     }
     n += board.patherCTX.diagNumCrossedNodes;
 
-    log( $"[ffc000]Num nodes crossed: {n}[-]" );
+    PfLog( $"[ffc000]Num nodes crossed: {n}[-]" );
 
     if ( board.strippedPath.Count == 0 ) {
         _pathCache[key] = _pathError;
@@ -677,14 +687,8 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
         DebugDrawPath( path, Color.magenta );
     }
 
-    log( $"[ffc000]Path len: {path.Count}[-]" );
-    log( $"[ffc000]Num paths in cache: {_pathCache.Count}[-]" );
-
-    void log( string s ) {
-        if ( SvLogPaths_kvar ) {
-            Log( s );
-        }
-    }
+    PfLog( $"[ffc000]Path len: {path.Count}[-]" );
+    PfLog( $"[ffc000]Num paths in cache: {_pathCache.Count}[-]" );
 
     return path.Count;
 }
@@ -741,7 +745,7 @@ void CachePathBothWays( List<int> path ) {
         return;
     }
     _pathCache[key0] = new List<int>( path );
-    Log( $"[ffc000]Stored {path.Count} nodes at {hxA}:{hxB}[-]" );
+    PfLog( $"[ffc000]Stored {path.Count} nodes at {hxA}:{hxB}[-]" );
 
     int key1 = ( hxB << 16 ) | hxA;
     if ( _pathCache.TryGetValue( key1, out p ) ) {
@@ -749,7 +753,7 @@ void CachePathBothWays( List<int> path ) {
     }
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
-    Log( $"[ffc000]Stored {path.Count} nodes at {hxB}:{hxA} [i][-]" );
+    PfLog( $"[ffc000]Stored {path.Count} nodes at {hxB}:{hxA} [i][-]" );
 }
 
 int MvDurationMs( int z, Vector2 a, Vector2 b ) {
