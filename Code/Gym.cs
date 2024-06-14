@@ -925,20 +925,27 @@ enum Flags {
 
 static Pawn svPawn => Sv.game.pawn;
 
+// inverted mass -- either 0 (inert, infinite mass) or 1 (can be pushed aside)
 static byte [] avdW = new byte[Pawn.MAX_PAWN]; 
+// the point where this pawn is generally heading (while avoiding other pawns)
 static Vector2 [] avdFocus = new Vector2[Pawn.MAX_PAWN]; 
-static byte [] avdLock = new byte[Pawn.MAX_PAWN]; 
+// the enemy pawn this pawn is chasing
+static byte [] avdChase = new byte[Pawn.MAX_PAWN]; 
+// minimal pather waypoints to pawn reached while chasing a pawn
+static byte [] avdChaseMin = new byte[Pawn.MAX_PAWN]; 
+// the sphere ahead of this pawn used to avoid other pawns by 'steering'
 static Vector2 [] avdFeeler = new Vector2[Pawn.MAX_PAWN]; 
 
 struct Pair {
     public byte a;
     public byte b;
+    public float sqDist;
 }
 
 static List<byte> avdNew = new List<byte>();
 static List<byte> no_avdNew = new List<byte>();
-static List<byte> avdLocked = new List<byte>();
-static List<byte> no_avdLocked = new List<byte>();
+static List<byte> avdChasing = new List<byte>();
+static List<byte> no_avdChasing = new List<byte>();
 static List<byte> avdFocused = new List<byte>();
 static List<byte> no_avdFocused = new List<byte>();
 
@@ -1026,9 +1033,9 @@ public static int TickServer() {
         }, duration: 0.1f );
     }
 
-    // === latch pawns to some enemy or waypoint ===
+    // === latch pawns to chasing some proper enemy ===
 
-    foreach ( var z in no_avdLocked ) {
+    foreach ( var z in no_avdChasing ) {
         // FIXME: check it in the filter?
         if ( svPawn.GetState( z ) == PS.Attack ) {
             continue;
@@ -1046,10 +1053,32 @@ public static int TickServer() {
 
             if ( len < minLen ) {
                 minLen = len;
-                avdLock[z] = zWP;
+                avdChase[z] = zWP;
+                avdChaseMin[z] = 255;
                 avdFocus[z] = Sv.game.HexToV( path[1] );
             }
         }
+    }
+
+    // === start chasing another pawn if visible and currently chased pawn was never visible ===
+
+    foreach ( var pr in avdPairEnemy ) {
+        // FIXME: static float SvAggroRange_kvar = 6;
+        if ( pr.sqDist > 6 * 6 ) {
+            continue;
+        }
+
+        int pathCount = Sv.game.GetCachedPathMvPos( pr.a, pr.b, out List<int> path );
+
+        if ( pathCount != 2 ) {
+            continue;
+        }
+
+        avdChase[pr.a] = avdChaseMin[pr.a] > 2 ? pr.b : avdChase[pr.a];
+        avdChase[pr.b] = avdChaseMin[pr.b] > 2 ? pr.a : avdChase[pr.b];
+
+        avdChaseMin[pr.a] = 2;
+        avdChaseMin[pr.b] = 2;
     }
 
     // === correct the focus constantly, so teammates avoidance doesn't mess up pathing ===
@@ -1058,12 +1087,18 @@ public static int TickServer() {
     // clipping teammates eventually end up circling around the pather (focus) point,
     // not being able to reach it.
     // 'fix' the issue by making sure we always have an 'unreachable' pather waypoint ahead of us
-    foreach ( var z in avdLocked ) {
-        int zEnemy = avdLock[z];
+    foreach ( var z in avdChasing ) {
+        int zEnemy = avdChase[z];
         int pathCount = Sv.game.GetCachedPathMvPos( z, zEnemy, out List<int> path );
 
         if ( pathCount <= 1 ) {
             continue;
+        }
+
+        // FIXME: static float SvAggroRange_kvar = 6;
+        float sq = svPawn.SqDist( z, avdChase[z] );
+        if ( sq <= 6 * 6 ) {
+            avdChaseMin[z] = ( byte )Mathf.Min( avdChaseMin[z], pathCount );
         }
 
         if ( pathCount == 2 ) {
@@ -1088,7 +1123,7 @@ public static int TickServer() {
             continue;
         }
 
-        // these will get overwritten if the feelers got moved (pawns feelers clip)
+        // these will get overwritten if the feelers got corrected (pawns feelers clipped)
         svPawn.mvEnd[z] = avdFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
     }
@@ -1118,7 +1153,11 @@ public static int TickServer() {
 
     foreach ( var z in avdNew ) {
         svPawn.SetState( z, PS.Patrol );
+
+        // FIXME: move to pawn create
         avdFocus[z] = Vector2.zero;
+        avdChase[z] = 0;
+        avdChaseMin[z] = 255;
 
         // FIXME: maybe redundant, but hold the structure in place anyway
         avdW[z] = ( byte )( svPawn.IsStructure( z ) ? 0 : 1 );
@@ -1133,13 +1172,12 @@ public static int TickServer() {
         float datkBA = svPawn.IsStructure( pr.b ) || svPawn.GetState( pr.b ) == PS.Attack
                                                         ? 0
                                                         : svPawn.DistanceForAttack( pr.b, pr.a );
-        float sq = svPawn.SqDist( pr.a, pr.b );
-        if ( sq <= datkAB * datkAB ) {
+        if ( pr.sqDist <= datkAB * datkAB ) {
             svPawn.MvInterrupt( pr.a, ZServer.clock );
             svPawn.SetState( pr.a, PS.Attack );
             avdW[pr.a] = 0;
         } 
-        if ( sq <= datkBA * datkBA ) {
+        if ( pr.sqDist <= datkBA * datkBA ) {
             svPawn.MvInterrupt( pr.b, ZServer.clock );
             svPawn.SetState( pr.b, PS.Attack );
             avdW[pr.b] = 0;
@@ -1168,7 +1206,7 @@ public static int TickServer() {
 
 static void PrintPairEnemy_cmd( string [] argv ) {
     foreach ( var pr in avdPairEnemy ) {
-        float d = Mathf.Sqrt( svPawn.SqDist( pr.a, pr.b ) );
+        float d = Mathf.Sqrt( pr.sqDist );
         Qonsole.Log( $"{pr.a} [{svPawn.team[pr.a]}] : {pr.b} [{svPawn.team[pr.b]}] -- {d}" );
     }
 }
@@ -1182,12 +1220,13 @@ static int MvDurationMs( int z, Vector2 a, Vector2 b ) {
     return ( int )( Mathf.Sqrt( sq ) / svPawn.SpeedSec( z ) * 1000 );
 }
 
+// point this pawn is generally advancing to
 static bool HasFocusPos( int z ) {
     return avdFocus[z] != Vector2.zero;
 }
 
-static bool HasLock( int z ) {
-    return avdLock[z] != 0;
+static bool IsChasingEnemy( int z ) {
+    return avdChase[z] != 0;
 }
 
 static int GetCachedPathMvPos( int zSrc, int zTarget, out List<int> path ) {
@@ -1211,16 +1250,37 @@ static int NearestAttackableEnemy( int z ) {
 static void AvdFilter() {
     avdNew.Clear();
     no_avdNew.Clear();
-    avdLocked.Clear();
-    no_avdLocked.Clear();
+    
+    avdChasing.Clear();
+    no_avdChasing.Clear();
+
     avdFocused.Clear();
     no_avdFocused.Clear();
+
     avdPairEnemy.Clear();
+
     for ( int team = 0; team < 2; team++ ) {
         avdPairClip[team].Clear();
         avdCrntDist[team].Clear();
         avdWaypoints[team].Clear();
         no_avdWaypoints[team].Clear();
+    }
+
+    // FIXME: move to kill-pawn routine if any
+    foreach ( var z in svPawn.filter.garbage ) {
+        avdW[z] = 0; 
+        avdFocus[z] = Vector2.zero; 
+        avdChase[z] = 0; 
+        avdChaseMin[z] = 0; 
+        avdFeeler[z] = Vector2.zero; 
+    }
+
+    // FIXME: move to kill-pawn routine if any
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        if ( svPawn.IsDead( avdChase[z] ) || svPawn.IsGarbage( avdChase[z] ) )  {
+            avdChase[z] = 0;
+            avdFocus[z] = Vector2.zero;
+        }
     }
 
     // we need to let the client snap the position on spawn, do nothing for a tick
@@ -1233,11 +1293,11 @@ static void AvdFilter() {
     }
 
     foreach ( var z in no_avdNew ) {
-        assign( z, HasLock( z ), avdLocked, no_avdLocked );
+        assign( z, IsChasingEnemy( z ), avdChasing, no_avdChasing );
     }
 
-    // only locked-to-a-pawn pawns can have focus
-    foreach ( var z in avdLocked ) {
+    // only pawns chasing other pawns can have focus
+    foreach ( var z in avdChasing ) {
         assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
     }
 
@@ -1285,6 +1345,7 @@ static void AvdFilter() {
                 avdPairEnemy.Add( new Pair {
                     a = ( byte )zA,
                     b = ( byte )zB,
+                    sqDist = svPawn.SqDist( zA, zB ),
                 } );
             }
         }
@@ -1305,7 +1366,11 @@ static void AvdFilter() {
                 float r = svPawn.Radius( zA ) + svPawn.Radius( zB ) + SEPARATE;
                 Vector2 d = avdFeeler[zB] - avdFeeler[zA];
                 if ( d.sqrMagnitude <= r * r ) {
-                    clip.Add( new Pair { a = ( byte )zA, b = ( byte )zB } );
+                    clip.Add( new Pair {
+                        a = ( byte )zA,
+                        b = ( byte )zB,
+                        sqDist = svPawn.SqDist( zA, zB ),
+                    } );
                 }
             }
         }
