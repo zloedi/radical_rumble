@@ -10,7 +10,15 @@
 ] Use some 'vfx' for melees instead of lines.
 
 ] Improve the editor.
+
+
+
 ] Pawn avoidance
+    ===> two issues with gym:
+        pawns go through enemy pawns to get to their target
+        towers don't shoot
+
+
     + Go around inert/attacking teammates
         - each pawn has a 'feeler' -- sphere in the direction of movement, defines 'velocity'
         - feeler is radius-times-speed away from z
