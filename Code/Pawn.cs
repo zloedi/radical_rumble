@@ -298,7 +298,6 @@ partial class Pawn {
         public List<byte> flying = null, no_flying = null;
         public List<byte> structures = null, no_structures = null;
 
-        // FIXME: obsolete?
         public List<byte> [] enemies = new List<byte>[2];
         public List<byte> [] team = new List<byte>[2];
         public List<byte> [] objectives = new List<byte>[2];

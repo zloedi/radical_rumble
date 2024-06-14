@@ -610,6 +610,27 @@ public void SaveMap( string fileName ) {
     }
 }
 
+public int GetCachedPathMvPos( int zSrc, int zTarget, out List<int> path ) {
+    return GetCachedPathVec( pawn.mvPos[zSrc], pawn.mvPos[zTarget], out path );
+}
+
+public int GetCachedPathMvPosLen( int zSrc, int zTarget, out List<int> path, out float length ) {
+    return GetCachedPathVecLen( pawn.mvPos[zSrc], pawn.mvPos[zTarget], out path, out length );
+}
+
+public int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
+    return GetCachedPathVec( pawn.mvEnd[zSrc], pawn.mvEnd[zTarget], out path );
+}
+
+public int GetCachedPathVec( Vector2 vSrc, Vector2 vTarget, out List<int> path ) {
+    return GetCachedPathHex( VToHex( vSrc ), VToHex( vTarget ), out path, out float length );
+}
+
+public int GetCachedPathVecLen( Vector2 vSrc, Vector2 vTarget,
+                                                            out List<int> path, out float length ) {
+    return GetCachedPathHex( VToHex( vSrc ), VToHex( vTarget ), out path, out length );
+}
+
 bool MvCanCrossTerrain( int z, int zTarget ) {
 #if false
     if ( zTarget == 0 ) {
@@ -623,14 +644,6 @@ bool MvCanCrossTerrain( int z, int zTarget ) {
 #endif
 }
 
-int GetCachedPathEndPos( int zSrc, int zTarget, out List<int> path ) {
-    return GetCachedPathVec( pawn.mvEnd[zSrc], pawn.mvEnd[zTarget], out path );
-}
-
-int GetCachedPathVec( Vector2 vSrc, Vector2 vTarget, out List<int> path ) {
-    return GetCachedPathHex( VToHex( vSrc ), VToHex( vTarget ), out path );
-}
-
 void PfLog( string s ) {
     if ( SvLogPaths_kvar ) {
         Log( s );
@@ -639,35 +652,41 @@ void PfLog( string s ) {
 
 // target can be a void hex bordering the solids
 Dictionary<int,List<int>> _pathCache = new Dictionary<int,List<int>>();
+Dictionary<int,float> _pathLengthCache = new Dictionary<int,float>();
 List<int> _pathError = new List<int>();
-int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
-    if ( hxSrc == 0 || hxTarget == 0 ) {
+int GetCachedPathHex( int hxSrc, int hxDst, out List<int> path, out float pathLength ) {
+    if ( hxSrc == 0 || hxDst == 0 ) {
         Error( "Trying to find path to/from 0" );
         path = _pathError;
+        pathLength = 0;
         return 0;
     }
 
-    if ( hxSrc == hxTarget ) {
+    if ( hxSrc == hxDst
+           ||  hxSrc < 0 || hxSrc >= board.numItems
+           ||  hxDst < 0 || hxDst >= board.numItems ) {
         path = _pathError;
+        pathLength = 0;
         return 0;
     }
 
-    int key = ( hxSrc << 16 ) | hxTarget;
+    int key = ( hxSrc << 16 ) | hxDst;
     if ( _pathCache.TryGetValue( key, out path ) ) {
         //if ( SvShowPaths_kvar == 2 ) {
         //  DebugDrawPath( path, Color.green );
         //}
+        pathLength = _pathLengthCache[key]; 
         return path.Count;
     }
 
-    PfLog( $"[ffc000]Casting the real pather {hxSrc}->{hxTarget}[-]" );
+    PfLog( $"[ffc000]Casting the real pather {hxSrc}->{hxDst}[-]" );
 
     int n = 0;
-    if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 5 ) ) {
+    if ( ! board.GetPath( hxSrc, hxDst, maxPath: 5 ) ) {
         n += board.patherCTX.diagNumCrossedNodes;
-        if ( ! board.GetPath( hxSrc, hxTarget, maxPath: 10 ) ) {
+        if ( ! board.GetPath( hxSrc, hxDst, maxPath: 10 ) ) {
             n += board.patherCTX.diagNumCrossedNodes;
-            board.GetPath( hxSrc, hxTarget );
+            board.GetPath( hxSrc, hxDst );
         }
     }
     n += board.patherCTX.diagNumCrossedNodes;
@@ -676,12 +695,18 @@ int GetCachedPathHex( int hxSrc, int hxTarget, out List<int> path ) {
 
     if ( board.strippedPath.Count == 0 ) {
         _pathCache[key] = _pathError;
+        _pathLengthCache[key] = 0;
+    } else if ( board.strippedPath.Count == 1 ) {
+        _pathCache[key] = new List<int>( board.strippedPath );
+        _pathLengthCache[key] = 0;
     } else {
         PatchWithCached( board.strippedPath );
         CachePathSubpaths( board.strippedPath );
+        CachePathLength( board.strippedPath );
     }
 
     path = _pathCache[key];
+    pathLength = _pathLengthCache[key];
 
     if ( SvShowPaths_kvar > 1 ) {
         DebugDrawPath( path, Color.magenta );
@@ -722,6 +747,18 @@ void PatchWithCached( List<int> path ) {
     path.Add( orig[orig.Count - 1] );
 }
 
+void CachePathLength( List<int> path ) {
+    int hxA = path[0];
+    int hxB = path[path.Count - 1];
+    int key = ( hxA << 16 ) | hxB;
+    _pathLengthCache[key] = 0;
+    for ( int i = 0; i < path.Count - 1; i++ ) {
+        Vector2 a = HexToV( path[i + 0] );
+        Vector2 b = HexToV( path[i + 1] );
+        _pathLengthCache[key] += ( b - a ).magnitude;
+    }
+}
+
 void CachePathSubpaths( List<int> path ) {
     for ( int i = 0; i < path.Count - 1; i++ ) {
         for ( int j = path.Count - 1; j >= i + 1; j-- ) {
@@ -736,7 +773,9 @@ void CachePathBothWays( List<int> path ) {
 
     if ( hxA == hxB ) {
         Error( $"Trying to cache zero path {hxB}:{hxA}, path count: {path.Count}" );
-        path = _pathError;
+        int key = ( hxA << 16 ) | hxB;
+        _pathCache[key] = _pathError;
+        _pathLengthCache[key] = 0;
         return;
     }
     
@@ -745,6 +784,7 @@ void CachePathBothWays( List<int> path ) {
         return;
     }
     _pathCache[key0] = new List<int>( path );
+    CachePathLength( _pathCache[key0] );
     PfLog( $"[ffc000]Stored {path.Count} nodes at {hxA}:{hxB}[-]" );
 
     int key1 = ( hxB << 16 ) | hxA;
@@ -753,6 +793,7 @@ void CachePathBothWays( List<int> path ) {
     }
     _pathCache[key1] = new List<int>( path );
     _pathCache[key1].Reverse();
+    CachePathLength( _pathCache[key1] );
     PfLog( $"[ffc000]Stored {path.Count} nodes at {hxB}:{hxA} [i][-]" );
 }
 
@@ -1005,6 +1046,12 @@ void DebugDrawPath( List<int> path, Color c ) {
     }
     SingleShot.Add( dt => {
         QGL.LateDrawLine( pathLine, c );
+        if ( path.Count > 1 ) {
+            int hxA = path[0];
+            int hxB = path[path.Count - 1];
+            int key = ( hxA << 16 ) | hxB;
+            QGL.LatePrint( _pathLengthCache[key], pathLine[0], c );
+        }
     } );
 #endif
 }

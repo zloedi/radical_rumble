@@ -15,6 +15,7 @@ namespace RR {
     
 using Cl = Client;
 using Sv = Server;
+using PS = Pawn.State;
 
 
 static class Gym {
@@ -924,8 +925,9 @@ enum Flags {
 
 static Pawn svPawn => Sv.game.pawn;
 
-static float [] avdW = new float[Pawn.MAX_PAWN]; 
+static byte [] avdW = new byte[Pawn.MAX_PAWN]; 
 static Vector2 [] avdFocus = new Vector2[Pawn.MAX_PAWN]; 
+static byte [] avdLock = new byte[Pawn.MAX_PAWN]; 
 static Vector2 [] avdFeeler = new Vector2[Pawn.MAX_PAWN]; 
 
 struct Pair {
@@ -935,12 +937,16 @@ struct Pair {
 
 static List<byte> avdNew = new List<byte>();
 static List<byte> no_avdNew = new List<byte>();
+static List<byte> avdLocked = new List<byte>();
+static List<byte> no_avdLocked = new List<byte>();
 static List<byte> avdFocused = new List<byte>();
 static List<byte> no_avdFocused = new List<byte>();
 
 static List<Pair> avdPairEnemy = new List<Pair>();
 static List<Pair> [] avdPairClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
 static List<byte> [] avdCrntDist = new List<byte>[2] { new List<byte>(), new List<byte>() };
+static List<byte> [] avdWaypoints = new List<byte>[2] { new List<byte>(), new List<byte>() };
+static List<byte> [] no_avdWaypoints = new List<byte>[2] { new List<byte>(), new List<byte>() };
 
 /*
 TODO:
@@ -954,6 +960,8 @@ const float SEPARATE = 0.3f;
 public static int TickServer() {
     svPawn.UpdateFilters();
     AvdFilter();
+
+    // === solve clipping feelers, and keep them at desired ditance ===
 
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdPairClip[team];
@@ -1018,6 +1026,57 @@ public static int TickServer() {
         }, duration: 0.1f );
     }
 
+    // === latch pawns to some enemy or waypoint ===
+
+    foreach ( var z in no_avdLocked ) {
+        // FIXME: check it in the filter?
+        if ( svPawn.GetState( z ) == PS.Attack ) {
+            continue;
+        }
+
+        float minLen = 9999999;
+
+        // use the waypoints of the opposing team (the towers are always waypoints)
+        int team = ~svPawn.team[z] & 1;
+        var zWPs = avdWaypoints[team];
+        foreach ( var zWP in zWPs ) {
+            if ( Sv.game.GetCachedPathMvPosLen( z, zWP, out List<int> path, out float len ) <= 1 ) {
+                continue;
+            }
+
+            if ( len < minLen ) {
+                minLen = len;
+                avdLock[z] = zWP;
+                avdFocus[z] = Sv.game.HexToV( path[1] );
+            }
+        }
+    }
+
+    // === correct the focus constantly, so teammates avoidance doesn't mess up pathing ===
+
+    // if we don't correct the focus constantly,
+    // clipping teammates eventually end up circling around the pather (focus) point,
+    // not being able to reach it.
+    // 'fix' the issue by making sure we always have an 'unreachable' pather waypoint ahead of us
+    foreach ( var z in avdLocked ) {
+        int zEnemy = avdLock[z];
+        int pathCount = Sv.game.GetCachedPathMvPos( z, zEnemy, out List<int> path );
+
+        if ( pathCount <= 1 ) {
+            continue;
+        }
+
+        if ( pathCount == 2 ) {
+            avdFocus[z] = svPawn.mvPos[zEnemy];
+            continue;
+        } 
+
+        // focus on the next pather waypoint
+        avdFocus[z] = Sv.game.HexToV( path[1] );
+    }
+
+    // === move the pawns before applying corrected feelers ===
+
     foreach ( var z in avdFocused ) {
         svPawn.MvChaseEndPoint( z, ZServer.clock );
 
@@ -1025,22 +1084,24 @@ public static int TickServer() {
             continue;
         }
 
-        if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
+        if ( svPawn.GetState( z ) == PS.Attack ) {
             continue;
         }
 
+        // these will get overwritten if the feelers got moved (pawns feelers clip)
         svPawn.mvEnd[z] = avdFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
     }
 
-    // make sure we lerped (moved, so next avoidance solver has new position)
+    // === apply corrected feelers for clipping pawns ===
+
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdPairClip[team];
         foreach ( var pr in clip ) {
             int [] za = { pr.a, pr.b };
             for ( int i = 0; i < 2; i++ ) {
                 int z = za[i];
-                if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
+                if ( svPawn.GetState( z ) == PS.Attack ) {
                     continue;
                 }
                 if ( avdW[z] == 0 ) {
@@ -1053,38 +1114,34 @@ public static int TickServer() {
         }
     }
 
+    // === newly spawned transition to 'patrol' ====
+
     foreach ( var z in avdNew ) {
-        svPawn.SetState( z, Pawn.State.Patrol );
-        avdW[z] = svPawn.IsStructure( z ) ? 0 : 1;
+        svPawn.SetState( z, PS.Patrol );
         avdFocus[z] = Vector2.zero;
+
+        // FIXME: maybe redundant, but hold the structure in place anyway
+        avdW[z] = ( byte )( svPawn.IsStructure( z ) ? 0 : 1 );
     }
 
-    foreach ( var z in no_avdFocused ) {
-        if ( svPawn.GetState( z ) == Pawn.State.Attack ) {
-            continue;
-        }
-        int zEnemy = NearestAttackableEnemy( z );
-        avdFocus[z] = svPawn.mvPos[zEnemy];
-        svPawn.mvEnd[z] = avdFocus[z];
-        svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
-    }
+    // === stop and attack if in attack range ====
 
     foreach ( var pr in avdPairEnemy ) {
-        float datkAB = svPawn.IsStructure( pr.a ) || svPawn.GetState( pr.a ) == Pawn.State.Attack
+        float datkAB = svPawn.IsStructure( pr.a ) || svPawn.GetState( pr.a ) == PS.Attack
                                                         ? 0
                                                         : svPawn.DistanceForAttack( pr.a, pr.b );
-        float datkBA = svPawn.IsStructure( pr.b ) || svPawn.GetState( pr.b ) == Pawn.State.Attack
+        float datkBA = svPawn.IsStructure( pr.b ) || svPawn.GetState( pr.b ) == PS.Attack
                                                         ? 0
                                                         : svPawn.DistanceForAttack( pr.b, pr.a );
         float sq = svPawn.SqDist( pr.a, pr.b );
         if ( sq <= datkAB * datkAB ) {
             svPawn.MvInterrupt( pr.a, ZServer.clock );
-            svPawn.SetState( pr.a, Pawn.State.Attack );
+            svPawn.SetState( pr.a, PS.Attack );
             avdW[pr.a] = 0;
         } 
         if ( sq <= datkBA * datkBA ) {
             svPawn.MvInterrupt( pr.b, ZServer.clock );
-            svPawn.SetState( pr.b, Pawn.State.Attack );
+            svPawn.SetState( pr.b, PS.Attack );
             avdW[pr.b] = 0;
         } 
     }
@@ -1129,6 +1186,14 @@ static bool HasFocusPos( int z ) {
     return avdFocus[z] != Vector2.zero;
 }
 
+static bool HasLock( int z ) {
+    return avdLock[z] != 0;
+}
+
+static int GetCachedPathMvPos( int zSrc, int zTarget, out List<int> path ) {
+    return Sv.game.GetCachedPathMvPos( zSrc, zTarget, out path );
+}
+
 static int NearestAttackableEnemy( int z ) {
     var enemies = svPawn.filter.enemies[svPawn.team[z]];
     int zClose = 0;
@@ -1146,27 +1211,44 @@ static int NearestAttackableEnemy( int z ) {
 static void AvdFilter() {
     avdNew.Clear();
     no_avdNew.Clear();
+    avdLocked.Clear();
+    no_avdLocked.Clear();
     avdFocused.Clear();
     no_avdFocused.Clear();
     avdPairEnemy.Clear();
     for ( int team = 0; team < 2; team++ ) {
         avdPairClip[team].Clear();
         avdCrntDist[team].Clear();
+        avdWaypoints[team].Clear();
+        no_avdWaypoints[team].Clear();
     }
 
     // we need to let the client snap the position on spawn, do nothing for a tick
     foreach ( var z in svPawn.filter.no_structures ) {
-        assign( z, svPawn.GetState( z ) == Pawn.State.None, avdNew, no_avdNew );
+        assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
     }
 
     foreach ( var z in svPawn.filter.flying ) {
-        assign( z, svPawn.GetState( z ) == Pawn.State.None, avdNew, no_avdNew );
+        assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
     }
 
     foreach ( var z in no_avdNew ) {
+        assign( z, HasLock( z ), avdLocked, no_avdLocked );
+    }
+
+    // only locked-to-a-pawn pawns can have focus
+    foreach ( var z in avdLocked ) {
         assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
     }
 
+    for ( int team = 0; team < 2; team++ ) {
+        var zs = svPawn.filter.team[team];
+        foreach ( var z in zs ) {
+            assign( z, svPawn.IsPatrolWaypoint( z ), avdWaypoints[team], no_avdWaypoints[team] );
+        }
+    }
+
+    // FIXME: not a filter
     foreach ( var z in svPawn.filter.no_garbage ) {
         avdFeeler[z] = svPawn.mvPos[z];
 
@@ -1190,6 +1272,8 @@ static void AvdFilter() {
         avdFeeler[z] = svPawn.mvPos[z] + v.normalized * svPawn.Radius( z ) * svPawn.SpeedSec( z );
     }
 
+    // === all possilble pairs of pawns on opposing teams ==
+
     {
 
     var l = svPawn.filter.no_garbage;
@@ -1208,6 +1292,8 @@ static void AvdFilter() {
 
     }
 
+    // === pawns with clipping feelers ==
+
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdPairClip[team];
         var tl = svPawn.filter.team[team];
@@ -1225,6 +1311,8 @@ static void AvdFilter() {
         }
     }
 
+    // === moving pawns (w != 0) keep their feelers at a distance (distance constraint) ===
+
     for ( int team = 0; team < 2; team++ ) {
         var clip = avdPairClip[team];
 
@@ -1239,10 +1327,10 @@ static void AvdFilter() {
         }
     }
     
-     void assign( int z, bool condition, List<byte> la, List<byte> lb ) {
-         var l = condition ? la : lb;
-         l.Add( ( byte )z );
-     }
+    void assign( int z, bool condition, List<byte> la, List<byte> lb ) {
+        var l = condition ? la : lb;
+        l.Add( ( byte )z );
+    }
 }
 
 
