@@ -223,6 +223,14 @@ partial class Pawn {
         mvEnd_ms[z] = clock;
     }
 
+    // don't generate delta if already on the spot
+    public void MvInterruptSoft( int z, int clock ) {
+        if ( mvEnd[z] != mvPos[z] ) {
+            mvEnd[z] = mvPos[z];
+            mvEnd_ms[z] = clock;
+        }
+    }
+
     public void MvLerpClient( int z, int clock, float deltaTime ) {
         if ( mvPos[z] == Vector2.zero ) {
             mvPos[z] = mvStart[z] = mvEnd[z];

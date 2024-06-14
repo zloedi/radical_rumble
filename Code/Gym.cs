@@ -948,6 +948,8 @@ static List<byte> avdChasing = new List<byte>();
 static List<byte> no_avdChasing = new List<byte>();
 static List<byte> avdFocused = new List<byte>();
 static List<byte> no_avdFocused = new List<byte>();
+static List<byte> avdAttacking = new List<byte>();
+static List<byte> no_avdAttacking = new List<byte>();
 
 static List<Pair> avdPairEnemy = new List<Pair>();
 static List<Pair> [] avdPairClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
@@ -1123,6 +1125,10 @@ public static int TickServer() {
             continue;
         }
 
+        if ( IsAttacking( z ) ) {
+            continue;
+        }
+
         // these will get overwritten if the feelers got corrected (pawns feelers clipped)
         svPawn.mvEnd[z] = avdFocus[z];
         svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z], svPawn.mvEnd[z] );
@@ -1136,12 +1142,12 @@ public static int TickServer() {
             int [] za = { pr.a, pr.b };
             for ( int i = 0; i < 2; i++ ) {
                 int z = za[i];
-                if ( svPawn.GetState( z ) == PS.Attack ) {
-                    continue;
-                }
+
+                // attacking units are also inert
                 if ( avdW[z] == 0 ) {
                     continue;
                 }
+
                 svPawn.mvEnd[z] = avdFeeler[z];
                 svPawn.mvEnd_ms[z] = ZServer.clock + MvDurationMs( z, svPawn.mvPos[z],
                                                                                 svPawn.mvEnd[z] );
@@ -1158,30 +1164,50 @@ public static int TickServer() {
         avdFocus[z] = Vector2.zero;
         avdChase[z] = 0;
         avdChaseMin[z] = 255;
-
-        // FIXME: maybe redundant, but hold the structure in place anyway
-        avdW[z] = ( byte )( svPawn.IsStructure( z ) ? 0 : 1 );
+        StopAttack( z );
     }
 
-    // === stop and attack if in attack range ====
+    // === if a moving pawn is in attack range, stop, make inert, trigger initial attack ====
 
-    foreach ( var pr in avdPairEnemy ) {
-        float datkAB = svPawn.IsStructure( pr.a ) || svPawn.GetState( pr.a ) == PS.Attack
-                                                        ? 0
-                                                        : svPawn.DistanceForAttack( pr.a, pr.b );
-        float datkBA = svPawn.IsStructure( pr.b ) || svPawn.GetState( pr.b ) == PS.Attack
-                                                        ? 0
-                                                        : svPawn.DistanceForAttack( pr.b, pr.a );
-        if ( pr.sqDist <= datkAB * datkAB ) {
-            svPawn.MvInterrupt( pr.a, ZServer.clock );
-            svPawn.SetState( pr.a, PS.Attack );
-            avdW[pr.a] = 0;
-        } 
-        if ( pr.sqDist <= datkBA * datkBA ) {
-            svPawn.MvInterrupt( pr.b, ZServer.clock );
-            svPawn.SetState( pr.b, PS.Attack );
-            avdW[pr.b] = 0;
-        } 
+    foreach ( var z in no_avdAttacking ) {
+        int a = z;
+        int b = avdChase[z];
+        float dsq = svPawn.SqDist( a, b );
+        float dneed = svPawn.DistanceForAttack( a, b );
+        if ( dsq <= dneed * dneed ) {
+            // stop
+            svPawn.MvInterruptSoft( z, ZServer.clock );
+
+            // make inert so other pawns can't push us around
+            avdW[z] = 0;
+
+            // start attacking
+            // FIXME: just use chase, scrap focus
+            svPawn.focus[z] = avdChase[z];
+            // the initial attack loop is shorter
+            svPawn.atkEnd_ms[z] = ZServer.clock + svPawn.AttackTime( z ) / 2;
+        }
+    }
+
+    foreach ( var z in avdAttacking ) {
+
+        if ( InAttackLoop( z ) ) {
+            continue;
+        }
+
+        // check if still in range
+        int a = z;
+        int b = avdChase[z];
+        float dsq = svPawn.SqDist( a, b );
+        float dneed = svPawn.DistanceForAttack( a, b );
+        if ( dsq > dneed * dneed ) {
+            StopAttack( z );
+            continue;
+        }
+
+        // loop another attack if still in range
+        int extra = ZServer.clock - svPawn.atkEnd_ms[z];
+        svPawn.atkEnd_ms[z] = ZServer.clock + svPawn.AttackTime( z ) - extra;
     }
 
     foreach ( var z in svPawn.filter.no_garbage ) {
@@ -1229,6 +1255,22 @@ static bool IsChasingEnemy( int z ) {
     return avdChase[z] != 0;
 }
 
+static bool IsAttacking( int z ) {
+    return svPawn.atkEnd_ms[z] != 0;
+}
+
+// FIXME: pass clock
+static bool InAttackLoop( int z ) {
+    return svPawn.atkEnd_ms[z] > ZServer.clock;
+}
+
+static void StopAttack( int z ) {
+    // stop any attack loop
+    svPawn.atkEnd_ms[z] = 0;
+    // let other teammates push us around
+    avdW[z] = ( byte )( svPawn.IsStructure( z ) ? 0 : 1 );
+}
+
 static int GetCachedPathMvPos( int zSrc, int zTarget, out List<int> path ) {
     return Sv.game.GetCachedPathMvPos( zSrc, zTarget, out path );
 }
@@ -1257,6 +1299,9 @@ static void AvdFilter() {
     avdFocused.Clear();
     no_avdFocused.Clear();
 
+    avdAttacking.Clear();
+    no_avdAttacking.Clear();
+
     avdPairEnemy.Clear();
 
     for ( int team = 0; team < 2; team++ ) {
@@ -1279,7 +1324,11 @@ static void AvdFilter() {
     foreach ( var z in svPawn.filter.no_garbage ) {
         if ( svPawn.IsDead( avdChase[z] ) || svPawn.IsGarbage( avdChase[z] ) )  {
             avdChase[z] = 0;
-            avdFocus[z] = Vector2.zero;
+            avdChaseMin[z] = 0; 
+            svPawn.MvInterruptSoft( z, ZServer.clock );
+            avdFocus[z] = svPawn.mvPos[z];
+            avdFeeler[z] = svPawn.mvPos[z];
+            StopAttack( z );
         }
     }
 
@@ -1301,6 +1350,10 @@ static void AvdFilter() {
         assign( z, HasFocusPos( z ), avdFocused, no_avdFocused );
     }
 
+    foreach ( var z in avdChasing ) {
+        assign( z, IsAttacking( z ), avdAttacking, no_avdAttacking );
+    }
+
     for ( int team = 0; team < 2; team++ ) {
         var zs = svPawn.filter.team[team];
         foreach ( var z in zs ) {
@@ -1312,6 +1365,7 @@ static void AvdFilter() {
     foreach ( var z in svPawn.filter.no_garbage ) {
         avdFeeler[z] = svPawn.mvPos[z];
 
+        // inert stuff have their feelers at their origins
         if ( avdW[z] == 0 ) {
             continue;
         }
