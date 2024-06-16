@@ -1,14 +1,14 @@
-debug_sdl:
-	rm ./bin/Debug/game_sdl.exe; make ./bin/Debug/game_sdl.exe
-
-release_sdl:
-	rm ./bin/Release/game_sdl.exe; make ./bin/Release/game_sdl.exe
-
 debug_unity:
 	rm ./bin/Debug/game.dll; make ./bin/Debug/game.dll
 
 release_unity:
 	rm ./bin/Release/game.dll; make ./bin/Release/game.dll
+
+debug_sdl:
+	rm ./bin/Debug/game_sdl.exe; make ./bin/Debug/game_sdl.exe
+
+release_sdl:
+	rm ./bin/Release/game_sdl.exe; make ./bin/Release/game_sdl.exe
 
 all: debug_sdl release_sdl debug_unity release_unity
 
