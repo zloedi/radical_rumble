@@ -34,12 +34,12 @@ public static void Tick() {
     }
 
     Pawn.FindDefIdxByName( "Archer", out int def );
-    for ( int i = 0; i < 255; i++ ) {
+    for ( int i = 0; i < Pawn.MAX_PAWN; i++ ) {
         int x = i % 16;
         int y = i / 16;
         ImmObject imo = DrawModel( _model[def], new Vector3( x * 1.5f, 0, y * 1.5f ), handle: i );
         Animo.UpdateState( Cl.clockDelta, _animSource[def], _crossfade[i], 2 );
-        //Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(), _crossfade[i] );
+        Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(), _crossfade[i] );
     }
 }
 
