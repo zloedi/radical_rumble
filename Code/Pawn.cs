@@ -13,6 +13,7 @@ namespace RR {
 
 
 using static Pawn.Def;
+using PDF = RR.Pawn.Def.Flags;
 
 
 partial class Pawn {
@@ -172,19 +173,19 @@ partial class Pawn {
     }
 
     public bool IsFlying( int z ) {
-        return ( GetDef( z ).flags & Pawn.Def.Flags.Flying ) != 0;
+        return ( GetDef( z ).flags & PDF.Flying ) != 0;
     }
 
     public bool IsStructure( int z ) {
-        return ( GetDef( z ).flags & Pawn.Def.Flags.Structure ) != 0;
+        return ( GetDef( z ).flags & PDF.Structure ) != 0;
     }
 
     public bool IsWinObjective( int z ) {
-        return ( GetDef( z ).flags & Pawn.Def.Flags.WinObjective ) != 0;
+        return ( GetDef( z ).flags & PDF.WinObjective ) != 0;
     }
 
     public bool IsPatrolWaypoint( int z ) {
-        return ( GetDef( z ).flags & Pawn.Def.Flags.PatrolWaypoint ) != 0;
+        return ( GetDef( z ).flags & PDF.PatrolWaypoint ) != 0;
     }
 
     public bool IsEnemy( int z, int zEnemy ) {

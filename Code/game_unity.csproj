@@ -89,6 +89,7 @@
     <Compile Include="TickUtil.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientPlayQGL.cs" />
+    <Compile Include="ClientPlayUnity.cs" />
     <Compile Include="ClientEdit.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="ArrayShadow.cs" />

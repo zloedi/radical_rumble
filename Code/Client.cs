@@ -25,9 +25,9 @@ public static string ClServerIpAddress_kvar = "127.0.0.1";
 public static int ClTraceLevel_kvar = 1;
 [Description( "0 -- no clock cmd logging, 1 -- log only pathologic clocks, 2 -- log all clocks" )]
 public static int ClLogClocks_kvar = 0;
-[Description("Print incoming packets: 1 -- some; 2 -- all")]
+[Description( "Print incoming packets: 1 -- some; 2 -- all" )]
 static int ClPrintIncomingPackets_kvar = 0;
-[Description("Sleep each frame in milliseconds.")]
+[Description( "Sleep each frame in milliseconds. Really bad if you run a local server." )]
 public static int ClFrameSleep_kvar = 0;
 
 static bool ShowBoardBounds_kvar = false;
@@ -177,11 +177,7 @@ public static void Tick( double timeDeltaDbl ) {
         Draw.BoardBounds();
     }
 
-#if false
-    QUI.End();
-#else
     InputEnd();
-#endif
 
     if ( Cellophane.VarChanged( nameof( ClState_kvar ) ) ) {
         Color c = Color.white;
@@ -230,15 +226,11 @@ public static bool AllowSpam() {
     return ! ZClient.HasUnsentReliableCommands();
 }
 
-public static void DrawBoard( Color? colorSolid = null ) {
-    Draw.Board( colorSolid );
-}
-
-public static bool TriggerOn( int z, Pawn.ClientTrigger trig ) {
+public static bool TrigIsOn( int z, Pawn.ClientTrigger trig ) {
     return ( _trigger[z] & trig ) != 0;
 }
 
-public static void TriggerRaise( int z, Pawn.ClientTrigger trig ) {
+public static void TrigRaise( int z, Pawn.ClientTrigger trig ) {
     _trigger[z] |= trig;
 }
 

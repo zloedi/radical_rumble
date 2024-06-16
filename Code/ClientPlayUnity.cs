@@ -16,7 +16,7 @@ using Trig = RR.Pawn.ClientTrigger;
 using PDF = RR.Pawn.Def.Flags;
 
     
-public static class ClientPlayQGL {
+public static class ClientPlayUnity {
 
 
 static bool ClSpawnDirectly_kvar = false;
@@ -39,6 +39,9 @@ public static void Tick() {
 
     int clock = ( int )Cl.clock;
     int clockDelta = ( int )Cl.clockDelta;
+
+    // when default renderer and camera present, this is the proper value
+    Qonsole.QonInvertPlayY_kvar = false;
 
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
