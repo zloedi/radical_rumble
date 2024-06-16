@@ -1,3 +1,6 @@
 [submodule "Code/ZloediUtils"]
 	path = Code/ZloediUtils
 	url = https://github.com/zloedi/ZloediUtils
+[submodule "RadicalRumbleUnity/Assets/Content"]
+	path = RadicalRumbleUnity/Assets/Content
+	url = /home/stoiko/ggl_drive_private/radical_rumble/Content

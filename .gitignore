@@ -13,6 +13,7 @@ BuildUnity/*.dll
 RadicalRumbleUnity/Library
 RadicalRumbleUnity/Logs
 RadicalRumbleUnity/UserSettings
+RadicalRumbleUnity/**/*.sln
 RadicalRumbleUnity/**/*.csproj
 RadicalRumbleUnity/**/*.pdb
 RadicalRumbleUnity/**/*.pdb.meta
