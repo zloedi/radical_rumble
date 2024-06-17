@@ -75,7 +75,19 @@ public static void Tick() {
         updatePos( z );
     }
 
-    foreach ( var z in _pawn.filter.no_garbage ) {
+    foreach ( var z in _pawn.filter.structures ) {
+        int def = _pawn.def[z];
+        Vector2 posGame = _pawn.mvPos[z];
+        Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
+        ImmObject imo = DrawModel( _model[def], posWorld, handle: ( def << 16 ) | z );
+        if ( _animSource[def] > 0 ) {
+            Animo.UpdateState( clockDelta, _animSource[def], _crossfade[z], 1 );
+            Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
+                                                                                    _crossfade[z] );
+        }
+    }
+
+    foreach ( var z in _pawn.filter.no_structures ) {
         int zf = _pawn.focus[z];
         Vector2 posGame = _pawn.mvPos[z];
         Vector2 toEnd = _pawn.mvEnd[z] - _pawn.mvPos[z];
@@ -132,13 +144,15 @@ static void StressTest() {
 }
 
 static ImmObject DrawModel( GameObject model, Vector3 pos, Vector3? forward = null,
-                                                                float scale = 1, int handle = 0 ) {
+                                                                float scale = -1, int handle = 0 ) {
     ImmObject imo = IMMGO.RegisterPrefab( model, handle: handle );
     imo.go.transform.position = pos;
     if ( forward != null && forward.Value.sqrMagnitude > 0.0001f ) {
         imo.go.transform.forward = forward.Value.normalized;
     }
-    imo.go.transform.localScale = Vector3.one * scale;
+    if ( scale != -1 ) {
+        imo.go.transform.localScale = Vector3.one * scale;
+    }
     return imo;
 }
 
