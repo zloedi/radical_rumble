@@ -1108,6 +1108,7 @@ public static int TickServer() {
     // clipping teammates eventually end up circling around the pather (focus) point,
     // not being able to reach it.
     // 'fix' the issue by making sure we always have an 'unreachable' pather waypoint ahead of us
+    // FIXME: do it only for clipping feelers
     foreach ( var z in avdChasing ) {
         int zEnemy = avdChase[z];
         int numWPs = Sv.game.GetCachedPathMvPos( z, zEnemy, out List<int> path );
