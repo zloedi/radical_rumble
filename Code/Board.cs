@@ -107,10 +107,16 @@ public class Board {
         foreach ( var hx in filter.solid ) {
             navMap[hx] = 0;
         }
+
         foreach ( var hx in filter.no_solid ) {
             navMap[hx] = 1;
         }
-        navMap[hxSrc] = 0;
+
+        if ( navMap[hxSrc] != 0 ) {
+            path.Clear();
+            strippedPath.Clear();
+            return false;
+        }
 
         // flood the map with score
         HexPather.FloodMap( hxSrc, maxPath, width, navMap, numItems, patherCTX );
