@@ -19,6 +19,7 @@
             + maybe they should just stop and attack the first possible if in 'avoidance mode'
         no damage is dealed on attack
         melees attack flyers?
+        game over
         ====> towers don't shoot
 
 
