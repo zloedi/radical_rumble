@@ -1043,14 +1043,17 @@ public static int TickServer() {
         }, duration: 0.1f );
     }
 
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        SingleShot.Add( dt => {
+            Color c = Color.cyan; c.a = 0.4f;
+            QGL.LateDrawLine( Draw.GTS( svPawn.mvPos[z] ), Draw.GTS( svPawn.mvPos[avdChase[z]] ),
+                                                                                        color: c );
+        }, duration: 0.1f );
+    }
+
     // === latch pawns to chasing some proper enemy ===
 
     foreach ( var z in no_avdChasing ) {
-        // FIXME: check it in the filter?
-        if ( svPawn.GetState( z ) == PS.Attack ) {
-            continue;
-        }
-
         float minLen = 9999999;
 
         // use the waypoints of the opposing team (the towers are always waypoints)
@@ -1135,10 +1138,6 @@ public static int TickServer() {
         svPawn.MvChaseEndPoint( z, ZServer.clock );
 
         if ( svPawn.mvEnd[z] == avdFocus[z] ) {
-            continue;
-        }
-
-        if ( svPawn.GetState( z ) == PS.Attack ) {
             continue;
         }
 
@@ -1265,7 +1264,7 @@ static int MvDurationMs( int z, Vector2 a, Vector2 b ) {
 
 // point this pawn is generally advancing to
 static bool HasFocusPos( int z ) {
-    return avdFocus[z] != Vector2.zero;
+    return ! svPawn.IsStructure( z ) && avdFocus[z] != Vector2.zero;
 }
 
 static bool IsChasingEnemy( int z ) {
@@ -1350,13 +1349,13 @@ static void AvdFilter() {
     }
 
     // we need to let the client snap the position on spawn, do nothing for a tick
-    foreach ( var z in svPawn.filter.no_structures ) {
+    foreach ( var z in svPawn.filter.no_garbage ) {
         assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
     }
 
-    foreach ( var z in svPawn.filter.flying ) {
-        assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
-    }
+    //foreach ( var z in svPawn.filter.flying ) {
+    //    assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
+    //}
 
     foreach ( var z in no_avdNew ) {
         assign( z, IsChasingEnemy( z ), avdChasing, no_avdChasing );

@@ -14,9 +14,11 @@
 
 
 ] Pawn avoidance
-    * two issues with gym:
+    ] issues with gym:
         * pawns go through enemy pawns to get to their target
-            maybe they should just stop and attack the first possible if in 'avoidance mode'
+            + maybe they should just stop and attack the first possible if in 'avoidance mode'
+        no damage is dealed on attack
+        melees attack flyers?
         ====> towers don't shoot
 
 
