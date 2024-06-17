@@ -14,9 +14,10 @@
 
 
 ] Pawn avoidance
-    ===> two issues with gym:
-        pawns go through enemy pawns to get to their target
-        towers don't shoot
+    * two issues with gym:
+        * pawns go through enemy pawns to get to their target
+            maybe they should just stop and attack the first possible if in 'avoidance mode'
+        ====> towers don't shoot
 
 
     + Go around inert/attacking teammates

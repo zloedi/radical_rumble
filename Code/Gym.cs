@@ -932,7 +932,7 @@ static Vector2 [] avdFocus = new Vector2[Pawn.MAX_PAWN];
 // the enemy pawn this pawn is chasing
 static byte [] avdChase = new byte[Pawn.MAX_PAWN]; 
 // minimal pather waypoints to pawn reached while chasing a pawn
-static byte [] avdChaseMin = new byte[Pawn.MAX_PAWN]; 
+static int [] avdChaseMin = new int[Pawn.MAX_PAWN]; 
 // the sphere ahead of this pawn used to avoid other pawns by 'steering'
 static Vector2 [] avdFeeler = new Vector2[Pawn.MAX_PAWN]; 
 
@@ -942,18 +942,26 @@ struct Pair {
     public float sqDist;
 }
 
+// newly spawned
 static List<byte> avdNew = new List<byte>();
 static List<byte> no_avdNew = new List<byte>();
+// pawns with a pawn to chase
 static List<byte> avdChasing = new List<byte>();
 static List<byte> no_avdChasing = new List<byte>();
+// pawns with a point to chase
 static List<byte> avdFocused = new List<byte>();
 static List<byte> no_avdFocused = new List<byte>();
+// currently in attack loop
 static List<byte> avdAttacking = new List<byte>();
 static List<byte> no_avdAttacking = new List<byte>();
 
+// all possilble pairs of pawns of opposing teams ==
 static List<Pair> avdPairEnemy = new List<Pair>();
+// pairs of pawns with clipping feelers
 static List<Pair> [] avdPairClip = new List<Pair>[2] { new List<Pair>(), new List<Pair>() };
+// pawns who need their feelers separated by a distance constraint
 static List<byte> [] avdCrntDist = new List<byte>[2] { new List<byte>(), new List<byte>() };
+// pawns providing waypoints
 static List<byte> [] avdWaypoints = new List<byte>[2] { new List<byte>(), new List<byte>() };
 static List<byte> [] no_avdWaypoints = new List<byte>[2] { new List<byte>(), new List<byte>() };
 
@@ -1049,38 +1057,46 @@ public static int TickServer() {
         int team = ~svPawn.team[z] & 1;
         var zWPs = avdWaypoints[team];
         foreach ( var zWP in zWPs ) {
-            if ( Sv.game.GetCachedPathMvPosLen( z, zWP, out List<int> path, out float len ) <= 1 ) {
+            int numWPs = Sv.game.GetCachedPathMvPosLen( z, zWP, out List<int> path, out float len );
+            if ( numWPs <= 1 ) {
                 continue;
             }
-
             if ( len < minLen ) {
                 minLen = len;
                 avdChase[z] = zWP;
-                avdChaseMin[z] = 255;
+                avdChaseMin[z] = ( numWPs << 16 ) | 0xffff;
                 avdFocus[z] = Sv.game.HexToV( path[1] );
             }
         }
     }
 
-    // === start chasing another pawn if visible and currently chased pawn was never visible ===
+    // === start chasing another pawn if better suited than currently chased one ===
 
     foreach ( var pr in avdPairEnemy ) {
         // FIXME: static float SvAggroRange_kvar = 6;
         if ( pr.sqDist > 6 * 6 ) {
+            // too far to switch chase
             continue;
         }
 
-        int pathCount = Sv.game.GetCachedPathMvPos( pr.a, pr.b, out List<int> path );
+        int pathCount = Sv.game.GetCachedPathMvPos( pr.a, pr.b, out List<int> pathAB );
 
         if ( pathCount != 2 ) {
+            // no visibility between these two
             continue;
         }
 
-        avdChase[pr.a] = avdChaseMin[pr.a] > 2 ? pr.b : avdChase[pr.a];
-        avdChase[pr.b] = avdChaseMin[pr.b] > 2 ? pr.a : avdChase[pr.b];
+        int score = ( 2 << 16 ) | ( int )( pr.sqDist * 100 );
 
-        avdChaseMin[pr.a] = 2;
-        avdChaseMin[pr.b] = 2;
+        if ( ! IsAttacking( pr.a ) && avdChaseMin[pr.a] > score ) {
+            avdChase[pr.a] = pr.b;
+            avdChaseMin[pr.a] = score;
+        }
+
+        if ( ! IsAttacking( pr.b ) && avdChaseMin[pr.b] > score ) {
+            avdChase[pr.b] = pr.a;
+            avdChaseMin[pr.b] = score;
+        }
     }
 
     // === correct the focus constantly, so teammates avoidance doesn't mess up pathing ===
@@ -1091,19 +1107,20 @@ public static int TickServer() {
     // 'fix' the issue by making sure we always have an 'unreachable' pather waypoint ahead of us
     foreach ( var z in avdChasing ) {
         int zEnemy = avdChase[z];
-        int pathCount = Sv.game.GetCachedPathMvPos( z, zEnemy, out List<int> path );
+        int numWPs = Sv.game.GetCachedPathMvPos( z, zEnemy, out List<int> path );
 
-        if ( pathCount <= 1 ) {
+        if ( numWPs <= 1 ) {
             continue;
         }
 
         // FIXME: static float SvAggroRange_kvar = 6;
         float sq = svPawn.SqDist( z, avdChase[z] );
         if ( sq <= 6 * 6 ) {
-            avdChaseMin[z] = ( byte )Mathf.Min( avdChaseMin[z], pathCount );
+            int score = ( numWPs << 16 ) | ( int )( sq * 100 );
+            avdChaseMin[z] = Mathf.Min( avdChaseMin[z], score );
         }
 
-        if ( pathCount == 2 ) {
+        if ( numWPs == 2 ) {
             avdFocus[z] = svPawn.mvPos[zEnemy];
             continue;
         } 
@@ -1163,29 +1180,29 @@ public static int TickServer() {
         // FIXME: move to pawn create
         avdFocus[z] = Vector2.zero;
         avdChase[z] = 0;
-        avdChaseMin[z] = 255;
+        avdChaseMin[z] = 255 << 16;
         StopAttack( z );
     }
 
-    // === if a moving pawn is in attack range, stop, make inert, trigger initial attack ====
+    // === pawn is in attack range to chased enemy, stop, make inert, trigger initial attack ====
 
     foreach ( var z in no_avdAttacking ) {
-        int a = z;
-        int b = avdChase[z];
-        float dsq = svPawn.SqDist( a, b );
-        float dneed = svPawn.DistanceForAttack( a, b );
+        int zAtk = z;
+        int zDfn = avdChase[z];
+        float dsq = svPawn.SqDist( zAtk, zDfn );
+        float dneed = svPawn.DistanceForAttack( zAtk, zDfn );
         if ( dsq <= dneed * dneed ) {
             // stop
-            svPawn.MvInterruptSoft( z, ZServer.clock );
+            svPawn.MvInterruptSoft( zAtk, ZServer.clock );
 
             // make inert so other pawns can't push us around
-            avdW[z] = 0;
+            avdW[zAtk] = 0;
 
             // start attacking
-            // FIXME: just use chase, scrap focus
-            svPawn.focus[z] = avdChase[z];
+            // FIXME: just use chase when moved from gym, scrap focus
+            svPawn.focus[zAtk] = ( byte )zDfn;
             // the initial attack loop is shorter
-            svPawn.atkEnd_ms[z] = ZServer.clock + svPawn.AttackTime( z ) / 2;
+            svPawn.atkEnd_ms[zAtk] = ZServer.clock + svPawn.AttackTime( zAtk ) / 2;
         }
     }
 
