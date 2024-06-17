@@ -27,6 +27,7 @@ static GameObject [] _model = new GameObject[Pawn.defs.Count];
 
 static Animo.Crossfade [] _crossfade = new Animo.Crossfade[Pawn.MAX_PAWN];
 static Vector2 [] _velocity = new Vector2[Pawn.MAX_PAWN];
+static Vector2 [] _forward = new Vector2[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -47,6 +48,7 @@ public static void Tick() {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
             _pawn.mvStart_ms[z] = clock;
+            _forward[z] = Vector2.zero;
             Cl.Log( $"Spawned {_pawn.DN( z )}." ); 
         }
 
@@ -80,6 +82,8 @@ public static void Tick() {
         Vector2 fwdGame = _pawn.mvStart_ms[z] == _pawn.mvEnd_ms[z]
                             ? _pawn.mvPos[zf] - posGame
                             : toEnd;
+        fwdGame = ( fwdGame.normalized + _forward[z] * 20 ).normalized;
+        _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
