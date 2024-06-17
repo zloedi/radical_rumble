@@ -99,16 +99,17 @@ public static void Tick() {
     // == client logic ==
 
     foreach ( var z in pawn.filter.no_garbage ) {
+        if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
+            pawn.mvPos[z] = pawn.mvEnd[z];
+            pawn.mvStart_ms[z] = clock;
+            Cl.Log( $"Spawned {pawn.DN( z )}." ); 
+        }
+
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             // new movement segment arrives, plan movement on the client
             pawn.mvStart[z] = pawn.mvPos[z];
-            pawn.mvStart_ms[z] = clock;
+            pawn.mvStart_ms[z] = clock - clockDelta;
             //Cl.Log( $"Plan move for {pawn.DN( z )}." ); 
-        }
-
-        if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
-            pawn.mvPos[z] = pawn.mvEnd[z];
-            Cl.Log( $"Spawned {pawn.DN( z )}." ); 
         }
     }
 
@@ -165,7 +166,8 @@ public static void Tick() {
     }
 
     foreach ( var z in pawn.filter.structures ) {
-        snapPos( z );
+        pawn.mvPos[z] = pawn.mvEnd[z];
+        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
     }
 
     foreach ( var z in pawn.filter.no_structures ) {
@@ -239,14 +241,8 @@ public static void Tick() {
 
     // == end == 
 
-    void snapPos( int z ) {
-        pawn.mvPos[z] = pawn.mvEnd[z];
-        pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
-    }
-
     void updatePos( int z ) {
         // zero delta move means stop
-        // FIXME: remove if the pawn state is sent over the network
         if ( pawn.mvEnd_ms[z] <= Cl.serverClock && pawn.mvStart_ms[z] != pawn.mvEnd_ms[z] ) {
             // FIXME: should lerp to actual end pos if offshoot
             pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
@@ -254,7 +250,7 @@ public static void Tick() {
             return;
         }
 
-        // use the unity clock here to keep moving even on crappy synced clock delta
+        // the unity clock here is used just to extrapolate (move in the same direction)
         pawn.MvLerpClient( z, clock, Time.deltaTime );
     }
 }
