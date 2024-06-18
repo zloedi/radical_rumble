@@ -34,6 +34,7 @@ static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
 static byte [] _animIdle = new byte[Pawn.MAX_PAWN];
 // one shot animations scale, i.e. attacks may be shorter than the attack animations
 static float [] _animOneShotSpeed = new float[Pawn.MAX_PAWN];
+static Color [] _colEmissive = new Color[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -141,21 +142,30 @@ public static void Tick() {
         int shoot = Mathf.Max( clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
         Vector2 a = _pawn.mvPos[z];
         Vector2 b = _pawn.mvPos[zf];
+
+        // clock the time until impact and trigger 'hurt'
+        SingleShot.AddConditional( dt => {
+            // impact moment -- when clock passes the attack end
+            if ( end > ( int )Cl.clock ) {
+                return true;
+            }
+
+            //  FIXME: cache it
+            Transform [] ts = prj.GetComponentsInChildren<Transform>();
+            foreach ( Transform tt in ts ) {
+                if ( tt.CompareTag( "HideOnImpact" ) ) {
+                    tt.gameObject.SetActive( false );
+                }
+            }
+
+            // notify the target it is hit
+            Cl.TrigRaise( zf, Trig.HurtVisuals );
+            return false;
+        } );
+
+        // the projectile one-shot
         SingleShot.Add( dt => {
             int clk = ( int )Cl.clock;
-
-            // impact moment
-            if ( end <= clk ) {
-                //  FIXME: cache it
-                Transform [] ts = prj.GetComponentsInChildren<Transform>();
-                foreach ( Transform tt in ts ) {
-                    if ( tt.CompareTag( "HideOnImpact" ) ) {
-                        tt.gameObject.SetActive( false );
-                    }
-                }
-                Cl.TrigRaise( zf, Trig.HurtVisuals );
-                return;
-            }
 
             if ( shoot > clk ) {
                 // not time to shoot yet
@@ -208,10 +218,25 @@ public static void Tick() {
         Vector2 posGame = _pawn.mvPos[z];
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         ImmObject imo = DrawModel( _model[def], posWorld, handle: ( def << 16 ) | z );
+
         if ( _animSource[def] > 0 ) {
             Animo.UpdateState( clockDelta, _animSource[def], _crossfade[z], 1 );
             Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
                                                                                     _crossfade[z] );
+        }
+
+        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
+            _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
+        }
+
+        if ( _colEmissive[z].r > 0 ) {
+            foreach ( var m in imo.mats ) {
+                m.SetColor( "_EmissionColor", _colEmissive[z] );
+                m.EnableKeyword( "_EMISSION" );
+            }
+            _colEmissive[z].r -= 3 * clockDelta / 1000f;
+            _colEmissive[z].g -= 3 * clockDelta / 1000f;
+            _colEmissive[z].b -= 3 * clockDelta / 1000f;
         }
     }
 
@@ -290,7 +315,7 @@ static void StressTest() {
 
 static ImmObject DrawModel( GameObject model, Vector3 pos, Vector3? forward = null,
                                                                 float scale = -1, int handle = 0 ) {
-    ImmObject imo = IMMGO.RegisterPrefab( model, handle: handle );
+    ImmObject imo = IMMGO.RegisterPrefab( model, garbageMaterials: true, handle: handle );
     imo.go.transform.position = pos;
     if ( forward != null && forward.Value.sqrMagnitude > 0.0001f ) {
         imo.go.transform.forward = forward.Value.normalized;
