@@ -103,8 +103,15 @@ public static void Tick() {
         int animDuration = Animo.sourcesList[animSrc].duration[oneShot];
 
         _animOneShot[z] = ( byte )oneShot;
+
         // shrink the animation if longer than the attack duration
-        _animOneShotSpeed[z] = atkDuration > animDuration ? 1 : animDuration / ( float )atkDuration;
+        _animOneShotSpeed[z] = atkDuration > animDuration
+                                                ? 1
+                                                : animDuration / ( float )atkDuration;
+
+        // we need to force attack anim again, since Animo fails if one shots are set 
+        // while transitioning...
+        Animo.CrossfadeToState( _crossfade[z], oneShot );
 
         //Cl.Log( "atk duration: " + animDuration );
         //Cl.Log( "atk anim speed: " + _animOneShotSpeed[z] );

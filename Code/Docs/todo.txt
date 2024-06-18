@@ -17,8 +17,11 @@
     ] issues with gym:
         * pawns go through enemy pawns to get to their target
             + maybe they should just stop and attack the first possible if in 'avoidance mode'
-        !! sometimes attack animation is not played (either skipped or never)
+        * !! sometimes attack animation is not played (either skipped or never)
+            -- if one-shot clip is set at the end of the current same clip, it dies
         !! guys get CLIENT teleported on client reconnect
+        projectiles fly and 'shoot' animation moment, should match
+            maybe we should sync the 'load time' and the 'shoot' moment
         no damage is dealed on attack
         melees attack flyers?
         game over
