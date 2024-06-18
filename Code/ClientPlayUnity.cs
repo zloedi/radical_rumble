@@ -17,10 +17,13 @@ using PDF = RR.Pawn.Def.Flags;
 public static class ClientPlayUnity {
 
 static bool _initialized;
-static GameObject _dummy = new GameObject( "__DUMMY__" );
+static GameObject _dummy;
+static GameObject _projectileFallback;
 
 static int [] _animSource = new int[Pawn.defs.Count];
 static GameObject [] _model = new GameObject[Pawn.defs.Count];
+static GameObject [] _modelProjectilePrefab = new GameObject[Pawn.defs.Count];
+static Transform [] _modelMuzzle = new Transform[Pawn.defs.Count];
 
 static Animo.Crossfade [] _crossfade = new Animo.Crossfade[Pawn.MAX_PAWN];
 static Vector2 [] _velocity = new Vector2[Pawn.MAX_PAWN];
@@ -81,22 +84,12 @@ public static void Tick() {
     // === program attack animation === 
 
     foreach ( var z in _pawn.filter.no_garbage ) {
-        if ( ! Cl.TrigIsOn( z, Trig.Attack ) ) {
+        if ( ! IsAttackTrigger( z ) ) {
             continue;
         }
 
         // not animated
         if ( _animSource[_pawn.def[z]] == 0 ) {
-            continue;
-        }
-
-        // attack target is garbage
-        if ( _pawn.focus[z] == 0 ) {
-            continue;
-        }
-
-        // not attacking actually, the server set the timestamp to zero for some reason
-        if ( _pawn.atkEnd_ms[z] == 0 ) {
             continue;
         }
 
@@ -115,6 +108,77 @@ public static void Tick() {
 
         //Cl.Log( "atk duration: " + animDuration );
         //Cl.Log( "atk anim speed: " + _animOneShotSpeed[z] );
+    }
+
+    // === program projectile === 
+
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        if ( ! IsAttackTrigger( z ) ) {
+            continue;
+        }
+
+        GameObject prefab = _modelProjectilePrefab[_pawn.def[z]];
+
+        if ( ! prefab ) {
+            continue;
+        }
+
+        GameObject prj = GameObject.Instantiate( prefab );
+
+        Vector2 mvpos = _pawn.mvPos[z];
+        prj.transform.position = new Vector3( mvpos.x, 1, mvpos.y );
+
+        int zf = _pawn.focus[z];
+        int start = clock;
+        int end = _pawn.atkEnd_ms[z];
+        int shoot = Mathf.Max( clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
+        Vector2 a = _pawn.mvPos[z];
+        Vector2 b = _pawn.mvPos[zf];
+        SingleShot.Add( dt => {
+            int clk = ( int )Cl.clock;
+
+            // impact moment
+            if ( end <= clk ) {
+                //  FIXME: cache it
+                Transform [] ts = prj.GetComponentsInChildren<Transform>();
+                foreach ( Transform tt in ts ) {
+                    if ( tt.CompareTag( "HideOnImpact" ) ) {
+                        tt.gameObject.SetActive( false );
+                    }
+                }
+                Cl.TrigRaise( zf, Trig.HurtVisuals );
+                return;
+            }
+
+            if ( shoot > clk ) {
+                // not time to shoot yet
+                return;
+            }
+
+            prj.SetActive( true );
+
+            if ( ! _pawn.IsGarbage( z ) ) {
+                a = _pawn.mvPos[z];
+            }
+
+            if ( ! _pawn.IsGarbage( zf ) ) {
+                b = _pawn.mvPos[zf];
+            }
+
+            float t = ( clk - shoot ) / ( float )( end - shoot );
+
+            Vector2 c = Vector2.Lerp( a, b, t );
+
+            Vector3 ag = new Vector3( a.x, 1, a.y );
+            Vector3 bg = new Vector3( b.x, 1, b.y );
+            Vector3 cg = new Vector3( c.x, 1, c.y );
+
+            prj.transform.position = cg;
+            prj.transform.forward = ( bg - ag ).normalized;
+        },
+        done: () => {
+            GameObject.Destroy( prj );
+        }, duration: 5 );
     }
 
     foreach ( var z in _pawn.filter.structures ) {
@@ -238,6 +302,8 @@ static void Initialize() {
     Animo.Log = Cl.Log;
     Animo.Error = Cl.Error;
 
+    _dummy = new GameObject( "__DUMMY__" );
+
     for ( int i = 0; i < Pawn.defs.Count; i++ ) {
         var go = UnityLoad( $"mdl_{Cellophane.NormalizeName( Pawn.defs[i].name )}" ) as GameObject;
         if ( go ) {
@@ -246,6 +312,29 @@ static void Initialize() {
         } else {
             _model[i] = _dummy;
         }
+    }
+
+    for ( int i = 0; i < Pawn.defs.Count; i++ ) {
+        var mdl = _model[i];
+        Transform [] ts = mdl.GetComponentsInChildren<Transform>( includeInactive: true );
+        foreach ( var t in ts ) {
+            var nm = t.name.ToLowerInvariant();
+            if ( nm.Contains( "vfx_projectile" ) ) {
+                _modelProjectilePrefab[i] = t.gameObject;
+                _modelProjectilePrefab[i].SetActive( false );
+                break;
+            }
+            
+            if ( nm.Contains( "vfx_muzzle" ) ) {
+                _modelMuzzle[i] = t;
+                break;
+            }
+        }
+    }
+
+    _projectileFallback = UnityLoad( "vfx_projectile_fallback" ) as GameObject;
+    if ( ! _projectileFallback ) {
+        _projectileFallback = _dummy;
     }
 }
 
@@ -257,6 +346,24 @@ static UnityEngine.Object UnityLoad( string name ) {
     }
     Cl.Log( $"Loaded '{name}'" );
     return result;
+}
+
+static bool IsAttackTrigger( int z ) {
+    if ( ! Cl.TrigIsOn( z, Trig.Attack ) ) {
+        return false;
+    }
+
+    // attack target is garbage
+    if ( _pawn.focus[z] == 0 ) {
+        return false;
+    }
+
+    // not attacking actually, the server set the timestamp to zero for some reason
+    if ( _pawn.atkEnd_ms[z] == 0 ) {
+        return false;
+    }
+
+    return true;
 }
 
 

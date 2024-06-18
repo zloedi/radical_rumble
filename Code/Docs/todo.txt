@@ -17,6 +17,8 @@
     ] issues with gym:
         * pawns go through enemy pawns to get to their target
             + maybe they should just stop and attack the first possible if in 'avoidance mode'
+        !! sometimes attack animation is not played (either skipped or never)
+        !! guys get CLIENT teleported on client reconnect
         no damage is dealed on attack
         melees attack flyers?
         game over
