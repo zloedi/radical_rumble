@@ -1,0 +1,100 @@
+
+
+
+
+
+
+
+
+
+
+   RADICAL MULTIPLAYER       prostranstvoto_guest : prostranstvoto789
+
+
+
+
+
+
+
+
+
+    Who am I
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Why the Radical
+        * De-indoctrinate, alternative approach to code games.
+        * Meet other programmers and talk about real programming. (group therapy?)
+        * Learn new stuff.
+        * To create ?useful? software.
+        * To promote prostranstvoto.bg (there is a donation pot, please donate)
+        * Drink alcohol.
+        * Source code
+            https://github.com/zloedi/radical_rumble
+            https://github.com/zloedi/ZloediUtils
+    
+    
+    
+    
+    
+
+
+
+
+
+    Revisit SDL/Unity, Structs of Arrays, clocks and more
+        * Compile as Unity assembly, SDL exe and headless standalone server.
+        * SOA of primitive types exclusively on game state (class Game):
+            Pawn, Board, Player
+        * Filters
+        * Same mechanism to serialize deltas everywhere (network, map editor, /savegames/)
+        * Use future timestamps to sync lerps, don't send packets inbetween. Server clock always
+            piggybacked.
+        * Single tick/monobehaviour (the local server runs in the same tick too)
+        * Use unreliable UDP stack ('inspired by' Quake3)
+            Each tick potentially generates delta.
+            64 deltas per client in a circular buffer.
+            Resend deltas from last ack to current.
+            Currently deltas are string, too lazy to make them compressed bytes.
+        * Extensive Qonsole/Cellophane usage (thank you C# reflection):
+            Use the Cellophane for client commands, server can push 'tail' commands in packets.
+            Map keys to Cellophane commands, store in the Cellophane cfg.
+            Cellophane on the standalone.
+    
+    
+    
+
+
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+* IMMGO
+
+* Programming animations vs using the Animation Controller
+    Trigger on events, interrupt loops, start looping, control on transitions.
+    Control on animation speeds (attack loop may be shorter than anim...)
+    Changing the attack duration on the server properly translates on the client,
+    no animation tweaking needed show changing duration
+

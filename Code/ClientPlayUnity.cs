@@ -28,6 +28,12 @@ static GameObject [] _model = new GameObject[Pawn.defs.Count];
 static Animo.Crossfade [] _crossfade = new Animo.Crossfade[Pawn.MAX_PAWN];
 static Vector2 [] _velocity = new Vector2[Pawn.MAX_PAWN];
 static Vector2 [] _forward = new Vector2[Pawn.MAX_PAWN];
+// one shot animation currently played, as opposed to a loop
+static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
+// idles are special i.e. when in attack loop
+static byte [] _animIdle = new byte[Pawn.MAX_PAWN];
+// one shot animations scale, i.e. attacks may be shorter than the attack animations
+static float [] _animOneShotSpeed = new float[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -45,19 +51,73 @@ public static void Tick() {
     _pawn.UpdateFilters();
 
     foreach ( var z in _pawn.filter.no_garbage ) {
+
+        // newly spawned
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
             _pawn.mvStart_ms[z] = clock;
-            _forward[z] = Vector2.zero;
+
+            // lookat the the first enemy 
+            var enemies = _pawn.filter.enemies[_pawn.team[z]];
+            Vector2 lookat = enemies.Count > 0 ? _pawn.mvPos[enemies[0]] : Vector2.zero;
+            _forward[z] = lookat - _pawn.mvPos[z];
+
+            _animOneShot[z] = 0;
+            _animOneShotSpeed[z] = 1;
+
+            _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdle;
+            Animo.ResetToState( _crossfade[z], _pawn.GetDef( z ).animIdle, offset: z * z * 2023 );
             Cl.Log( $"Spawned {_pawn.DN( z )}." ); 
         }
 
+        // program new movement segment
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
-            // new movement segment arrives, plan movement on the client
             _pawn.mvStart[z] = _pawn.mvPos[z];
             _pawn.mvStart_ms[z] = clock - clockDelta;
+            // kinda redundant, since velocity > 0 will reset it, but do it anyway
+            _animOneShot[z] = 0;
+            _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdle;
             //Cl.Log( $"Plan move for {_pawn.DN( z )}." ); 
         }
+    }
+        
+    // === program attack animation === 
+
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        if ( ! Cl.TrigIsOn( z, Trig.Attack ) ) {
+            continue;
+        }
+
+        // not animated
+        if ( _animSource[_pawn.def[z]] == 0 ) {
+            continue;
+        }
+
+        // attack target is garbage
+        if ( _pawn.focus[z] == 0 ) {
+            continue;
+        }
+
+        // not attacking actually, the server set the timestamp to zero for some reason
+        if ( _pawn.atkEnd_ms[z] == 0 ) {
+            continue;
+        }
+
+        // loop in combat idle between attacks
+        _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdleCombat;
+
+        int atkDuration = _pawn.atkEnd_ms[z] - clock;
+
+        int animSrc = _animSource[_pawn.def[z]];
+        int oneShot = _pawn.GetDef( z ).animAttack;
+        int animDuration = Animo.sourcesList[animSrc].duration[oneShot];
+
+        _animOneShot[z] = ( byte )oneShot;
+        // shrink the animation if longer than the attack duration
+        _animOneShotSpeed[z] = atkDuration > animDuration ? 1 : animDuration / ( float )atkDuration;
+
+        //Cl.Log( "atk duration: " + animDuration );
+        //Cl.Log( "atk anim speed: " + _animOneShotSpeed[z] );
     }
 
     foreach ( var z in _pawn.filter.structures ) {
@@ -100,12 +160,29 @@ public static void Tick() {
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
         ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, handle: ( def << 16 ) | z );
-        if ( _animSource[def] > 0 ) {
-            int state = _velocity[z].sqrMagnitude > 0.01f ? 2 : 1;
-            Animo.UpdateState( clockDelta, _animSource[def], _crossfade[z], state );
-            Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
-                                                                                    _crossfade[z] );
+        int animSrc = _animSource[def];
+        if ( animSrc == 0 ) {
+            continue;
         }
+
+        bool isMoving = _velocity[z].sqrMagnitude > 0.01f;
+
+        // interrupt any single-shot animations if moving; start looping movement
+        int oneShot = isMoving ? 0 : _animOneShot[z];
+
+        // if not moving, the special idle could be used
+        int loop = isMoving ? _pawn.GetDef( z ).animMove : _animIdle[z];
+
+        if ( oneShot != 0 ) {
+            if ( Animo.UpdateState( clockDelta, animSrc, _crossfade[z], oneShot, clamp: true,
+                                                transition: 100, speed: _animOneShotSpeed[z] ) ) {
+                _animOneShot[z] = 0;
+            }
+        } else {
+            Animo.UpdateState( clockDelta, animSrc, _crossfade[z], loop, transition: 100 );
+        }
+
+        Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
     }
 
     IMMGO.End();
@@ -172,10 +249,6 @@ static void Initialize() {
         } else {
             _model[i] = _dummy;
         }
-    }
-
-    for ( int i = 1; i < Pawn.MAX_PAWN; i++ ) {
-        Animo.ResetToState( _crossfade[i], 2, offset: i * i * 2023 );
     }
 }
 

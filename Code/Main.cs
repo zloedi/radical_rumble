@@ -74,6 +74,9 @@ static void QonsoleDone_kmd( string [] argv ) { Done(); }
 [Description( "Always run the local server no matter if target ip is localhost." )]
 static bool LocalServerAlwaysOn_kvar = false;
 
+[Description( "Don't run local server along this client." )]
+static bool SkipLocalServer_kvar = false;
+
 [Description( "Frame duration in milliseconds." )]
 static bool ShowFrameTime_kvar = false;
 
@@ -162,7 +165,7 @@ public static void PostStart() {
         return;
     }
 
-    if ( Cl.IsLocalGame() || LocalServerAlwaysOn_kvar ) {
+    if ( ! SkipLocalServer_kvar && ( Cl.IsLocalGame() || LocalServerAlwaysOn_kvar ) ) {
         if ( ! Sv.Init( svh: "[FFA000]Server: [-]" ) ) {
             return;
         }
@@ -195,7 +198,7 @@ public static void Tick() {
     int timeDeltaMs = ( int )timeDelta;
     _clockPrevDate = _clockDate;
 
-    if ( Cl.IsLocalGame() ) {
+    if ( ! SkipLocalServer_kvar && Cl.IsLocalGame() ) {
         Sv.RunLocalServer( timeDeltaMs );
     }
 

@@ -133,31 +133,31 @@ partial class Pawn {
     }
 
     public float Radius( int z ) {
-        return defs[def[z]].radius;
+        return GetDef( z ).radius;
     }
 
     public float Range( int z ) {
-        return defs[def[z]].range;
+        return GetDef( z ).range;
     }
 
     public int AttackTime( int z ) {
-        return defs[def[z]].attackTime;
+        return GetDef( z ).attackTime;
     }
 
     public int LoadTime( int z ) {
-        return defs[def[z]].loadTime;
+        return GetDef( z ).loadTime;
     }
 
     public int Damage( int z ) {
-        return defs[def[z]].damage;
+        return GetDef( z ).damage;
     }
 
     public int Cost( int z ) {
-        return defs[def[z]].cost;
+        return GetDef( z ).cost;
     }
 
     public int MaxHP( int z ) {
-        return defs[def[z]].maxHP;
+        return GetDef( z ).maxHP;
     }
 
     public Def GetDef( int z ) {
