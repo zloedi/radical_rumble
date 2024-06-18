@@ -30,6 +30,9 @@ static int ClPrintIncomingPackets_kvar = 0;
 [Description( "Sleep each frame in milliseconds. Really bad if you run a local server." )]
 public static int ClFrameSleep_kvar = 0;
 
+[Description( "Run a client made in unity with actual content." )]
+static bool ClRunUnityPlayer_kvar = false;
+
 static bool ShowBoardBounds_kvar = false;
 static bool ShowHelp_kvar = false;
 
@@ -401,7 +404,11 @@ static void OnServerPacket( List<byte> packet ) {
 }
 
 static void Play_tck() {
-    ClientPlayQGL.Tick();
+    if ( ClRunUnityPlayer_kvar ) {
+        ClientPlayUnity.Tick();
+    } else {
+        ClientPlayQGL.Tick();
+    }
 }
 
 static void Edit_tck() {

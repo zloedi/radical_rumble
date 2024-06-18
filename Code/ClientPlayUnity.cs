@@ -1,13 +1,10 @@
+#if UNITY_STANDALONE
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
-#if UNITY_STANDALONE
 using UnityEngine;
-#else
-using GalliumMath;
-using SDLPorts;
-#endif
 
 namespace RR {
     
@@ -264,3 +261,15 @@ static UnityEngine.Object UnityLoad( string name ) {
 
 
 } }
+
+#else
+
+public static class ClientPlayUnity {
+
+public static void Tick() {
+    Qonsole.Log( "RUNNING THE UNITY PLAYER STUB..." );
+}
+
+}
+
+#endif
