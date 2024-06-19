@@ -172,6 +172,10 @@ partial class Pawn {
         return $"{GetDef( z ).name} {z}";
     }
 
+    public bool IsRanged( int z ) {
+        return GetDef( z ).range > 0;
+    }
+
     public bool IsFlying( int z ) {
         return ( GetDef( z ).flags & PDF.Flying ) != 0;
     }
@@ -306,6 +310,8 @@ partial class Pawn {
         public List<byte> garbage = null, no_garbage = null;
         public List<byte> flying = null, no_flying = null;
         public List<byte> structures = null, no_structures = null;
+        public List<byte> ranged = null, no_ranged = null;
+        public List<byte> melee => no_ranged;
 
         public List<byte> [] enemies = new List<byte>[2];
         public List<byte> [] team = new List<byte>[2];
@@ -360,6 +366,10 @@ partial class Pawn {
 
         foreach ( int z in filter.no_garbage ) {
             filter.Assign( z, team[z] == 0, filter.enemies[1], filter.enemies[0] );
+        }
+
+        foreach ( int z in filter.no_garbage ) {
+            filter.Assign( z, IsRanged( z ), filter.ranged, filter.melee );
         }
 
         foreach ( int z in filter.no_garbage ) {
