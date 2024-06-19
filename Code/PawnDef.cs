@@ -75,7 +75,7 @@ public static Def Flyer = Register( new Def {
     maxHP = 1000,
 } );
 
-public static Def Undead = Register( new Def {
+public static Def Zombie = Register( new Def {
     attackTime = 900,
     loadTime = 400,
     damage = 40,

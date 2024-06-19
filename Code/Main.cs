@@ -90,12 +90,12 @@ public static void PreConfig() {
         bind Alpha1 ""cl_select_to_spawn Brute"" play;
         bind Alpha2 ""cl_select_to_spawn Archer"" play;
         bind Alpha3 ""cl_select_to_spawn Flyer"" play;
-        bind Alpha4 ""cl_select_to_spawn Undead"" play;
+        bind Alpha4 ""cl_select_to_spawn Zombie"" play;
 
         bind Alpha5 ""cl_forced_spawn Brute 1"" play;
         bind Alpha6 ""cl_forced_spawn Archer 1"" play;
         bind Alpha7 ""cl_forced_spawn Flyer 1"" play;
-        bind Alpha8 ""cl_forced_spawn Undead 1"" play;
+        bind Alpha8 ""cl_forced_spawn Zombie 1"" play;
 
         bind K ""cl_kill"" play;
 
