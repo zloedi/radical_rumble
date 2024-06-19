@@ -118,30 +118,17 @@ public static void Tick() {
         //Cl.Log( "atk anim speed: " + _animOneShotSpeed[z] );
     }
 
-    // === program projectile === 
+    // === program projectile and trigger 'hurt' === 
 
     foreach ( var z in _pawn.filter.no_garbage ) {
         if ( ! IsAttackTrigger( z ) ) {
             continue;
         }
 
-        GameObject prefab = _modelProjectilePrefab[_pawn.def[z]];
-
-        if ( ! prefab ) {
-            continue;
-        }
-
-        GameObject prj = GameObject.Instantiate( prefab );
-
-        Vector2 mvpos = _pawn.mvPos[z];
-        prj.transform.position = new Vector3( mvpos.x, 1, mvpos.y );
-
         int zf = _pawn.focus[z];
         int start = clock;
         int end = _pawn.atkEnd_ms[z];
-        int shoot = Mathf.Max( clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
-        Vector2 a = _pawn.mvPos[z];
-        Vector2 b = _pawn.mvPos[zf];
+        GameObject prj = null;
 
         // clock the time until impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
@@ -150,6 +137,15 @@ public static void Tick() {
                 return true;
             }
 
+            // notify the target it is hit
+            Cl.TrigRaise( zf, Trig.HurtVisuals );
+
+            // even units without shooting vfx should be able to do 'hurt'
+            if ( ! prj ) {
+                return false;
+            }
+
+            // hide the porjectile mesh, but not the trail
             //  FIXME: cache it
             Transform [] ts = prj.GetComponentsInChildren<Transform>();
             foreach ( Transform tt in ts ) {
@@ -158,10 +154,23 @@ public static void Tick() {
                 }
             }
 
-            // notify the target it is hit
-            Cl.TrigRaise( zf, Trig.HurtVisuals );
             return false;
         } );
+
+        GameObject prefab = _modelProjectilePrefab[_pawn.def[z]];
+
+        if ( ! prefab ) {
+            continue;
+        }
+
+        prj = GameObject.Instantiate( prefab );
+
+        Vector2 mvpos = _pawn.mvPos[z];
+        prj.transform.position = new Vector3( mvpos.x, 1, mvpos.y );
+
+        int shoot = Mathf.Max( clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
+        Vector2 a = _pawn.mvPos[z];
+        Vector2 b = _pawn.mvPos[zf];
 
         // the projectile one-shot
         SingleShot.Add( dt => {
@@ -225,19 +234,7 @@ public static void Tick() {
                                                                                     _crossfade[z] );
         }
 
-        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
-            _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
-        }
-
-        if ( _colEmissive[z].r > 0 ) {
-            foreach ( var m in imo.mats ) {
-                m.SetColor( "_EmissionColor", _colEmissive[z] );
-                m.EnableKeyword( "_EMISSION" );
-            }
-            _colEmissive[z].r -= 3 * clockDelta / 1000f;
-            _colEmissive[z].g -= 3 * clockDelta / 1000f;
-            _colEmissive[z].b -= 3 * clockDelta / 1000f;
-        }
+        hurt( z, imo );
     }
 
     foreach ( var z in _pawn.filter.no_structures ) {
@@ -253,6 +250,9 @@ public static void Tick() {
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
         ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, handle: ( def << 16 ) | z );
+
+        hurt( z, imo );
+
         int animSrc = _animSource[def];
         if ( animSrc == 0 ) {
             continue;
@@ -299,6 +299,22 @@ public static void Tick() {
         _velocity[z] = clockDelta > 0
                                     ? ( _pawn.mvPos[z] - prev ) / ( clockDelta / 1000f )
                                     : Vector2.zero;
+    }
+
+    void hurt( int z, ImmObject imo  ) {
+        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
+            _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
+        }
+
+        if ( _colEmissive[z].r > 0 ) {
+            foreach ( var m in imo.mats ) {
+                m.SetColor( "_EmissionColor", _colEmissive[z] );
+                m.EnableKeyword( "_EMISSION" );
+            }
+            _colEmissive[z].r -= 3 * clockDelta / 1000f;
+            _colEmissive[z].g -= 3 * clockDelta / 1000f;
+            _colEmissive[z].b -= 3 * clockDelta / 1000f;
+        }
     }
 }
 
@@ -406,7 +422,7 @@ static bool IsAttackTrigger( int z ) {
 public static class ClientPlayUnity {
 
 public static void Tick() {
-    Qonsole.Log( "RUNNING THE UNITY PLAYER STUB..." );
+    RR.Client.Log( "RUNNING THE UNITY PLAYER STUB..." );
 }
 
 }
