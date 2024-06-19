@@ -16,6 +16,8 @@ using PDF = RR.Pawn.Def.Flags;
     
 public static class ClientPlayUnity {
 
+static float TestFloat_cvar = 0;
+
 static bool _initialized;
 static GameObject _dummy;
 static GameObject _projectileFallback;
@@ -30,8 +32,6 @@ static Vector2 [] _velocity = new Vector2[Pawn.MAX_PAWN];
 static Vector2 [] _forward = new Vector2[Pawn.MAX_PAWN];
 // one shot animation currently played, as opposed to a loop
 static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
-// idles are special i.e. when in attack loop
-static byte [] _animIdle = new byte[Pawn.MAX_PAWN];
 // one shot animations scale, i.e. attacks may be shorter than the attack animations
 static float [] _animOneShotSpeed = new float[Pawn.MAX_PAWN];
 static Color [] _colEmissive = new Color[Pawn.MAX_PAWN];
@@ -66,7 +66,6 @@ public static void Tick() {
             _animOneShot[z] = 0;
             _animOneShotSpeed[z] = 1;
 
-            _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdle;
             Animo.ResetToState( _crossfade[z], _pawn.GetDef( z ).animIdle, offset: z * z * 2023 );
             Cl.Log( $"Spawned {_pawn.DN( z )}." ); 
         }
@@ -77,8 +76,6 @@ public static void Tick() {
             _pawn.mvStart_ms[z] = clock - clockDelta;
             // kinda redundant, since velocity > 0 will reset it, but do it anyway
             _animOneShot[z] = 0;
-            _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdle;
-            //Cl.Log( $"Plan move for {_pawn.DN( z )}." ); 
         }
     }
         
@@ -93,9 +90,6 @@ public static void Tick() {
         if ( _animSource[_pawn.def[z]] == 0 ) {
             continue;
         }
-
-        // loop in combat idle between attacks
-        _animIdle[z] = ( byte )_pawn.GetDef( z ).animIdleCombat;
 
         int atkDuration = _pawn.atkEnd_ms[z] - clock;
 
@@ -118,9 +112,46 @@ public static void Tick() {
         //Cl.Log( "atk anim speed: " + _animOneShotSpeed[z] );
     }
 
-    // === program projectile and trigger 'hurt' === 
+    // === program melee units 'hurt' when weapon hit lands === 
 
-    foreach ( var z in _pawn.filter.no_garbage ) {
+    foreach ( var z in _pawn.filter.melee ) {
+        if ( ! IsAttackTrigger( z ) ) {
+            continue;
+        }
+
+        int zf = _pawn.focus[z];
+        int start = clock;
+        int end = _pawn.atkEnd_ms[z];
+
+        int animSrc = _animSource[_pawn.def[z]];
+        int unscaledDuration = Animo.sourcesList[animSrc].duration[_animOneShot[z]];
+        float duration = unscaledDuration / _animOneShotSpeed[z];
+        float moment = TestFloat_cvar > 0 ? TestFloat_cvar : _pawn.GetDef( z ).momentLandHit;
+        int landHit = clock + ( int )( duration * moment );
+
+        // clock the time until impact and trigger 'hurt'
+        SingleShot.AddConditional( dt => {
+
+            // impact moment -- programmed as an animation event
+            // this doesn't match the damage moment on the server,
+            // but its simpler and good enough I guess
+            if ( landHit > ( int )Cl.clock ) {
+                return true;
+            }
+
+            // notify the target it is hit
+            Cl.TrigRaise( zf, Trig.HurtVisuals );
+
+            // TODO: handle any vfx management on impact here
+
+            return false;
+        } );
+
+    }
+
+    // === program ranged units projectile and trigger 'hurt' on impact === 
+
+    foreach ( var z in _pawn.filter.ranged ) {
         if ( ! IsAttackTrigger( z ) ) {
             continue;
         }
@@ -130,7 +161,7 @@ public static void Tick() {
         int end = _pawn.atkEnd_ms[z];
         GameObject prj = null;
 
-        // clock the time until impact and trigger 'hurt'
+        // clock the time until projectile impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
             // impact moment -- when clock passes the attack end
             if ( end > ( int )Cl.clock ) {
@@ -264,7 +295,7 @@ public static void Tick() {
         int oneShot = isMoving ? 0 : _animOneShot[z];
 
         // if not moving, the special idle could be used
-        int loop = isMoving ? _pawn.GetDef( z ).animMove : _animIdle[z];
+        int loop = isMoving ? _pawn.GetDef( z ).animMove : _pawn.GetDef( z ).animIdle;
 
         if ( oneShot != 0 ) {
             if ( Animo.UpdateState( clockDelta, animSrc, _crossfade[z], oneShot, clamp: true,
