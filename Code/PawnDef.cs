@@ -88,6 +88,10 @@ public static Def Zombie = Register( new Def {
 
     color = new Color( 0.9f, 0.9f, 0.9f ),
     maxHP = 40,
+
+    animIdle = 5,
+    animMove = 6,
+    animAttack = 7,
 } );
 
 // =============================
@@ -118,10 +122,13 @@ public class Def {
     public float radius = 0.5f;
     public Color color;
 
-    public int animIdle = 1;
-    public int animIdleCombat = 4;
-    public int animMove = 2;
+    // Animo states
+    public int animIdle = 4;
+    public int animMove = 5;
     public int animAttack = 6;
+
+    // animation event moments
+    public float momentLandHit = 0.3f;
 
     public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }
