@@ -46,8 +46,7 @@ public static void Tick() {
         _initialized = true;
     }
 
-    int clock = ( int )Cl.clock;
-    int clockDelta = ( int )Cl.clockDelta;
+    int clock = Cl.clock;
 
     _pawn.UpdateFilters();
 
@@ -73,7 +72,7 @@ public static void Tick() {
         // program new movement segment
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             _pawn.mvStart[z] = _pawn.mvPos[z];
-            _pawn.mvStart_ms[z] = clock - clockDelta;
+            _pawn.mvStart_ms[z] = clock - Cl.clockDelta;
             // kinda redundant, since velocity > 0 will reset it, but do it anyway
             _animOneShot[z] = 0;
         }
@@ -260,7 +259,7 @@ public static void Tick() {
         ImmObject imo = DrawModel( _model[def], posWorld, handle: ( def << 16 ) | z );
 
         if ( _animSource[def] > 0 ) {
-            Animo.UpdateState( clockDelta, _animSource[def], _crossfade[z], 1 );
+            Animo.UpdateState( Cl.clockDelta, _animSource[def], _crossfade[z], 1 );
             Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
                                                                                     _crossfade[z] );
         }
@@ -298,12 +297,12 @@ public static void Tick() {
         int loop = isMoving ? _pawn.GetDef( z ).animMove : _pawn.GetDef( z ).animIdle;
 
         if ( oneShot != 0 ) {
-            if ( Animo.UpdateState( clockDelta, animSrc, _crossfade[z], oneShot, clamp: true,
+            if ( Animo.UpdateState( Cl.clockDelta, animSrc, _crossfade[z], oneShot, clamp: true,
                                                 transition: 100, speed: _animOneShotSpeed[z] ) ) {
                 _animOneShot[z] = 0;
             }
         } else {
-            Animo.UpdateState( clockDelta, animSrc, _crossfade[z], loop, transition: 100 );
+            Animo.UpdateState( Cl.clockDelta, animSrc, _crossfade[z], loop, transition: 100 );
         }
 
         Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
@@ -327,8 +326,8 @@ public static void Tick() {
         // the unity clock here is used just to extrapolate (move in the same direction)
         _pawn.MvLerpClient( z, clock, Time.deltaTime );
 
-        _velocity[z] = clockDelta > 0
-                                    ? ( _pawn.mvPos[z] - prev ) / ( clockDelta / 1000f )
+        _velocity[z] = Cl.clockDelta > 0
+                                    ? ( _pawn.mvPos[z] - prev ) / ( Cl.clockDelta / 1000f )
                                     : Vector2.zero;
     }
 
@@ -342,9 +341,9 @@ public static void Tick() {
                 m.SetColor( "_EmissionColor", _colEmissive[z] );
                 m.EnableKeyword( "_EMISSION" );
             }
-            _colEmissive[z].r -= 3 * clockDelta / 1000f;
-            _colEmissive[z].g -= 3 * clockDelta / 1000f;
-            _colEmissive[z].b -= 3 * clockDelta / 1000f;
+            _colEmissive[z].r -= 3 * Cl.clockDelta / 1000f;
+            _colEmissive[z].g -= 3 * Cl.clockDelta / 1000f;
+            _colEmissive[z].b -= 3 * Cl.clockDelta / 1000f;
         }
     }
 }
@@ -388,6 +387,16 @@ static void Initialize() {
         if ( go ) {
             _model[i] = go;
             _animSource[i] = Animo.RegisterAnimationSource( go );
+            if ( _animSource[i] > 0 ) {
+                foreach ( var kv in Pawn.defs[i].anims ) {
+                    int max = Animo.sourcesList[_animSource[i]].state.Count;
+                    if ( kv.Value < 0 || kv.Value >= max ) {
+                        Cl.Error( $"anim{kv.Key} has invalid Animo state: {kv.Value}, max: {max - 1}" );
+                        _animSource[i] = 0;
+                        break;
+                    }
+                }
+            }
         } else {
             _model[i] = _dummy;
         }

@@ -123,9 +123,11 @@ public class Def {
     public Color color;
 
     // Animo states
+    // anim names starting with 'anim' and are of type 'int' (to fill the dict with reflection)
     public int animIdle = 4;
     public int animMove = 5;
     public int animAttack = 6;
+    public Dictionary<string,int> anims = new Dictionary<string,int>();
 
     // animation event moments
     public float momentLandHit = 0.3f;
@@ -135,13 +137,20 @@ public class Def {
 
 public static List<Def> defs;
 
-void FillDefNames() {
+void FillDefReflection() {
     FieldInfo [] fields = typeof( Pawn ).GetFields();
     foreach ( FieldInfo fi in fields ) {
         if ( fi.FieldType == typeof( Def ) ) {
             var def = fi.GetValue( null ) as Def;
             def.name = fi.Name;
             def.symbol = def.symbol == ' ' ? def.name[0] : def.symbol;
+
+            FieldInfo [] ffields = typeof( Def ).GetFields();
+            foreach ( FieldInfo ffi in ffields ) {
+                if ( ffi.FieldType == typeof( int ) && ffi.Name.StartsWith( "anim" ) ) {
+                    def.anims[ffi.Name.Substring( 4 )] = ( int )ffi.GetValue( def );
+                }
+            }
         }
     }
 }

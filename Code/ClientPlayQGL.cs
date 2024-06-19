@@ -37,8 +37,7 @@ public static void Tick() {
     int myTeam = 0;
     bool needPlayers = ! ClSkipWaitForPlayers_kvar && game.player.AnyTeamNeedsPlayers();
 
-    int clock = ( int )Cl.clock;
-    int clockDelta = ( int )Cl.clockDelta;
+    int clock = Cl.clock;
 
     if ( player.IsPlayer( Cl.zport ) ) {
         Cl.TickKeybinds( "play" );
@@ -108,7 +107,7 @@ public static void Tick() {
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             // new movement segment arrives, plan movement on the client
             pawn.mvStart[z] = pawn.mvPos[z];
-            pawn.mvStart_ms[z] = clock - clockDelta;
+            pawn.mvStart_ms[z] = clock - Cl.clockDelta;
             //Cl.Log( $"Plan move for {pawn.DN( z )}." ); 
         }
     }

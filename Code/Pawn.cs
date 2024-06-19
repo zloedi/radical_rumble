@@ -80,7 +80,7 @@ partial class Pawn {
 
     public Pawn() {
         ArrayUtil.CreateAll( this, MAX_PAWN, out _allRows );
-        FillDefNames();
+        FillDefReflection();
     }
 
     public void Reset() {

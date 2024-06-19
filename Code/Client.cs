@@ -53,8 +53,8 @@ public static bool mouse1Held;
 public static bool mouse1Up;
 public static bool mouse1Down;
 
-public static double clock, clockPrev, clockDeltaDbl;
-public static int clockDelta;
+public static double clockDbl, clockPrevDbl, clockDeltaDbl;
+public static int clock, clockDelta;
 
 // last received clock in Clk_kmd
 public static int serverClock;
@@ -149,10 +149,11 @@ public static void Tick( double timeDeltaDbl ) {
         System.Threading.Thread.Sleep( Mathf.Min( 33, ClFrameSleep_kvar ) );
     }
 
-    clockDeltaDbl = clock - clockPrev;
-    clockPrev = clock;
-    clock += timeDeltaDbl;
+    clockDeltaDbl = clockDbl - clockPrevDbl;
+    clockPrevDbl = clockDbl;
+    clockDbl += timeDeltaDbl;
 
+    clock = ( int )clockDbl;
     clockDelta = ( int )clockDeltaDbl;
 
     WrapBox.DisableCanvasScale( fixedScale: Draw.pixelSize );
@@ -383,7 +384,7 @@ static void OnServerPacket( List<byte> packet ) {
     }
 
     // apply server game state on the client
-    game.UndeltaState( argv, ( int )clock, out bool updateBoard, pawnTrig: _trigger );
+    game.UndeltaState( argv, clock, out bool updateBoard, pawnTrig: _trigger );
 
     if ( ClPrintIncomingPackets_kvar > 1 ) {
         Log( $"incoming packet: '{packetStr}'" );
@@ -427,7 +428,7 @@ static void Clk_kmd( string [] argv ) {
         return;
     }
 
-    int clClk = ( int )clock;
+    int clClk = clock;
     int.TryParse( argv[1], out serverClock );
     int delta = serverClock - clClk;
 
@@ -448,14 +449,14 @@ static void Clk_kmd( string [] argv ) {
     if ( delta > 0 ) {
         if ( delta > pathologic ) {
             // the server clock is too far ahead, snap client to this time
-            clockPrev = clock = serverClock;
+            clockPrevDbl = clockDbl = serverClock;
         } else {
             // this will increase the delta next tick
-            clock = serverClock;
+            clockDbl = serverClock;
         }
     } else if ( delta < -pathologic ) {
         // the server clock is too far behind, snap client to this time
-        clockPrev = clock = serverClock;
+        clockPrevDbl = clockDbl = serverClock;
     }
 }
 
