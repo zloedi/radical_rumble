@@ -46,8 +46,6 @@ public static void Tick() {
         _initialized = true;
     }
 
-    int clock = Cl.clock;
-
     _pawn.UpdateFilters();
 
     foreach ( var z in _pawn.filter.no_garbage ) {
@@ -55,7 +53,7 @@ public static void Tick() {
         // newly spawned
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
-            _pawn.mvStart_ms[z] = clock;
+            _pawn.mvStart_ms[z] = Cl.clock;
 
             // lookat the the first enemy 
             var enemies = _pawn.filter.enemies[_pawn.team[z]];
@@ -72,7 +70,7 @@ public static void Tick() {
         // program new movement segment
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             _pawn.mvStart[z] = _pawn.mvPos[z];
-            _pawn.mvStart_ms[z] = clock - Cl.clockDelta;
+            _pawn.mvStart_ms[z] = Cl.clock - Cl.clockDelta;
             // kinda redundant, since velocity > 0 will reset it, but do it anyway
             _animOneShot[z] = 0;
         }
@@ -90,7 +88,7 @@ public static void Tick() {
             continue;
         }
 
-        int atkDuration = _pawn.atkEnd_ms[z] - clock;
+        int atkDuration = _pawn.atkEnd_ms[z] - Cl.clock;
 
         int animSrc = _animSource[_pawn.def[z]];
         int oneShot = _pawn.GetDef( z ).animAttack;
@@ -119,14 +117,14 @@ public static void Tick() {
         }
 
         int zf = _pawn.focus[z];
-        int start = clock;
+        int start = Cl.clock;
         int end = _pawn.atkEnd_ms[z];
 
         int animSrc = _animSource[_pawn.def[z]];
         int unscaledDuration = Animo.sourcesList[animSrc].duration[_animOneShot[z]];
         float duration = unscaledDuration / _animOneShotSpeed[z];
         float moment = TestFloat_cvar > 0 ? TestFloat_cvar : _pawn.GetDef( z ).momentLandHit;
-        int landHit = clock + ( int )( duration * moment );
+        int landHit = Cl.clock + ( int )( duration * moment );
 
         // clock the time until impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
@@ -156,7 +154,7 @@ public static void Tick() {
         }
 
         int zf = _pawn.focus[z];
-        int start = clock;
+        int start = Cl.clock;
         int end = _pawn.atkEnd_ms[z];
         GameObject prj = null;
 
@@ -198,7 +196,7 @@ public static void Tick() {
         Vector2 mvpos = _pawn.mvPos[z];
         prj.transform.position = new Vector3( mvpos.x, 1, mvpos.y );
 
-        int shoot = Mathf.Max( clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
+        int shoot = Mathf.Max( Cl.clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
         Vector2 a = _pawn.mvPos[z];
         Vector2 b = _pawn.mvPos[zf];
 
@@ -239,7 +237,7 @@ public static void Tick() {
 
     foreach ( var z in _pawn.filter.structures ) {
         _pawn.mvPos[z] = _pawn.mvEnd[z];
-        _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = clock;
+        _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
     }
 
     // FIXME: movers have 'patrol' point (was 'focus' in gym)
@@ -317,14 +315,14 @@ public static void Tick() {
         // FIXME: remove if the pawn state is sent over the network
         if ( _pawn.mvEnd_ms[z] <= Cl.serverClock && _pawn.mvStart_ms[z] != _pawn.mvEnd_ms[z] ) {
             // FIXME: should lerp to actual end pos if offshoot
-            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = clock;
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
             return;
         }
 
         var prev = _pawn.mvPos[z];
 
         // the unity clock here is used just to extrapolate (move in the same direction)
-        _pawn.MvLerpClient( z, clock, Time.deltaTime );
+        _pawn.MvLerpClient( z, Cl.clock, Time.deltaTime );
 
         _velocity[z] = Cl.clockDelta > 0
                                     ? ( _pawn.mvPos[z] - prev ) / ( Cl.clockDelta / 1000f )
