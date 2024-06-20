@@ -33,6 +33,7 @@ static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
 // one shot animations scale, i.e. attacks may be shorter than the attack animations
 static float [] _animOneShotSpeed = new float[Pawn.MAX_PAWN];
 static Color [] _colEmissive = new Color[Pawn.MAX_PAWN];
+static Transform [] _muzzle = new Transform[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -49,7 +50,7 @@ public static void Tick() {
     foreach ( var z in _pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
-            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z];
 
             _animOneShot[z] = 0;
             _animOneShotSpeed[z] = 1;
@@ -202,18 +203,27 @@ public static void Tick() {
             prefab = _projectileFallback;
             if ( ! prefab ) {
                 Cl.Error( "No projectile prefab." );
+                continue;
             }
-            continue;
         }
 
         prj = GameObject.Instantiate( prefab );
 
-        Vector2 mvpos = _pawn.mvPos[z];
-        prj.transform.position = new Vector3( mvpos.x, 1, mvpos.y );
+        Vector3 getA() {
+            return _muzzle[z] ? _muzzle[z].position
+                                : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
+        }
+
+        Vector3 getB() {
+            return new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
+        }
+
+        prj.transform.position = getA();
 
         int shoot = Mathf.Max( Cl.clock, end - ( _pawn.AttackTime( z ) - _pawn.LoadTime( z ) ) );
-        Vector2 a = _pawn.mvPos[z];
-        Vector2 b = _pawn.mvPos[zf];
+
+        Vector3 a = getA();
+        Vector3 b = getB();
 
         // the projectile one-shot
         SingleShot.Add( dt => {
@@ -221,29 +231,24 @@ public static void Tick() {
 
             if ( shoot > clk ) {
                 // not time to shoot yet
+                if ( ! _pawn.IsGarbage( z ) ) {
+                    a = getA();
+                }
                 return;
             }
 
             prj.SetActive( true );
 
-            if ( ! _pawn.IsGarbage( z ) ) {
-                a = _pawn.mvPos[z];
-            }
-
             if ( ! _pawn.IsGarbage( zf ) ) {
-                b = _pawn.mvPos[zf];
+                b = getB();
             }
 
             float t = ( clk - shoot ) / ( float )( end - shoot );
 
-            Vector2 c = Vector2.Lerp( a, b, t );
+            Vector3 c = Vector3.Lerp( a, b, t );
 
-            Vector3 ag = new Vector3( a.x, 1, a.y );
-            Vector3 bg = new Vector3( b.x, 1, b.y );
-            Vector3 cg = new Vector3( c.x, 1, c.y );
-
-            prj.transform.position = cg;
-            prj.transform.forward = ( bg - ag ).normalized;
+            prj.transform.position = c;
+            prj.transform.forward = ( b - a ).normalized;
         },
         done: () => {
             GameObject.Destroy( prj );
@@ -269,25 +274,23 @@ public static void Tick() {
         Vector2 posGame = _pawn.mvPos[z];
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
 
-        string [] lookupRotor = { "vfx_attack_rotor" };
-
+        string [] lookup = { "vfx_muzzle", "vfx_attack_rotor" };
         int def = _pawn.def[z];
-
-        ImmObject imo = DrawModel( _model[def], posWorld, lookup: lookupRotor,
-                                                                        handle: ( def << 16 ) | z );
-
-        int zf = _pawn.focus[z];
-        foreach ( List<Transform> tl in imo.refChildren ) {
-            foreach ( Transform t in tl ) {
+        ImmObject imo = DrawModel( _model[def], posWorld, lookup: lookup,
+                                                                    handle: ( def << 16 ) | z );
+        _muzzle[z] = imo.GetRef( 0, 0 );
+        if ( imo.GetRefs( 1, out List<Transform> rotors ) ) {
+            int zf = _pawn.focus[z];
+            foreach ( var rotor in rotors ) {
                 if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
-                    t.forward = new Vector3( _forward[z].x, 0, _forward[z].y ).normalized;
+                    rotor.forward = new Vector3( _forward[z].x, 0, _forward[z].y ).normalized;
                 } else if ( zf > 0 ) {
-                    Vector2 posGameRotor = new Vector2( t.position.x, t.position.z );
-                    Vector2 fwdOld = new Vector2( t.forward.x, t.forward.z );
+                    Vector2 posGameRotor = new Vector2( rotor.position.x, rotor.position.z );
+                    Vector2 fwdOld = new Vector2( rotor.forward.x, rotor.forward.z );
                     Vector2 fwdGameRotor = _pawn.mvPos[zf] - posGameRotor;
                     fwdGameRotor = fwdGameRotor.normalized * 7.5f * Cl.clockDeltaSec + fwdOld;
                     fwdGameRotor = fwdGameRotor.normalized;
-                    t.forward = new Vector3( fwdGameRotor.x, 0, fwdGameRotor.y );
+                    rotor.forward = new Vector3( fwdGameRotor.x, 0, fwdGameRotor.y );
                 }
             }
         }
@@ -313,7 +316,10 @@ public static void Tick() {
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
-        ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, handle: ( def << 16 ) | z );
+        string [] lookup = { "vfx_muzzle" };
+        ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, lookup: lookup,
+                                                                        handle: ( def << 16 ) | z );
+        _muzzle[z] = imo.GetRef( 0, 0 );
 
         updateEmissive( z, imo );
 
@@ -375,17 +381,6 @@ public static void Tick() {
             _colEmissive[z].g -= 3 * Cl.clockDeltaSec;
             _colEmissive[z].b -= 3 * Cl.clockDeltaSec;
         }
-    }
-}
-
-static void StressTest() {
-    Pawn.FindDefIdxByName( "Archer", out int def );
-    for ( int i = 0; i < Pawn.MAX_PAWN; i++ ) {
-        int x = i % 16;
-        int y = i / 16;
-        ImmObject imo = DrawModel( _model[def], new Vector3( x * 1.5f, 0, y * 1.5f ), handle: i );
-        Animo.UpdateState( Cl.clockDelta, _animSource[def], _crossfade[i], 2 );
-        Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(), _crossfade[i] );
     }
 }
 

@@ -58,7 +58,7 @@ public static Def Archer = Register( new Def {
 
     color = Color.red,
     maxHP = 120,
-    radius = 0.32f,
+    radius = 0.35f,
     symbol = 'a',
 } );
 
