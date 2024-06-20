@@ -53,8 +53,12 @@ public static bool mouse1Held;
 public static bool mouse1Up;
 public static bool mouse1Down;
 
+// millisecond clocks
 public static double clockDbl, clockPrevDbl, clockDeltaDbl;
 public static int clock, clockDelta;
+
+// second clocks
+public static float clockSec, clockDeltaSec;
 
 // last received clock in Clk_kmd
 public static int serverClock;
@@ -155,6 +159,9 @@ public static void Tick( double timeDeltaDbl ) {
 
     clock = ( int )clockDbl;
     clockDelta = ( int )clockDeltaDbl;
+
+    clockSec = ( float )( clockDbl / 1000d );
+    clockDeltaSec = ( float )( timeDeltaDbl / 1000d );
 
     WrapBox.DisableCanvasScale( fixedScale: Draw.pixelSize );
 
