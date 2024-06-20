@@ -28,7 +28,6 @@ static GameObject [] _modelProjectilePrefab = new GameObject[Pawn.defs.Count];
 static Transform [] _modelMuzzle = new Transform[Pawn.defs.Count];
 
 static Animo.Crossfade [] _crossfade = new Animo.Crossfade[Pawn.MAX_PAWN];
-static Vector2 [] _velocity = new Vector2[Pawn.MAX_PAWN];
 static Vector2 [] _forward = new Vector2[Pawn.MAX_PAWN];
 // one shot animation currently played, as opposed to a loop
 static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
@@ -53,7 +52,7 @@ public static void Tick() {
         // newly spawned
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
-            _pawn.mvStart_ms[z] = Cl.clock;
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
 
             // lookat the the first enemy 
             var enemies = _pawn.filter.enemies[_pawn.team[z]];
@@ -237,7 +236,7 @@ public static void Tick() {
 
     foreach ( var z in _pawn.filter.structures ) {
         _pawn.mvPos[z] = _pawn.mvEnd[z];
-        _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
+        _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z];
     }
 
     // FIXME: movers have 'patrol' point (was 'focus' in gym)
@@ -272,7 +271,7 @@ public static void Tick() {
         Vector2 fwdGame = _pawn.mvStart_ms[z] == _pawn.mvEnd_ms[z]
                             ? _pawn.mvPos[zf] - posGame
                             : toEnd;
-        fwdGame = ( fwdGame.normalized + _forward[z] * 20 ).normalized;
+        fwdGame = ( fwdGame.normalized * 7.5f * Cl.clockDeltaSec + _forward[z] ).normalized;
         _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
@@ -286,7 +285,7 @@ public static void Tick() {
             continue;
         }
 
-        bool isMoving = _velocity[z].sqrMagnitude > 0.01f;
+        bool isMoving = _pawn.IsMovingOnClient( z );
 
         // interrupt any single-shot animations if moving; start looping movement
         int oneShot = isMoving ? 0 : _animOneShot[z];
@@ -323,10 +322,6 @@ public static void Tick() {
 
         // the unity clock here is used just to extrapolate (move in the same direction)
         _pawn.MvLerpClient( z, Cl.clock, Time.deltaTime );
-
-        _velocity[z] = Cl.clockDelta > 0
-                                    ? ( _pawn.mvPos[z] - prev ) / ( Cl.clockDelta / 1000f )
-                                    : Vector2.zero;
     }
 
     void hurt( int z, ImmObject imo  ) {

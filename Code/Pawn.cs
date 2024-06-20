@@ -172,6 +172,10 @@ partial class Pawn {
         return $"{GetDef( z ).name} {z}";
     }
 
+    public bool IsMovingOnClient( int z ) {
+        return mvStart_ms[z] != mvEnd_ms[z];
+    }
+
     public bool IsRanged( int z ) {
         return GetDef( z ).range > 0;
     }
