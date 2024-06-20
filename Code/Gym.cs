@@ -1077,8 +1077,12 @@ public static int TickServer() {
 
     foreach ( var pr in avdPairEnemy ) {
         // FIXME: static float SvAggroRange_kvar = 6;
-        if ( pr.sqDist > 6 * 6 ) {
-            // too far to switch chase
+        bool canAggroA = ! IsAttacking( pr.a )
+                            && ( svPawn.IsStructure( pr.a ) || pr.sqDist < 6 * 6 );
+        bool canAggroB = ! IsAttacking( pr.b )
+                            && ( svPawn.IsStructure( pr.b ) || pr.sqDist < 6 * 6 );
+
+        if ( ! canAggroA && ! canAggroB ) {
             continue;
         }
 
@@ -1091,12 +1095,12 @@ public static int TickServer() {
 
         int score = ( 2 << 16 ) | ( int )( pr.sqDist * 100 );
 
-        if ( ! IsAttacking( pr.a ) && avdChaseMin[pr.a] > score ) {
+        if ( canAggroA && avdChaseMin[pr.a] > score ) {
             avdChase[pr.a] = pr.b;
             avdChaseMin[pr.a] = score;
         }
 
-        if ( ! IsAttacking( pr.b ) && avdChaseMin[pr.b] > score ) {
+        if ( canAggroB && avdChaseMin[pr.b] > score ) {
             avdChase[pr.b] = pr.a;
             avdChaseMin[pr.b] = score;
         }
@@ -1191,6 +1195,7 @@ public static int TickServer() {
         int zDfn = avdChase[z];
         float dsq = svPawn.SqDist( zAtk, zDfn );
         float dneed = svPawn.DistanceForAttack( zAtk, zDfn );
+
         if ( dsq <= dneed * dneed ) {
             // stop
             svPawn.MvInterruptSoft( zAtk, ZServer.clock );
@@ -1217,6 +1222,7 @@ public static int TickServer() {
         int b = avdChase[z];
         float dsq = svPawn.SqDist( a, b );
         float dneed = svPawn.DistanceForAttack( a, b );
+
         if ( dsq > dneed * dneed ) {
             StopAttack( z );
             continue;

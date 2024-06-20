@@ -100,10 +100,12 @@ public static void Tick() {
     foreach ( var z in pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             pawn.mvPos[z] = pawn.mvEnd[z];
-            pawn.mvStart_ms[z] = clock;
+            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z];
             Cl.Log( $"Spawned {pawn.DN( z )}." ); 
         }
+    }
 
+    foreach ( var z in pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             // new movement segment arrives, plan movement on the client
             pawn.mvStart[z] = pawn.mvPos[z];
