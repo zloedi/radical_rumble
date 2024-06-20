@@ -1332,7 +1332,7 @@ static void AvdFilter() {
     foreach ( var z in svPawn.filter.garbage ) {
         avdW[z] = 0; 
         avdFocus[z] = Vector2.zero; 
-        avdChase[z] = 0; 
+        svPawn.focus[z] = avdChase[z] = 0; 
         avdChaseMin[z] = 0; 
         avdFeeler[z] = Vector2.zero; 
     }
@@ -1340,7 +1340,7 @@ static void AvdFilter() {
     // FIXME: move to kill-pawn routine if any
     foreach ( var z in svPawn.filter.no_garbage ) {
         if ( svPawn.IsDead( avdChase[z] ) || svPawn.IsGarbage( avdChase[z] ) )  {
-            avdChase[z] = 0;
+            svPawn.focus[z] = avdChase[z] = 0;
             avdChaseMin[z] = 0; 
             svPawn.MvInterruptSoft( z, ZServer.clock );
             avdFocus[z] = svPawn.mvPos[z];

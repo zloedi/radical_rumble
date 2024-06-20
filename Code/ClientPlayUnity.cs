@@ -25,7 +25,6 @@ static GameObject _projectileFallback;
 static int [] _animSource = new int[Pawn.defs.Count];
 static GameObject [] _model = new GameObject[Pawn.defs.Count];
 static GameObject [] _modelProjectilePrefab = new GameObject[Pawn.defs.Count];
-static Transform [] _modelMuzzle = new Transform[Pawn.defs.Count];
 
 static Animo.Crossfade [] _crossfade = new Animo.Crossfade[Pawn.MAX_PAWN];
 static Vector2 [] _forward = new Vector2[Pawn.MAX_PAWN];
@@ -62,8 +61,10 @@ public static void Tick() {
             _animOneShot[z] = 0;
             _animOneShotSpeed[z] = 1;
 
+            _colEmissive[z] = Color.black;
+
             Animo.ResetToState( _crossfade[z], _pawn.GetDef( z ).animIdle, offset: z * z * 2023 );
-            Cl.Log( $"Spawned {_pawn.DN( z )}." ); 
+            Cl.Log( $"Created {_pawn.DN( z )}." ); 
         }
 
         // program new movement segment
@@ -250,18 +251,37 @@ public static void Tick() {
     }
 
     foreach ( var z in _pawn.filter.structures ) {
-        int def = _pawn.def[z];
         Vector2 posGame = _pawn.mvPos[z];
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
-        ImmObject imo = DrawModel( _model[def], posWorld, handle: ( def << 16 ) | z );
+
+        string [] lookupRotor = { "vfx_attack_rotor" };
+
+        int def = _pawn.def[z];
+
+        ImmObject imo = DrawModel( _model[def], posWorld, lookup: lookupRotor,
+                                                                        handle: ( def << 16 ) | z );
+
+        int zf = _pawn.focus[z];
+        if ( zf != 0 ) {
+            foreach ( List<Transform> tl in imo.refChildren ) {
+                foreach ( Transform t in tl ) {
+                    Vector2 posGameRotor = new Vector2( t.position.x, t.position.z );
+                    Vector2 fwdOld = new Vector2( t.forward.x, t.forward.z );
+                    Vector2 fwdGameRotor = _pawn.mvPos[zf] - posGameRotor;
+                    fwdGameRotor = fwdGameRotor.normalized * 7.5f * Cl.clockDeltaSec + fwdOld;
+                    fwdGameRotor = fwdGameRotor.normalized;
+                    t.forward = new Vector3( fwdGameRotor.x, 0, fwdGameRotor.y );
+                }
+            }
+        }
+
+        updateEmissive( z, imo );
 
         if ( _animSource[def] > 0 ) {
             Animo.UpdateState( Cl.clockDelta, _animSource[def], _crossfade[z], 1 );
             Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
                                                                                     _crossfade[z] );
         }
-
-        hurt( z, imo );
     }
 
     foreach ( var z in _pawn.filter.no_structures ) {
@@ -271,14 +291,14 @@ public static void Tick() {
         Vector2 fwdGame = _pawn.mvStart_ms[z] == _pawn.mvEnd_ms[z]
                             ? _pawn.mvPos[zf] - posGame
                             : toEnd;
-        fwdGame = ( fwdGame.normalized * 7.5f * Cl.clockDeltaSec + _forward[z] ).normalized;
+        fwdGame = ( fwdGame.normalized * 10 * Cl.clockDeltaSec + _forward[z] ).normalized;
         _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
         ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, handle: ( def << 16 ) | z );
 
-        hurt( z, imo );
+        updateEmissive( z, imo );
 
         int animSrc = _animSource[def];
         if ( animSrc == 0 ) {
@@ -324,19 +344,19 @@ public static void Tick() {
         _pawn.MvLerpClient( z, Cl.clock, Time.deltaTime );
     }
 
-    void hurt( int z, ImmObject imo  ) {
+    void updateEmissive( int z, ImmObject imo  ) {
         if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
             _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
         }
 
-        if ( _colEmissive[z].r > 0 ) {
+        if ( Cl.TrigIsOn( z, Trig.Spawn ) || _colEmissive[z].r > 0 ) {
             foreach ( var m in imo.mats ) {
                 m.SetColor( "_EmissionColor", _colEmissive[z] );
                 m.EnableKeyword( "_EMISSION" );
             }
-            _colEmissive[z].r -= 3 * Cl.clockDelta / 1000f;
-            _colEmissive[z].g -= 3 * Cl.clockDelta / 1000f;
-            _colEmissive[z].b -= 3 * Cl.clockDelta / 1000f;
+            _colEmissive[z].r -= 3 * Cl.clockDeltaSec;
+            _colEmissive[z].g -= 3 * Cl.clockDeltaSec;
+            _colEmissive[z].b -= 3 * Cl.clockDeltaSec;
         }
     }
 }
@@ -353,8 +373,9 @@ static void StressTest() {
 }
 
 static ImmObject DrawModel( GameObject model, Vector3 pos, Vector3? forward = null,
-                                                                float scale = -1, int handle = 0 ) {
-    ImmObject imo = IMMGO.RegisterPrefab( model, garbageMaterials: true, handle: handle );
+                                    float scale = -1, string [] lookup = null, int handle = 0 ) {
+    ImmObject imo = IMMGO.RegisterPrefab( model, garbageMaterials: true, lookupChildren: lookup,
+                                                                                handle: handle );
     imo.go.transform.position = pos;
     if ( forward != null && forward.Value.sqrMagnitude > 0.0001f ) {
         imo.go.transform.forward = forward.Value.normalized;
@@ -403,12 +424,6 @@ static void Initialize() {
             if ( nm.Contains( "vfx_projectile" ) ) {
                 _modelProjectilePrefab[i] = t.gameObject;
                 _modelProjectilePrefab[i].SetActive( false );
-                break;
-            }
-            
-            if ( nm.Contains( "vfx_muzzle" ) ) {
-                _modelMuzzle[i] = t;
-                break;
             }
         }
     }
