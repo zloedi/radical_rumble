@@ -47,16 +47,9 @@ public static void Tick() {
     _pawn.UpdateFilters();
 
     foreach ( var z in _pawn.filter.no_garbage ) {
-
-        // newly spawned
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
             _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
-
-            // lookat the the first enemy 
-            var enemies = _pawn.filter.enemies[_pawn.team[z]];
-            Vector2 lookat = enemies.Count > 0 ? _pawn.mvPos[enemies[0]] : Vector2.zero;
-            _forward[z] = lookat - _pawn.mvPos[z];
 
             _animOneShot[z] = 0;
             _animOneShotSpeed[z] = 1;
@@ -64,9 +57,27 @@ public static void Tick() {
             _colEmissive[z] = Color.black;
 
             Animo.ResetToState( _crossfade[z], _pawn.GetDef( z ).animIdle, offset: z * z * 2023 );
-            Cl.Log( $"Created {_pawn.DN( z )}." ); 
+            Cl.Log( $"Created {_pawn.DN( z )}" ); 
         }
+    }
 
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        // fix the lookat in another pass
+        if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
+            // lookat the the first enemy 
+            var enemies = _pawn.filter.enemies[_pawn.team[z]];
+            Vector2 lookat = enemies.Count > 0 ? _pawn.mvPos[enemies[0]] : Vector2.zero;
+            foreach ( var ze in enemies ) {
+                if ( _pawn.IsWinObjective( ze ) ) {
+                    lookat = _pawn.mvPos[ze];
+                    break;
+                }
+            }
+            _forward[z] = lookat - _pawn.mvPos[z];
+        }
+    }
+
+    foreach ( var z in _pawn.filter.no_garbage ) {
         // program new movement segment
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             _pawn.mvStart[z] = _pawn.mvPos[z];
@@ -188,6 +199,10 @@ public static void Tick() {
         GameObject prefab = _modelProjectilePrefab[_pawn.def[z]];
 
         if ( ! prefab ) {
+            prefab = _projectileFallback;
+            if ( ! prefab ) {
+                Cl.Error( "No projectile prefab." );
+            }
             continue;
         }
 
@@ -262,9 +277,11 @@ public static void Tick() {
                                                                         handle: ( def << 16 ) | z );
 
         int zf = _pawn.focus[z];
-        if ( zf != 0 ) {
-            foreach ( List<Transform> tl in imo.refChildren ) {
-                foreach ( Transform t in tl ) {
+        foreach ( List<Transform> tl in imo.refChildren ) {
+            foreach ( Transform t in tl ) {
+                if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
+                    t.forward = new Vector3( _forward[z].x, 0, _forward[z].y ).normalized;
+                } else if ( zf > 0 ) {
                     Vector2 posGameRotor = new Vector2( t.position.x, t.position.z );
                     Vector2 fwdOld = new Vector2( t.forward.x, t.forward.z );
                     Vector2 fwdGameRotor = _pawn.mvPos[zf] - posGameRotor;
@@ -291,7 +308,7 @@ public static void Tick() {
         Vector2 fwdGame = _pawn.mvStart_ms[z] == _pawn.mvEnd_ms[z]
                             ? _pawn.mvPos[zf] - posGame
                             : toEnd;
-        fwdGame = ( fwdGame.normalized * 10 * Cl.clockDeltaSec + _forward[z] ).normalized;
+        fwdGame = ( fwdGame.normalized * 4 * Cl.clockDeltaSec + _forward[z] ).normalized;
         _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
