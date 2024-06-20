@@ -93,6 +93,11 @@
 * IMMGO
 
 * Programming animations vs using the Animation Controller
+    Custom clock to sample.
+    Crossfade to any state at any time with custom transition times.
+    Code as autority.
+
+    Get away from Unity.
     Trigger on events, interrupt loops, start looping, control on transitions.
     Control on animation speeds (attack loop may be shorter than anim...)
     Changing the attack duration on the server properly translates on the client,
