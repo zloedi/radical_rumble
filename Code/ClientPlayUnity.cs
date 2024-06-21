@@ -33,7 +33,12 @@ static byte [] _animOneShot = new byte[Pawn.MAX_PAWN];
 // one shot animations scale, i.e. attacks may be shorter than the attack animations
 static float [] _animOneShotSpeed = new float[Pawn.MAX_PAWN];
 static Color [] _colEmissive = new Color[Pawn.MAX_PAWN];
+
 static Transform [] _muzzle = new Transform[Pawn.MAX_PAWN];
+static Transform [] _bullseye = new Transform[Pawn.MAX_PAWN];
+static Transform [] _emitterAttack = new Transform[Pawn.MAX_PAWN];
+static float [] _emitterAttackDuration = new float[Pawn.MAX_PAWN];
+static float [] _emitterAttackDelay = new float[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -54,8 +59,6 @@ public static void Tick() {
 
             _animOneShot[z] = 0;
             _animOneShotSpeed[z] = 1;
-
-            _colEmissive[z] = Color.black;
 
             Animo.ResetToState( _crossfade[z], _pawn.GetDef( z ).animIdle, offset: z * z * 2023 );
             Cl.Log( $"Created {_pawn.DN( z )}" ); 
@@ -173,7 +176,8 @@ public static void Tick() {
             continue;
         }
 
-        int zf = _pawn.focus[z];
+        int zOriginalFocus = _pawn.focus[z];
+
         int start = Cl.clock;
         int end = _pawn.atkEnd_ms[z];
         GameObject prj = null;
@@ -185,8 +189,10 @@ public static void Tick() {
                 return true;
             }
 
-            // notify the target it is hit
-            Cl.TrigRaise( zf, Trig.HurtVisuals );
+            if ( ! _pawn.IsGarbage( _pawn.focus[z] ) && _pawn.focus[z] == zOriginalFocus  ) {
+                // no longer targeting same pawn, won't 'hurt' it
+                Cl.TrigRaise( _pawn.focus[z], Trig.HurtVisuals );
+            }
 
             // even units without shooting vfx should be able to do 'hurt'
             if ( ! prj ) {
@@ -223,7 +229,9 @@ public static void Tick() {
         }
 
         Vector3 getB() {
-            return new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
+            int zf = _pawn.focus[z];
+            return _bullseye[zf] ? _bullseye[zf].position
+                                : new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
         }
 
         prj.transform.position = getA();
@@ -247,7 +255,8 @@ public static void Tick() {
 
             prj.SetActive( true );
 
-            if ( ! _pawn.IsGarbage( zf ) ) {
+            // stop tracking the bullseye point if target has changed
+            if ( ! _pawn.IsGarbage( _pawn.focus[z] ) && _pawn.focus[z] == zOriginalFocus  ) {
                 b = getB();
             }
 
@@ -261,6 +270,33 @@ public static void Tick() {
         done: () => {
             GameObject.Destroy( prj );
         }, duration: 5 );
+    }
+
+    // === some particle emitters are triggered on attack ===
+
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        if ( ! IsValidAttackTrigger( z ) ) {
+            continue;
+        }
+
+        ParticleSystem ps = _emitterAttack[z]?.GetComponent<ParticleSystem>();
+        if ( ! ps ) {
+            continue;
+        }
+
+        _emitterAttackDuration[z] = _emitterAttackDuration[z] != 0
+                                                                ? _emitterAttackDuration[z]
+                                                                : ps.main.duration;
+        _emitterAttackDelay[z] = _emitterAttackDelay[z] != 0
+                                                        ? _emitterAttackDelay[z]
+                                                        : ps.main.startDelay.Evaluate( 0 );
+
+        // need to stop to set durations (unity fu)
+        ps.Stop( withChildren: false, ParticleSystemStopBehavior.StopEmittingAndClear );
+        var main = ps.main;
+        main.duration = _emitterAttackDuration[z] / _animOneShotSpeed[z];
+        main.startDelay = _emitterAttackDelay[z] / _animOneShotSpeed[z];
+        ps.Play();
     }
 
     foreach ( var z in _pawn.filter.structures ) {
@@ -289,12 +325,15 @@ public static void Tick() {
         Vector2 posGame = _pawn.mvPos[z];
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
 
-        string [] lookup = { "vfx_muzzle", "vfx_attack_rotor" };
+        string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack",
+                                                                            "vfx_attack_rotor" };
         int def = _pawn.def[z];
         ImmObject imo = DrawModel( _model[def], posWorld, lookup: lookup,
                                                                     handle: ( def << 16 ) | z );
         _muzzle[z] = imo.GetRef( 0, 0 );
-        if ( imo.GetRefs( 1, out List<Transform> rotors ) ) {
+        _bullseye[z] = imo.GetRef( 1, 0 );
+        _emitterAttack[z] = imo.GetRef( 2, 0 );
+        if ( imo.GetRefs( 3, out List<Transform> rotors ) ) {
             int zf = _pawn.focus[z];
             foreach ( var rotor in rotors ) {
                 if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
@@ -331,10 +370,12 @@ public static void Tick() {
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         int def = _pawn.def[z];
-        string [] lookup = { "vfx_muzzle" };
+        string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack" };
         ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, lookup: lookup,
                                                                         handle: ( def << 16 ) | z );
         _muzzle[z] = imo.GetRef( 0, 0 );
+        _bullseye[z] = imo.GetRef( 1, 0 );
+        _emitterAttack[z] = imo.GetRef( 2, 0 );
 
         updateEmissive( z, imo );
 
@@ -368,19 +409,30 @@ public static void Tick() {
     // === routines below ===
 
     void updateEmissive( int z, ImmObject imo  ) {
-        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
-            _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
+        if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
+            Cl.Log( "Setting emissive to black on create." );
+            _colEmissive[z] = new Color( 0, 0, 0 );
+            setShader();
+            return;
         }
 
-        if ( Cl.TrigIsOn( z, Trig.Spawn ) || _colEmissive[z].r > 0 ) {
+        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
+            _colEmissive[z] = new Color( 1, 0.9f, 0.8f );
+        }
+
+        if ( _colEmissive[z].r > 0 ) {
+            setShader();
+            float dec = 2.75f * Cl.clockDeltaSec;
+            _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
+            _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
+            _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
+        }
+
+        void setShader() {
             foreach ( var m in imo.mats ) {
                 m.SetColor( "_EmissionColor", _colEmissive[z] );
                 m.EnableKeyword( "_EMISSION" );
             }
-            float dec = 3 * Cl.clockDeltaSec;
-            _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
-            _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
-            _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
         }
     }
 }

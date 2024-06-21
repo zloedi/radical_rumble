@@ -94,6 +94,7 @@
 
 * IMMGO
     Having imm game objects (polling) means no complicated management, just constantly match the game state.
+    Destroying all the IMGOs is ok.
 
 * Programming animations vs using the Animation Controller
     Custom clock to sample.

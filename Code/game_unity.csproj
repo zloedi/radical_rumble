@@ -38,6 +38,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Unity.AnimationModule">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
@@ -50,8 +53,8 @@
     <Reference Include="Unity.IMGUIModule">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.AnimationModule">
-      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+    <Reference Include="Unity.ParticleSystemModule">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
