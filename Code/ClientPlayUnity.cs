@@ -88,10 +88,18 @@ public static void Tick() {
         }
     }
         
+    // make sure everyone is at the synced position on reconnect
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        if ( Cl.TrigIsOn( z, Trig.Attack ) ) {
+            _pawn.mvPos[z] = _pawn.mvEnd[z];
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z];
+        }
+    }
+
     // === program attack animation === 
 
     foreach ( var z in _pawn.filter.no_garbage ) {
-        if ( ! IsAttackTrigger( z ) ) {
+        if ( ! IsValidAttackTrigger( z ) ) {
             continue;
         }
 
@@ -124,7 +132,7 @@ public static void Tick() {
     // === program melee units 'hurt' when weapon hit lands === 
 
     foreach ( var z in _pawn.filter.melee ) {
-        if ( ! IsAttackTrigger( z ) ) {
+        if ( ! IsValidAttackTrigger( z ) ) {
             continue;
         }
 
@@ -161,7 +169,7 @@ public static void Tick() {
     // === program ranged units projectile and trigger 'hurt' on impact === 
 
     foreach ( var z in _pawn.filter.ranged ) {
-        if ( ! IsAttackTrigger( z ) ) {
+        if ( ! IsValidAttackTrigger( z ) ) {
             continue;
         }
 
@@ -263,11 +271,18 @@ public static void Tick() {
     // FIXME: movers have 'patrol' point (was 'focus' in gym)
     // FIXME: and are filtered accordingly
     foreach ( var z in _pawn.filter.no_structures ) {
-        updatePos( z );
-    }
+        // zero delta move means stop
+        // FIXME: remove if the pawn state is sent over the network
+        if ( _pawn.mvEnd_ms[z] <= Cl.serverClock && _pawn.mvStart_ms[z] != _pawn.mvEnd_ms[z] ) {
+            // FIXME: should lerp to actual end pos if offshoot
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
+            return;
+        }
 
-    foreach ( var z in _pawn.filter.flying ) {
-        updatePos( z );
+        var prev = _pawn.mvPos[z];
+
+        // the unity clock here is used just to extrapolate (move in the same direction)
+        _pawn.MvLerpClient( z, Cl.clock, Time.deltaTime );
     }
 
     foreach ( var z in _pawn.filter.structures ) {
@@ -352,21 +367,6 @@ public static void Tick() {
 
     // === routines below ===
 
-    void updatePos( int z ) {
-        // zero delta move means stop
-        // FIXME: remove if the pawn state is sent over the network
-        if ( _pawn.mvEnd_ms[z] <= Cl.serverClock && _pawn.mvStart_ms[z] != _pawn.mvEnd_ms[z] ) {
-            // FIXME: should lerp to actual end pos if offshoot
-            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
-            return;
-        }
-
-        var prev = _pawn.mvPos[z];
-
-        // the unity clock here is used just to extrapolate (move in the same direction)
-        _pawn.MvLerpClient( z, Cl.clock, Time.deltaTime );
-    }
-
     void updateEmissive( int z, ImmObject imo  ) {
         if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
             _colEmissive[z] = new Color( 1, 0.8f, 0.8f );
@@ -377,9 +377,10 @@ public static void Tick() {
                 m.SetColor( "_EmissionColor", _colEmissive[z] );
                 m.EnableKeyword( "_EMISSION" );
             }
-            _colEmissive[z].r -= 3 * Cl.clockDeltaSec;
-            _colEmissive[z].g -= 3 * Cl.clockDeltaSec;
-            _colEmissive[z].b -= 3 * Cl.clockDeltaSec;
+            float dec = 3 * Cl.clockDeltaSec;
+            _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
+            _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
+            _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
         }
     }
 }
@@ -456,7 +457,7 @@ static UnityEngine.Object UnityLoad( string name ) {
     return result;
 }
 
-static bool IsAttackTrigger( int z ) {
+static bool IsValidAttackTrigger( int z ) {
     if ( ! Cl.TrigIsOn( z, Trig.Attack ) ) {
         return false;
     }

@@ -380,7 +380,7 @@ partial class Pawn {
             filter.Assign( z, IsFlying( z ), filter.flying, filter.no_flying );
         }
 
-        foreach ( int z in filter.no_flying ) {
+        foreach ( int z in filter.no_garbage ) {
             filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
         }
 

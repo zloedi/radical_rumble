@@ -348,20 +348,20 @@ public static void PawnSprites( float alpha = 1 ) {
         topLeft -= szHalf( z );
     }
 
-    // structures
-    setParams();
-    foreach ( var z in _pawn.filter.structures ) {
-        getScreenPos( z, out Vector2Int pos );
-        blit( z, pos, color: _colShadow );
-        Pawn.Def def = Pawn.defs[_pawn.def[z]];
-        Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
-        blit( z, pos - offShad, color: c );
-        symbol( z, pos - offShad );
-    }
+    //// structures
+    //setParams();
+    //foreach ( var z in _pawn.filter.structures ) {
+    //    getScreenPos( z, out Vector2Int pos );
+    //    blit( z, pos, color: _colShadow );
+    //    Pawn.Def def = Pawn.defs[_pawn.def[z]];
+    //    Color c = new Color( def.color.r * 0.5f, def.color.g * 0.5f, def.color.b * 0.5f );
+    //    blit( z, pos - offShad, color: c );
+    //    symbol( z, pos - offShad );
+    //}
 
-    // non-structure ground units
+    // ground units
     setParams();
-    foreach ( var z in _pawn.filter.no_structures ) {
+    foreach ( var z in _pawn.filter.no_flying ) {
         getScreenPos( z, out Vector2Int pos );
         blit( z, pos, color: _colShadow );
         Pawn.Def def = Pawn.defs[_pawn.def[z]];
@@ -389,14 +389,14 @@ public static void PawnSprites( float alpha = 1 ) {
 
     // == healthbars ==
 
-    setParams();
-    foreach ( var z in _pawn.filter.structures ) {
-        getScreenPos( z, out Vector2Int pos );
-        healthbar( z, pos - offShad );
-    }
+    //setParams();
+    //foreach ( var z in _pawn.filter.structures ) {
+    //    getScreenPos( z, out Vector2Int pos );
+    //    healthbar( z, pos - offShad );
+    //}
 
     setParams();
-    foreach ( var z in _pawn.filter.no_structures ) {
+    foreach ( var z in _pawn.filter.no_flying ) {
         getScreenPos( z, out Vector2Int pos );
         healthbar( z, pos - offShad );
     }

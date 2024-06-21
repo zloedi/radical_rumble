@@ -114,6 +114,14 @@ public static void Tick() {
         }
     }
 
+    // make sure everyone is at the synced position on reconnect
+    foreach ( var z in pawn.filter.no_garbage ) {
+        if ( Cl.TrigIsOn( z, Trig.Attack ) ) {
+            pawn.mvPos[z] = pawn.mvEnd[z];
+            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z];
+        }
+    }
+
     foreach ( var z in pawn.filter.no_garbage ) {
         int zf = pawn.focus[z];
         if ( Cl.TrigIsOn( z, Trig.Attack ) && zf > 0 && pawn.atkEnd_ms[z] > 0 ) {
@@ -172,11 +180,16 @@ public static void Tick() {
     }
 
     foreach ( var z in pawn.filter.no_structures ) {
-        updatePos( z );
-    }
+        // zero delta move means stop
+        if ( pawn.mvEnd_ms[z] <= Cl.serverClock && pawn.mvStart_ms[z] != pawn.mvEnd_ms[z] ) {
+            // FIXME: should lerp to actual end pos if offshoot
+            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
+            //Cl.Log( $"{pawn.DN( z )} stops." ); 
+            return;
+        }
 
-    foreach ( var z in pawn.filter.flying ) {
-        updatePos( z );
+        // the unity clock here is used just to extrapolate (move in the same direction)
+        pawn.MvLerpClient( z, clock, Time.deltaTime );
     }
 
     // == render ==
@@ -238,21 +251,6 @@ public static void Tick() {
     if ( _selectedSpawn != 0 ) {
         float alpha = allowSpawn ? 1 : 0.45f;
         Draw.PawnDef( Cl.mousePosScreen, _selectedSpawn, alpha: alpha, countDown: ! enoughMana );
-    }
-
-    // == end == 
-
-    void updatePos( int z ) {
-        // zero delta move means stop
-        if ( pawn.mvEnd_ms[z] <= Cl.serverClock && pawn.mvStart_ms[z] != pawn.mvEnd_ms[z] ) {
-            // FIXME: should lerp to actual end pos if offshoot
-            pawn.mvStart_ms[z] = pawn.mvEnd_ms[z] = clock;
-            //Cl.Log( $"{pawn.DN( z )} stops." ); 
-            return;
-        }
-
-        // the unity clock here is used just to extrapolate (move in the same direction)
-        pawn.MvLerpClient( z, clock, Time.deltaTime );
     }
 }
 
