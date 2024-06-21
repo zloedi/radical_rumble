@@ -1066,9 +1066,9 @@ public static int TickServer() {
             }
             if ( len < minLen ) {
                 minLen = len;
+                avdFocus[z] = Sv.game.HexToV( path[1] );
                 avdChase[z] = zWP;
                 avdChaseMin[z] = ( numWPs << 16 ) | 0xffff;
-                avdFocus[z] = Sv.game.HexToV( path[1] );
             }
         }
     }
@@ -1078,8 +1078,10 @@ public static int TickServer() {
     foreach ( var pr in avdPairEnemy ) {
         // FIXME: static float SvAggroRange_kvar = 6;
         bool canAggroA = ! IsAttacking( pr.a )
+                            && svPawn.IsAttackPossible( pr.a, pr.b )
                             && ( svPawn.IsStructure( pr.a ) || pr.sqDist < 6 * 6 );
         bool canAggroB = ! IsAttacking( pr.b )
+                            && svPawn.IsAttackPossible( pr.b, pr.a )
                             && ( svPawn.IsStructure( pr.b ) || pr.sqDist < 6 * 6 );
 
         if ( ! canAggroA && ! canAggroB ) {

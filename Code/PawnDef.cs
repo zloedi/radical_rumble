@@ -48,6 +48,10 @@ public static Def Brute = Register( new Def {
     color = Color.green,
     maxHP = 500,
     radius = 0.4f,
+
+    animIdle = 5,
+    animMove = 6,
+    animAttack = 7,
 } );
 
 public static Def Archer = Register( new Def {

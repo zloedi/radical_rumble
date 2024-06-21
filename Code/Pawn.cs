@@ -172,6 +172,13 @@ partial class Pawn {
         return $"{GetDef( z ).name} {z}";
     }
 
+    public bool IsAttackPossible( int zAtk, int zDfn ) {
+        if ( IsFlying( zDfn ) && ! IsRanged( zAtk ) ) {
+            return false;
+        }
+        return true;
+    }
+
     public bool IsMovingOnClient( int z ) {
         return mvStart_ms[z] != mvEnd_ms[z];
     }
