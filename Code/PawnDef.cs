@@ -73,6 +73,11 @@ public static Def Flyer = Register( new Def {
     color = new Color( 0f, 0.4f, 1f ),
     flags = Flying,
     maxHP = 1000,
+    radius = 0.6f,
+
+    animIdle = 9,
+    animMove = 7,
+    animAttack = 6,
 } );
 
 public static Def Zombie = Register( new Def {
