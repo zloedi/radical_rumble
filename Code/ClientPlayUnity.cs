@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+
 using UnityEngine;
 
 namespace RR {
@@ -41,6 +43,7 @@ static float [] _emitterAttackDuration = new float[Pawn.MAX_PAWN];
 static float [] _emitterAttackDelay = new float[Pawn.MAX_PAWN];
 
 static Pawn _pawn => Cl.game.pawn;
+static Projectile _projectile = new Projectile();
 
 public static void Tick() {
     IMMGO.Begin();
@@ -51,6 +54,7 @@ public static void Tick() {
     }
 
     _pawn.UpdateFilters();
+    _projectile.UpdateFilters();
 
     foreach ( var z in _pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
@@ -124,7 +128,7 @@ public static void Tick() {
                                                 ? 1
                                                 : animDuration / ( float )atkDuration;
 
-        // we need to force attack anim again, since Animo fails if one shots are set 
+        // we need to force attack anim again, since Animo fails if one-shots are set 
         // while transitioning...
         Animo.CrossfadeToState( _crossfade[z], oneShot );
 
@@ -171,6 +175,97 @@ public static void Tick() {
 
     // === program ranged units projectile and trigger 'hurt' on impact === 
 
+#if false
+    foreach ( var z in _pawn.filter.ranged ) {
+
+        if ( ! IsValidAttackTrigger( z ) ) {
+            continue;
+        }
+
+        if ( _pawn.IsStructure( z ) ) {
+            continue;
+        }
+
+        int pj = _projectile.Create();
+        if ( pj == 0 ) {
+            Cl.Error( "Out of projectiles." );
+            continue;
+        }
+
+        int zf = _pawn.focus[z];
+
+        _projectile.zSrc[pj] = ( byte )z;
+        _projectile.zDst[pj] = ( byte )zf;
+
+        _projectile.posStart[pj] = _muzzle[z]
+                                        ? _muzzle[z].position
+                                        : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
+        _projectile.posEnd[pj] = _bullseye[zf]
+                                    ? _bullseye[zf].position
+                                    : new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
+
+        _projectile.msStart[pj] = Cl.clock + 300;
+        _projectile.msEnd[pj] = _pawn.atkEnd_ms[z];
+    }
+
+    foreach ( var pj in _projectile.filter.no_garbage ) {
+        if ( _pawn.IsGarbage( _projectile.zSrc[pj] )
+                || _pawn.IsGarbage( _projectile.zDst[pj] ) ) {
+            _projectile.StopTracking( pj );
+        }
+    }
+
+    foreach ( var pj in _projectile.filter.travel ) {
+        if ( _projectile.ShouldKeepTracking( pj ) ) {
+            _projectile.posEnd[pj] = track( _bullseye, _projectile.zDst[pj] );
+            if ( _projectile.msStart[pj] > Cl.clock ) {
+                _projectile.posStart[pj] = track( _muzzle, _projectile.zSrc[pj] );
+            }
+        }
+        Vector3 track( Transform [] t, int z ) {
+            return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
+        }
+    }
+
+    foreach ( var pj in _projectile.filter.travel ) {
+        if ( _projectile.Lerp( pj, Cl.clock ) ) {
+            continue;
+        }
+        int z = _projectile.zDst[pj];
+        if ( ! _pawn.IsGarbage( z ) ) {
+            Cl.TrigRaise( z, Trig.HurtVisuals );
+        }
+    }
+
+    foreach ( var pj in _projectile.filter.no_garbage ) {
+        int z = _projectile.zSrc[pj];
+
+        var prefab = _modelProjectilePrefab[_pawn.def[z]];
+        if ( ! prefab ) {
+            prefab = _projectileFallback;
+            if ( ! prefab ) {
+                Cl.Error( "No projectile prefab." );
+                continue;
+            }
+        }
+        string [] lookup = { "vfx_hide_on_impact" };
+        ImmObject imo = IMMGO.RegisterPrefab( prefab, lookupChildren: lookup,
+                                                                handle: _projectile.id[pj] );
+        Transform hideOnImpact = imo.GetRef( 0, 0 );
+        if ( hideOnImpact && ! _projectile.IsTravelling( pj ) ) {
+            hideOnImpact.gameObject.SetActive( false );
+        }
+        imo.go.transform.position = _projectile.posCur[pj];
+        imo.go.transform.forward = _projectile.forward[pj].normalized;
+    }
+
+    foreach ( var pj in _projectile.filter.no_garbage ) {
+        if ( Cl.clock > _projectile.msEnd[pj] + 3000 ) {
+            _projectile.Destroy( pj );
+        }
+    }
+
+#else
     foreach ( var z in _pawn.filter.ranged ) {
         if ( ! IsValidAttackTrigger( z ) ) {
             continue;
@@ -212,7 +307,6 @@ public static void Tick() {
         } );
 
         GameObject prefab = _modelProjectilePrefab[_pawn.def[z]];
-
         if ( ! prefab ) {
             prefab = _projectileFallback;
             if ( ! prefab ) {
@@ -271,6 +365,7 @@ public static void Tick() {
             GameObject.Destroy( prj );
         }, duration: 5 );
     }
+#endif
 
     // === some particle emitters are triggered on attack ===
 
@@ -327,9 +422,7 @@ public static void Tick() {
 
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack",
                                                                             "vfx_attack_rotor" };
-        int def = _pawn.def[z];
-        ImmObject imo = DrawModel( _model[def], posWorld, lookup: lookup,
-                                                                    handle: ( def << 16 ) | z );
+        ImmObject imo = DrawPawn( z, posWorld, lookup: lookup );
         _muzzle[z] = imo.GetRef( 0, 0 );
         _bullseye[z] = imo.GetRef( 1, 0 );
         _emitterAttack[z] = imo.GetRef( 2, 0 );
@@ -351,6 +444,7 @@ public static void Tick() {
 
         updateEmissive( z, imo );
 
+        int def = _pawn.def[z];
         if ( _animSource[def] > 0 ) {
             Animo.UpdateState( Cl.clockDelta, _animSource[def], _crossfade[z], 1 );
             Animo.SampleAnimations( _animSource[def], imo.go.GetComponent<Animator>(),
@@ -369,17 +463,15 @@ public static void Tick() {
         _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
-        int def = _pawn.def[z];
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack" };
-        ImmObject imo = DrawModel( _model[def], posWorld, fwdWorld, lookup: lookup,
-                                                                        handle: ( def << 16 ) | z );
+        ImmObject imo = DrawPawn( z, posWorld, fwdWorld, lookup: lookup );
         _muzzle[z] = imo.GetRef( 0, 0 );
         _bullseye[z] = imo.GetRef( 1, 0 );
         _emitterAttack[z] = imo.GetRef( 2, 0 );
 
         updateEmissive( z, imo );
 
-        int animSrc = _animSource[def];
+        int animSrc = _animSource[_pawn.def[z]];
         if ( animSrc == 0 ) {
             continue;
         }
@@ -410,7 +502,7 @@ public static void Tick() {
 
     void updateEmissive( int z, ImmObject imo  ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
-            Cl.Log( "Setting emissive to black on create." );
+            Cl.Log( $"Setting emissive to black on {_pawn.DN( z )}." );
             _colEmissive[z] = new Color( 0, 0, 0 );
             setShader();
             return;
@@ -437,10 +529,14 @@ public static void Tick() {
     }
 }
 
-static ImmObject DrawModel( GameObject model, Vector3 pos, Vector3? forward = null,
-                                    float scale = -1, string [] lookup = null, int handle = 0 ) {
+static ImmObject DrawPawn( int z, Vector3 pos, Vector3? forward = null, float scale = -1,
+                                                        string [] lookup = null,
+                                                        [CallerLineNumber] int lineNumber = 0,
+                                                        [CallerMemberName] string caller = null ) {
+    int def = _pawn.def[z];
+    GameObject model = _model[def];
     ImmObject imo = IMMGO.RegisterPrefab( model, garbageMaterials: true, lookupChildren: lookup,
-                                                                                handle: handle );
+                                handle: ( def << 16 ) | z, lineNumber: lineNumber, caller: caller );
     imo.go.transform.position = pos;
     if ( forward != null && forward.Value.sqrMagnitude > 0.0001f ) {
         imo.go.transform.forward = forward.Value.normalized;
@@ -489,6 +585,7 @@ static void Initialize() {
             if ( nm.Contains( "vfx_projectile" ) ) {
                 _modelProjectilePrefab[i] = t.gameObject;
                 _modelProjectilePrefab[i].SetActive( false );
+                Cl.Log( $"Found vfx_projectile prefab on def '{Pawn.defs[i].name}:{i}'." );
             }
         }
     }

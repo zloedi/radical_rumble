@@ -1095,6 +1095,7 @@ public static int TickServer() {
             continue;
         }
 
+        // num waypoints | distance between pawns, squared
         int score = ( 2 << 16 ) | ( int )( pr.sqDist * 100 );
 
         if ( canAggroA && avdChaseMin[pr.a] > score ) {

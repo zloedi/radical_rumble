@@ -94,6 +94,8 @@
 
 * IMMGO
     Having imm game objects (polling) means no complicated management, just constantly match the game state.
+    Setup a situation on the server, keep it running while developing the client
+    Everyting is the same on reconnect, no fuss
     Destroying all the IMGOs is ok.
 
 * Programming animations vs using the Animation Controller

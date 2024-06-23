@@ -94,6 +94,7 @@
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
     <Compile Include="Player.cs" />
+    <Compile Include="Projectile.cs" />
     <Compile Include="TickUtil.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="ClientPlayQGL.cs" />

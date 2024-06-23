@@ -36,6 +36,25 @@ public static void CreateAll( object o, int numElements, out List<Array> all ) {
 }
 
 // no fucking number generic constraint
+public static bool FindFreeColumn( int [] lookup, out int idx, int lastFree = 0 ) {
+    if ( lastFree != 0 && lookup[lastFree] == 0 ) {
+        idx = lastFree;
+    } else {
+        for ( idx = 1; idx < lookup.Length; idx++ ) {
+            if ( lookup[idx] == 0 ) {
+                break;
+            }
+        }
+    }
+
+    if ( idx == lookup.Length ) {
+        idx = 0;
+        return false;
+    }
+
+    return true;
+}
+
 public static bool FindFreeColumn( ushort [] lookup, out int idx, int lastFree = 0 ) {
     if ( lastFree != 0 && lookup[lastFree] == 0 ) {
         idx = lastFree;
