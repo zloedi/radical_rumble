@@ -20,6 +20,9 @@ public static class ClientPlayUnity {
 
 static float TestFloat_cvar = 0;
 
+[Description( "Skip structures projectile visuals" )]
+static bool ClSkipStructureProjectiles_kvar = false;
+
 static bool _initialized;
 static GameObject _dummy;
 static GameObject _projectileFallback;
@@ -175,14 +178,14 @@ public static void Tick() {
 
     // === program ranged units projectile and trigger 'hurt' on impact === 
 
-#if false
+#if true
     foreach ( var z in _pawn.filter.ranged ) {
 
         if ( ! IsValidAttackTrigger( z ) ) {
             continue;
         }
 
-        if ( _pawn.IsStructure( z ) ) {
+        if ( ClSkipStructureProjectiles_kvar && _pawn.IsStructure( z ) ) {
             continue;
         }
 
@@ -217,27 +220,33 @@ public static void Tick() {
 
     foreach ( var pj in _projectile.filter.travel ) {
         if ( _projectile.ShouldKeepTracking( pj ) ) {
+            // track the target transform
             _projectile.posEnd[pj] = track( _bullseye, _projectile.zDst[pj] );
+
+            // if the shoot moment is ahead in time, track the shooter transform
             if ( _projectile.msStart[pj] > Cl.clock ) {
                 _projectile.posStart[pj] = track( _muzzle, _projectile.zSrc[pj] );
             }
         }
+
         Vector3 track( Transform [] t, int z ) {
             return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
         }
     }
 
     foreach ( var pj in _projectile.filter.travel ) {
-        if ( _projectile.Lerp( pj, Cl.clock ) ) {
-            continue;
-        }
-        int z = _projectile.zDst[pj];
-        if ( ! _pawn.IsGarbage( z ) ) {
-            Cl.TrigRaise( z, Trig.HurtVisuals );
+        if ( ! _projectile.Lerp( pj, Cl.clock ) ) {
+            // target reached, blink
+            Cl.TrigRaise( _projectile.zDst[pj], Trig.HurtVisuals );
         }
     }
 
     foreach ( var pj in _projectile.filter.no_garbage ) {
+        // the shoot moment is ahead in time, don't draw this projectile yet
+        if ( _projectile.msStart[pj] > Cl.clock ) {
+            continue;
+        }
+
         int z = _projectile.zSrc[pj];
 
         var prefab = _modelProjectilePrefab[_pawn.def[z]];
@@ -248,6 +257,7 @@ public static void Tick() {
                 continue;
             }
         }
+
         string [] lookup = { "vfx_hide_on_impact" };
         ImmObject imo = IMMGO.RegisterPrefab( prefab, lookupChildren: lookup,
                                                                 handle: _projectile.id[pj] );
@@ -255,11 +265,13 @@ public static void Tick() {
         if ( hideOnImpact && ! _projectile.IsTravelling( pj ) ) {
             hideOnImpact.gameObject.SetActive( false );
         }
+
         imo.go.transform.position = _projectile.posCur[pj];
         imo.go.transform.forward = _projectile.forward[pj].normalized;
     }
 
     foreach ( var pj in _projectile.filter.no_garbage ) {
+        // kill off in a few seconds, so any trails die off
         if ( Cl.clock > _projectile.msEnd[pj] + 3000 ) {
             _projectile.Destroy( pj );
         }
