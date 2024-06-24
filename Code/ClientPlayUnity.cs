@@ -49,7 +49,7 @@ static Pawn _pawn => Cl.game.pawn;
 static Projectile _projectile = new Projectile();
 
 public static void Tick() {
-    IMMGO.Begin();
+    IMGO.Begin();
 
     if ( ! _initialized ) {
         Initialize();
@@ -273,7 +273,7 @@ public static void Tick() {
         }
 
         string [] lookup = { "vfx_hide_on_impact" };
-        ImmObject imo = IMMGO.RegisterPrefab( prefab, lookupChildren: lookup,
+        ImObject imo = IMGO.RegisterPrefab( prefab, lookupChildren: lookup,
                                                                 handle: _projectile.id[pj] );
         Transform hideOnImpact = imo.GetRef( 0, 0 );
         if ( hideOnImpact && ! _projectile.IsTravelling( pj ) ) {
@@ -448,7 +448,7 @@ public static void Tick() {
 
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack",
                                                                             "vfx_attack_rotor" };
-        ImmObject imo = DrawPawn( z, posWorld, lookup: lookup );
+        ImObject imo = DrawPawn( z, posWorld, lookup: lookup );
         _muzzle[z] = imo.GetRef( 0, 0 );
         _bullseye[z] = imo.GetRef( 1, 0 );
         _emitterAttack[z] = imo.GetRef( 2, 0 );
@@ -490,7 +490,7 @@ public static void Tick() {
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack" };
-        ImmObject imo = DrawPawn( z, posWorld, fwdWorld, lookup: lookup );
+        ImObject imo = DrawPawn( z, posWorld, fwdWorld, lookup: lookup );
         _muzzle[z] = imo.GetRef( 0, 0 );
         _bullseye[z] = imo.GetRef( 1, 0 );
         _emitterAttack[z] = imo.GetRef( 2, 0 );
@@ -522,11 +522,11 @@ public static void Tick() {
         Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
     }
 
-    IMMGO.End();
+    IMGO.End();
 
     // === routines below ===
 
-    void updateEmissive( int z, ImmObject imo  ) {
+    void updateEmissive( int z, ImObject imo  ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             Cl.Log( $"Setting emissive to black on {_pawn.DN( z )}." );
             _colEmissive[z] = new Color( 0, 0, 0 );
@@ -555,13 +555,13 @@ public static void Tick() {
     }
 }
 
-static ImmObject DrawPawn( int z, Vector3 pos, Vector3? forward = null, float scale = -1,
+static ImObject DrawPawn( int z, Vector3 pos, Vector3? forward = null, float scale = -1,
                                                         string [] lookup = null,
                                                         [CallerLineNumber] int lineNumber = 0,
                                                         [CallerMemberName] string caller = null ) {
     int def = _pawn.def[z];
     GameObject model = _model[def];
-    ImmObject imo = IMMGO.RegisterPrefab( model, garbageMaterials: true, lookupChildren: lookup,
+    ImObject imo = IMGO.RegisterPrefab( model, garbageMaterials: true, lookupChildren: lookup,
                                 handle: ( def << 16 ) | z, lineNumber: lineNumber, caller: caller );
     imo.go.transform.position = pos;
     if ( forward != null && forward.Value.sqrMagnitude > 0.0001f ) {
