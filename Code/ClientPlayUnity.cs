@@ -141,6 +141,7 @@ public static void Tick() {
 
     // === program melee units 'hurt' when weapon hit lands === 
 
+    // assumes the attack one-shot is set
     foreach ( var z in _pawn.filter.melee ) {
         if ( ! IsValidAttackTrigger( z ) ) {
             continue;
@@ -150,11 +151,7 @@ public static void Tick() {
         int start = Cl.clock;
         int end = _pawn.atkEnd_ms[z];
 
-        int animSrc = _animSource[_pawn.def[z]];
-        int unscaledDuration = Animo.sourcesList[animSrc].duration[_animOneShot[z]];
-        float duration = unscaledDuration / _animOneShotSpeed[z];
-        float moment = TestFloat_cvar > 0 ? TestFloat_cvar : _pawn.GetDef( z ).momentLandHit;
-        int landHit = Cl.clock + ( int )( duration * moment );
+        int landHit = GetLandHitMoment( z );
 
         // clock the time until impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
@@ -162,7 +159,7 @@ public static void Tick() {
             // impact moment -- programmed as an animation event
             // this doesn't match the damage moment on the server,
             // but its simpler and good enough I guess
-            if ( landHit > ( int )Cl.clock ) {
+            if ( landHit > Cl.clock ) {
                 return true;
             }
 
@@ -174,11 +171,28 @@ public static void Tick() {
             return false;
         } );
 
+        // FIXME: just to make the dragon flame do burst, maybe use it on 'sprays' only, not 
+        // FIXME: all attack emitters
+        if ( _emitterAttack[z] ) {
+            int outMoment = GetAttackOutMoment( z );
+            float counter = 0;
+            SingleShot.AddConditional( dt => {
+                if ( landHit > Cl.clock ) {
+                    return true;
+                }
+                if ( counter <= 0 ) {
+                    Cl.TrigRaise( zf, Trig.HurtVisuals );
+                    counter = 0.1f;
+                }
+                counter -= dt;
+                return outMoment > Cl.clock;
+            } );
+        }
     }
 
     // === program ranged units projectile and trigger 'hurt' on impact === 
 
-#if true
+#if true // IMGO implementation
     foreach ( var z in _pawn.filter.ranged ) {
 
         if ( ! IsValidAttackTrigger( z ) ) {
@@ -207,7 +221,7 @@ public static void Tick() {
                                     ? _bullseye[zf].position
                                     : new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
 
-        _projectile.msStart[pj] = Cl.clock + 300;
+        _projectile.msStart[pj] = GetLandHitMoment( z );
         _projectile.msEnd[pj] = _pawn.atkEnd_ms[z];
     }
 
@@ -292,7 +306,7 @@ public static void Tick() {
         // clock the time until projectile impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
             // impact moment -- when clock passes the attack end
-            if ( end > ( int )Cl.clock ) {
+            if ( end > Cl.clock ) {
                 return true;
             }
 
@@ -349,7 +363,7 @@ public static void Tick() {
 
         // the projectile one-shot
         SingleShot.Add( dt => {
-            int clk = ( int )Cl.clock;
+            int clk = Cl.clock;
 
             if ( shoot > clk ) {
                 // not time to shoot yet
@@ -634,6 +648,24 @@ static bool IsValidAttackTrigger( int z ) {
     }
 
     return true;
+}
+
+// assumes the attack one-shot anim is already set
+static int GetMoment( int z, float moment ) {
+    int animSrc = _animSource[_pawn.def[z]];
+    int unscaledDuration = Animo.sourcesList[animSrc].duration[_animOneShot[z]];
+    float duration = unscaledDuration / _animOneShotSpeed[z];
+    float momentLocal = TestFloat_cvar > 0 ? TestFloat_cvar : moment;
+    int result = Cl.clock + ( int )( duration * momentLocal );
+    return result;
+}
+
+static int GetLandHitMoment( int z ) {
+    return GetMoment( z, _pawn.GetDef( z ).momentLandHit );
+}
+
+static int GetAttackOutMoment( int z ) {
+    return GetMoment( z, _pawn.GetDef( z ).momentAttackOut );
 }
 
 

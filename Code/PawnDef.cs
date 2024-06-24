@@ -82,6 +82,8 @@ public static Def Flyer = Register( new Def {
     animIdle = 9,
     animMove = 7,
     animAttack = 6,
+
+    momentAttackOut = 0.7f,
 } );
 
 public static Def Zombie = Register( new Def {
@@ -140,6 +142,7 @@ public class Def {
 
     // animation event moments
     public float momentLandHit = 0.3f;
+    public float momentAttackOut = 1f;
 
     public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }

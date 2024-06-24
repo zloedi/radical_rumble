@@ -92,11 +92,13 @@
 
     Being client/server means you can always jump in and out of a game, very convenient while developing graphical clients.
 
-* IMMGO
-    Having imm game objects (polling) means no complicated management, just constantly match the game state.
+* IMGO
+    Controls visibility and hierarchy order.
+    Having imm game objects (polling) means no complicated management, just constantly 'draw' the game state.
     Setup a situation on the server, keep it running while developing the client
     Everyting is the same on reconnect, no fuss
     Destroying all the IMGOs is ok.
+    IMGO vs SingleShot for projectiles.
 
 * Programming animations vs using the Animation Controller
     Custom clock to sample.
