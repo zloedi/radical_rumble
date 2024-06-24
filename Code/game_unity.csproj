@@ -65,7 +65,7 @@
     <Compile Include="ZloediUtils/Delta.cs" />
     <Compile Include="ZloediUtils/Hexes.cs" />
     <Compile Include="ZloediUtils/HexPather.cs" />
-    <Compile Include="ZloediUtils/IMMGO.cs" />
+    <Compile Include="ZloediUtils/IMGO.cs" />
     <Compile Include="ZloediUtils/KeyBinds.cs" />
     <Compile Include="ZloediUtils/Net.cs" />
     <Compile Include="ZloediUtils/NokiaFont.cs" />
