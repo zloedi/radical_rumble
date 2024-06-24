@@ -87,29 +87,75 @@
 
 
 
+    Being client/server means you can always jump in and out of a game. Killing the client, is of no consequence.
+    
 
 
 
-    Being client/server means you can always jump in and out of a game, very convenient while developing graphical clients.
+
+
+
+    Retained mode / event driven visuals
+        Create
+        Update
+        Handle events
+        Cleanup
+
+
+    Hard while Retained:
+        Dependencies
+        Order of execution
+        Arbitrary change of the 'abstract' (server) game state
+        Server enforced clocks
+
+
+    Immediate mode visuals
+        Update -- each frame 'redraw' the game state supplied by the server using the server clock.
+        Still convenient to have some event-like mechanism:
+            * Triggers
+                Flags that live for entire frame, can be handled at multiple places in the tick.
+            * SingleShot
+                Capture state, pass lambda, tick at the end of the frame.
+                Conditional, timeout, delay, done()
+                Projectiles implemented as both SingleShot and IMGO
 
 * IMGO
-    Controls visibility and hierarchy order.
-    Having imm game objects (polling) means no complicated management, just constantly 'draw' the game state.
+    Controls visibility and hierarchy order by invoke/no-invoke, order of invoke
+    Gives reference to game object.
+    Gives references to designated children.
+    Having imm game objects (polling) means no complicated management,
+        just constantly 'draw' the game state.
+
     Setup a situation on the server, keep it running while developing the client
-    Everyting is the same on reconnect, no fuss
+    Everything is the same on reconnect, no fuss
+
     Destroying all the IMGOs is ok.
     IMGO vs SingleShot for projectiles.
 
-* Programming animations vs using the Animation Controller
-    Custom clock to sample.
-    Crossfade to any state at any time with custom transition times.
-    Code as autority.
 
-    Get away from Unity -- changed few versions while making the demo, even consider Godot
-    Trigger on events, interrupt loops, start looping, control on transitions.
-    Control on animation speeds (attack loop may be shorter than anim...)
-    Changing the attack duration on the server properly translates on the client,
-    no animation tweaking needed show changing duration
+* Programming animations
+    What we need:
+        Custom clock to sample.
+        Crossfade to any state at any time with custom transition times.
+        Arbitrary scale for animation times (and animation transitions)
+            attack loop may be shorter than the animation clip
+            time to attack may vary each loop.
+        Changing the attack/move steps on the server shouldn't require animation mod/reimport.
+        Polling, not interested in events.
 
+    What we want -- control of animations down to the individual frame.
+    Problems with Animator state machines -- tangled, not enough control.
+    Heard about animancer, I wanted something simpler and better fitted for imgo-s.
 
+    Animo
+        Put all clips into two Animator layers.
+
+        At runtime, update animation times each tick and use two 'channels' in a circular buffer
+            for crossfades.
+
+        'One Shot' animations can be polled for end of animation and crossfade back to a loop.
+            in our case either 'move' or 'idle', not much idling there though
+
+        Sample animations each tick by using Animator.SetLayerWeight() and Animator.Play()
+        Some performance loss.
 

@@ -214,12 +214,8 @@ public static void Tick() {
         _projectile.zSrc[pj] = ( byte )z;
         _projectile.zDst[pj] = ( byte )zf;
 
-        _projectile.posStart[pj] = _muzzle[z]
-                                        ? _muzzle[z].position
-                                        : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
-        _projectile.posEnd[pj] = _bullseye[zf]
-                                    ? _bullseye[zf].position
-                                    : new Vector3( _pawn.mvPos[zf].x, 1, _pawn.mvPos[zf].y );
+        _projectile.posStart[pj] = track( _muzzle, _projectile.zSrc[pj] );
+        _projectile.posEnd[pj] = track( _bullseye, _projectile.zDst[pj] );
 
         _projectile.msStart[pj] = GetLandHitMoment( z );
         _projectile.msEnd[pj] = _pawn.atkEnd_ms[z];
@@ -242,10 +238,10 @@ public static void Tick() {
                 _projectile.posStart[pj] = track( _muzzle, _projectile.zSrc[pj] );
             }
         }
+    }
 
-        Vector3 track( Transform [] t, int z ) {
-            return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
-        }
+    Vector3 track( Transform [] t, int z ) {
+        return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
     }
 
     foreach ( var pj in _projectile.filter.travel ) {
@@ -468,7 +464,7 @@ public static void Tick() {
             }
         }
 
-        updateEmissive( z, imo );
+        UpdateEmissive( z, imo );
 
         int def = _pawn.def[z];
         if ( _animSource[def] > 0 ) {
@@ -489,13 +485,17 @@ public static void Tick() {
         _forward[z] = fwdGame;
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
         Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
+
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack" };
         ImObject imo = DrawPawn( z, posWorld, fwdWorld, lookup: lookup );
+
         _muzzle[z] = imo.GetRef( 0, 0 );
         _bullseye[z] = imo.GetRef( 1, 0 );
         _emitterAttack[z] = imo.GetRef( 2, 0 );
 
-        updateEmissive( z, imo );
+        UpdateEmissive( z, imo );
+
+        // animations sampling
 
         int animSrc = _animSource[_pawn.def[z]];
         if ( animSrc == 0 ) {
@@ -504,10 +504,10 @@ public static void Tick() {
 
         bool isMoving = _pawn.IsMovingOnClient( z );
 
-        // interrupt any single-shot animations if moving; start looping movement
+        // moving is with higher priority than one-shots, interrupt any one-shot here
         int oneShot = isMoving ? 0 : _animOneShot[z];
 
-        // if not moving, the special idle could be used
+        // loop is either move or idle, attacks are kinda single-shot
         int loop = isMoving ? _pawn.GetDef( z ).animMove : _pawn.GetDef( z ).animIdle;
 
         if ( oneShot != 0 ) {
@@ -524,33 +524,32 @@ public static void Tick() {
 
     IMGO.End();
 
-    // === routines below ===
+}
 
-    void updateEmissive( int z, ImObject imo  ) {
-        if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
-            Cl.Log( $"Setting emissive to black on {_pawn.DN( z )}." );
-            _colEmissive[z] = new Color( 0, 0, 0 );
-            setShader();
-            return;
-        }
+static void UpdateEmissive( int z, ImObject imo  ) {
+    if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
+        Cl.Log( $"Setting emissive to black on {_pawn.DN( z )}." );
+        _colEmissive[z] = new Color( 0, 0, 0 );
+        setShader();
+        return;
+    }
 
-        if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
-            _colEmissive[z] = new Color( 1, 0.9f, 0.8f );
-        }
+    if ( Cl.TrigIsOn( z, Trig.HurtVisuals ) ) {
+        _colEmissive[z] = new Color( 1, 0.9f, 0.8f );
+    }
 
-        if ( _colEmissive[z].r > 0 ) {
-            setShader();
-            float dec = 2.75f * Cl.clockDeltaSec;
-            _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
-            _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
-            _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
-        }
+    if ( _colEmissive[z].r > 0 ) {
+        setShader();
+        float dec = 2.75f * Cl.clockDeltaSec;
+        _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
+        _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
+        _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
+    }
 
-        void setShader() {
-            foreach ( var m in imo.mats ) {
-                m.SetColor( "_EmissionColor", _colEmissive[z] );
-                m.EnableKeyword( "_EMISSION" );
-            }
+    void setShader() {
+        foreach ( var m in imo.mats ) {
+            m.SetColor( "_EmissionColor", _colEmissive[z] );
+            m.EnableKeyword( "_EMISSION" );
         }
     }
 }
