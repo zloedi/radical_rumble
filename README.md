@@ -6,6 +6,10 @@ Radical Rumble is a demo of a casual multiplayer clash/rumble-like game, made sp
 **Radical Multiplayer** events at [Prostranstvoto].
 It is a Unity3D project, but could also be built as an SDL app without modifications.
 
+## Join the Discord server
+[![Discord](https://discord.com/api/guilds/1219911855128973342/widget.png?style=shield)](https://discord.gg/nWfq9HcGYB)
+
+
 [Prostranstvoto]: https://prostranstvoto.bg
 
 ## Install
