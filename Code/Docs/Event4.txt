@@ -43,6 +43,7 @@
         * Source code
             https://github.com/zloedi/radical_rumble
             https://github.com/zloedi/ZloediUtils
+            The missing 'Content' submodule.
     
     
     
@@ -95,18 +96,44 @@
 
 
 
-    Retained mode / event driven visuals
+    Doing visuals the 'common' way.
         Create
-        Update
+            * register in some 'manager' collection.
+            * setup transform
+            * setup materials
+            * find and instantiate / manipulate specific children
+            * create and attach some stuff in another hierarchy (another collection?)
+            * ...
+
+        Tick
+            * move stuff
+            * notify dependencies
+            * you love coroutines?
+
         Handle events
+            * server stat change
+            * animation switch
+            * feedback on visual interaction i.e. 'visually got hit' -- material prop change,
+                particle emission, UI change ...
+            * kill (ouch)
+            * notify dependencies
+            * ...
+
         Cleanup
+            * destroy game objects, unregister from managers
+            * material instances
+            * textures
+            * do the same for any attached game objects not in hierrchy
+            * notify dependencies
+            * ...
 
 
     Hard while Retained:
-        Dependencies
-        Order of execution
-        Arbitrary change of the 'abstract' (server) game state
-        Server enforced clocks
+        * dependencies and order of execution
+            -- we need context to handle some events, but the context may be garbage already.
+        * arbitrary change of the 'abstract' (server) game state
+            -- some objects are in another state / location / whatever or totally killed off.
+        * server enforced clocks.
 
 
     Immediate mode visuals
@@ -143,7 +170,7 @@
         Changing the attack/move steps on the server shouldn't require animation mod/reimport.
         Polling, not interested in events.
 
-    What we want -- control of animations down to the individual frame.
+    What we actually want -- control of animations down to the individual frame.
     Problems with Animator state machines -- tangled, not enough control.
     Heard about animancer, I wanted something simpler and better fitted for imgo-s.
 
