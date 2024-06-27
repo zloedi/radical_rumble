@@ -22,6 +22,8 @@ static float TestFloat_cvar = 0;
 
 [Description( "Skip structures projectile visuals" )]
 static bool ClSkipStructureProjectiles_kvar = false;
+[Description( "Skip all projectile visuals" )]
+static bool ClSkipProjectiles_kvar = false;
 
 static bool _initialized;
 static GameObject _dummy;
@@ -59,6 +61,8 @@ public static void Tick() {
     _pawn.UpdateFilters();
     _projectile.UpdateFilters();
 
+    // === newly created pawns initialization ===
+
     foreach ( var z in _pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
@@ -72,8 +76,8 @@ public static void Tick() {
         }
     }
 
+    // fix the lookat in another pass, after all positions are settled
     foreach ( var z in _pawn.filter.no_garbage ) {
-        // fix the lookat in another pass
         if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
             // lookat the the first enemy 
             var enemies = _pawn.filter.enemies[_pawn.team[z]];
@@ -88,8 +92,9 @@ public static void Tick() {
         }
     }
 
+    // === program new movement segment ===
+
     foreach ( var z in _pawn.filter.no_garbage ) {
-        // program new movement segment
         if ( Cl.TrigIsOn( z, Trig.Move ) ) {
             _pawn.mvStart[z] = _pawn.mvPos[z];
             _pawn.mvStart_ms[z] = Cl.clock - Cl.clockDelta;
@@ -98,7 +103,7 @@ public static void Tick() {
         }
     }
         
-    // make sure everyone is at the synced position on reconnect
+    // this just makes sure everyone is at the synced position on client reconnect
     foreach ( var z in _pawn.filter.no_garbage ) {
         if ( Cl.TrigIsOn( z, Trig.Attack ) ) {
             _pawn.mvPos[z] = _pawn.mvEnd[z];
@@ -193,13 +198,19 @@ public static void Tick() {
     // === program ranged units projectile and trigger 'hurt' on impact === 
 
 #if true // IMGO implementation
+
+    Vector3 track( Transform [] t, int z ) {
+        return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
+    }
+
     foreach ( var z in _pawn.filter.ranged ) {
 
         if ( ! IsValidAttackTrigger( z ) ) {
             continue;
         }
 
-        if ( ClSkipStructureProjectiles_kvar && _pawn.IsStructure( z ) ) {
+        if ( ClSkipProjectiles_kvar
+                || ( ClSkipStructureProjectiles_kvar && _pawn.IsStructure( z ) ) ) {
             continue;
         }
 
@@ -238,10 +249,6 @@ public static void Tick() {
                 _projectile.posStart[pj] = track( _muzzle, _projectile.zSrc[pj] );
             }
         }
-    }
-
-    Vector3 track( Transform [] t, int z ) {
-        return t[z] ? t[z].position : new Vector3( _pawn.mvPos[z].x, 1, _pawn.mvPos[z].y );
     }
 
     foreach ( var pj in _projectile.filter.travel ) {
@@ -287,7 +294,8 @@ public static void Tick() {
         }
     }
 
-#else
+#else // SingleShot implementation
+
     foreach ( var z in _pawn.filter.ranged ) {
         if ( ! IsValidAttackTrigger( z ) ) {
             continue;
@@ -522,6 +530,8 @@ public static void Tick() {
         Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
     }
 
+    //Event4();
+
     IMGO.End();
 
 }
@@ -530,7 +540,7 @@ static void UpdateEmissive( int z, ImObject imo  ) {
     if ( Cl.TrigIsOn( z, Trig.Spawn ) ) {
         Cl.Log( $"Setting emissive to black on {_pawn.DN( z )}." );
         _colEmissive[z] = new Color( 0, 0, 0 );
-        setShader();
+        updateShader();
         return;
     }
 
@@ -539,14 +549,14 @@ static void UpdateEmissive( int z, ImObject imo  ) {
     }
 
     if ( _colEmissive[z].r > 0 ) {
-        setShader();
+        updateShader();
         float dec = 2.75f * Cl.clockDeltaSec;
         _colEmissive[z].r = Mathf.Max( 0, _colEmissive[z].r - dec );
         _colEmissive[z].g = Mathf.Max( 0, _colEmissive[z].g - dec );
         _colEmissive[z].b = Mathf.Max( 0, _colEmissive[z].b - dec );
     }
 
-    void setShader() {
+    void updateShader() {
         foreach ( var m in imo.mats ) {
             m.SetColor( "_EmissionColor", _colEmissive[z] );
             m.EnableKeyword( "_EMISSION" );
@@ -570,6 +580,18 @@ static ImObject DrawPawn( int z, Vector3 pos, Vector3? forward = null, float sca
         imo.go.transform.localScale = Vector3.one * scale;
     }
     return imo;
+}
+
+static void Event4() {
+    for ( int i = 0, y = 0; y < 10; y++ ) {
+        for ( int x = 0; x < 10; x++, i++ ) {
+
+            GameObject model = _model[i % Pawn.defs.Count];
+            ImObject imo = IMGO.RegisterPrefab( model, handle: i );
+            imo.go.transform.position = new Vector3( x * 4, 0, y * 4 );
+
+        }
+    }
 }
 
 static void Initialize() {

@@ -43,7 +43,7 @@
         * Source code
             https://github.com/zloedi/radical_rumble
             https://github.com/zloedi/ZloediUtils
-            The missing 'Content' submodule.
+            The missing 'Content'
     
     
     
@@ -87,17 +87,38 @@
 
 
 
-
-    Being client/server means you can always jump in and out of a game. Killing the client, is of no consequence.
-    
+    What we improved since Event 3
 
 
 
 
 
 
-    Doing visuals the 'common' way.
-        Create
+
+
+
+
+
+
+    Words on coming from the 'QGL' client
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Doing (multiplayer) game visuals:
+
+        == Create ==
+
             * register in some 'manager' collection.
             * setup transform
             * setup materials
@@ -105,84 +126,232 @@
             * create and attach some stuff in another hierarchy (another collection?)
             * ...
 
-        Tick
-            * move stuff
-            * notify dependencies
-            * you love coroutines?
+        == Tick ==
 
-        Handle events
-            * server stat change
+            * move stuff
+            * use your favorite concurent mechanisms
+            * notify dependencies
+
+        == Handle events ==
+
+            * server game state change
             * animation switch
             * feedback on visual interaction i.e. 'visually got hit' -- material prop change,
                 particle emission, UI change ...
-            * kill (ouch)
+            * killed / garbage (on the server)
             * notify dependencies
             * ...
 
-        Cleanup
+        == Cleanup ==
+
             * destroy game objects, unregister from managers
-            * material instances
-            * textures
+            * material and texture instances
             * do the same for any attached game objects not in hierrchy
             * notify dependencies
             * ...
 
 
+
+
+
+
+
+
+
+
+
+
     Hard while Retained:
+        * don't leak
         * dependencies and order of execution
-            -- we need context to handle some events, but the context may be garbage already.
         * arbitrary change of the 'abstract' (server) game state
-            -- some objects are in another state / location / whatever or totally killed off.
         * server enforced clocks.
 
 
-    Immediate mode visuals
-        Update -- each frame 'redraw' the game state supplied by the server using the server clock.
-        Still convenient to have some event-like mechanism:
-            * Triggers
-                Flags that live for entire frame, can be handled at multiple places in the tick.
-            * SingleShot
-                Capture state, pass lambda, tick at the end of the frame.
-                Conditional, timeout, delay, done()
-                Projectiles implemented as both SingleShot and IMGO
-
-* IMGO
-    Controls visibility and hierarchy order by invoke/no-invoke, order of invoke
-    Gives reference to game object.
-    Gives references to designated children.
-    Having imm game objects (polling) means no complicated management,
-        just constantly 'draw' the game state.
-
-    Setup a situation on the server, keep it running while developing the client
-    Everything is the same on reconnect, no fuss
-
-    Destroying all the IMGOs is ok.
-    IMGO vs SingleShot for projectiles.
 
 
-* Programming animations
+
+
+
+
+
+
+
+
+    'Immediate' visuals
+        Just Tick: Each frame 'redraw' the game state supplied by the server using the server clock.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    IMGO
+        Demo Event4()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        Controls visibility and hierarchy order by invoke/no-invoke, order of invoke
+        Gives reference to game object.
+        Gives references to designated children.
+        Destroying all the IMGOs is ok.
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Dependencies and execution order become explicit, literally coded in the game tick.
+    No leaks, single point of management.
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Still convenient to have some event-like mechanism:
+        * Triggers
+            Flags that live for entire frame, can be handled at multiple places in the tick.
+        * SingleShot
+            Capture state, pass lambda, tick at the end of the frame.
+                conditional()/tick(), timeout, delay, done()
+            Projectiles implemented as both SingleShot and IMGO
+
+
+
+
+
+
+
+
+
+
+
+
+    Programming animations, the IM way
+
     What we need:
-        Custom clock to sample.
-        Crossfade to any state at any time with custom transition times.
-        Arbitrary scale for animation times (and animation transitions)
-            attack loop may be shorter than the animation clip
-            time to attack may vary each loop.
-        Changing the attack/move steps on the server shouldn't require animation mod/reimport.
-        Polling, not interested in events.
+         * sample the animations every tick, for models passed down from IMGOs
+         * custom clock to sample.
+         * crossfade to any state at any time with custom transition times.
+         * arbitrary scale for animation times (and animation transitions)
+              attack loop may be shorter than the animation clip
+              time to attack may vary each loop.
+         * changing the attack/move steps on the server shouldn't require animation mod/reimport.
+         * polling, not interested in events.
+
+
+
+
+
+
+
+
+
+
+
 
     What we actually want -- control of animations down to the individual frame.
-    Problems with Animator state machines -- tangled, not enough control.
-    Heard about animancer, I wanted something simpler and better fitted for imgo-s.
+
+
+
+
+
+
+
+
+
+
+
+
+    Problems with Animator Controller state machines -- explicit stuff go here...
+
+
+
+
+
+
+
+
+
+
+
+
+    Alt solutions -- animancer, other?
+
+
+
+
+
+
+
+
+
+
+
+
 
     Animo
-        Put all clips into two Animator layers.
-
-        At runtime, update animation times each tick and use two 'channels' in a circular buffer
-            for crossfades.
-
-        'One Shot' animations can be polled for end of animation and crossfade back to a loop.
+        Put all clips in two Animator layers.
+        At runtime, update animation times each tick and use two alternating 'channels'
+            in a circular buffer for crossfades.
+        'One Shot' animations can be polled for end of animation and crossfade back to loop.
             in our case either 'move' or 'idle', not much idling there though
-
         Sample animations each tick by using Animator.SetLayerWeight() and Animator.Play()
         Some performance loss.
+        Doesn't provide much utility, everything is left to the user.
+
+
+
+
+
+
+
+
+
+    Used it in Raypunk, proved the right thing.
+
+
+
+
+
+
+
+
+
+
 
