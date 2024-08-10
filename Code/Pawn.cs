@@ -156,6 +156,10 @@ partial class Pawn {
         return GetDef( z ).cost;
     }
 
+    public int Healthbar( int z ) {
+        return GetDef( z ).healthbar;
+    }
+
     public int MaxHP( int z ) {
         return GetDef( z ).maxHP;
     }
@@ -326,15 +330,25 @@ partial class Pawn {
 
         public List<byte> [] enemies = new List<byte>[2];
         public List<byte> [] team = new List<byte>[2];
+
+        // tested for game over
         public List<byte> [] objectives = new List<byte>[2];
+        public List<byte> [] no_objectives = new List<byte>[2];
+
         public List<byte> [] byState = new List<byte>[AllStates.Length];
         public List<byte> [] no_byState = new List<byte>[AllStates.Length];
 
         public List<byte> alive => ByStateNot( State.Dead );
         public List<byte> no_alive => ByState( State.Dead );
 
+        // healthbar proper, by team
+        public List<byte> [][] healthbar = new List<byte>[2][];
+
         public Filter() {
             FilterUtil.CreateAll( this, out all );
+            for ( int i = 0; i < healthbar.Length; i++ ) {
+                healthbar[i] = FilterUtil.ArrayOfLists<byte>( Pawn.Def.MAX_HEALTH_BAR, all );
+            }
         }
 
         public List<byte> ByState( State state ) {
@@ -347,6 +361,10 @@ partial class Pawn {
 
         public void Assign( int z, bool condition, List<byte> la, List<byte> lb ) {
             var l = condition ? la : lb;
+            l.Add( ( byte )z );
+        }
+
+        public void Assign( int z, List<byte> l ) {
             l.Add( ( byte )z );
         }
 
@@ -391,9 +409,17 @@ partial class Pawn {
             filter.Assign( z, IsStructure( z ), filter.structures, filter.no_structures );
         }
 
-        foreach ( int z in filter.no_garbage ) {
-            if ( IsWinObjective( z ) ) {
-                filter.Assign( z, team[z] == 0, filter.objectives[0], filter.objectives[1] );
+        for ( int i = 0; i < filter.team.Length; i++ ) {
+            foreach ( int z in filter.team[i] ) {
+                filter.Assign( z, IsWinObjective( z ), filter.objectives[i],
+                                                                        filter.no_objectives[1] );
+            }
+        }
+
+        for ( int i = 0; i < filter.team.Length; i++ ) {
+            foreach ( int z in filter.team[i] ) {
+                int hb = GetDef( z ).healthbar;
+                filter.Assign( z, filter.healthbar[i][hb] );
             }
         }
     }

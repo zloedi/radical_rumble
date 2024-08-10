@@ -193,6 +193,7 @@ public static void Tick() {
     try {
 
     _clockDate = DateTime.UtcNow;
+
     // using integers leads to client outrunning the server clock
     double timeDelta = ( _clockDate - _clockPrevDate ).TotalMilliseconds;
     int timeDeltaMs = ( int )timeDelta;

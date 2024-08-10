@@ -36,4 +36,14 @@ public static void CreateAll( object o, out List<IList> all ) {
 }
 
 
+public static List<T>[] ArrayOfLists<T>(int arraySize, List<IList> all) {
+    var array = new List<T>[arraySize];
+    for ( int i = 0; i < array.Length; i++ ) {
+        array[i] = new List<T>();
+        all.Add( array[i] );
+    }
+    return array;
+}
+
+
 }

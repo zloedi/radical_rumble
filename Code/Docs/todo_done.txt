@@ -1,3 +1,14 @@
+Sat Aug 10 15:56:55 EEST 2024
+
+* (UI) healthbars assets
+    * import the GUI pack from the asset store
+        * add text mesh pro, see what it needs to work
+    * pick some nice healthbars -- export them to prefabs
+        * different prefabs for unter mobs, mobs, turrets and towers
+
+* Pawn avoidance
+* Use particles for the ranged projectiles instead of lines.
+
 * Game over and winner announce
 * don't use PassableTerrainToTarget while navigating.
 * instead

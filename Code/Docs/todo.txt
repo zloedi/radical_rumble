@@ -1,106 +1,44 @@
-] Fast clicking leads to no-spawn
+=== Content HOWTO ===
 
-] Binary (compressed) deltas.
-] Turn the cached pather lists into arrays on cache.
-] DNS support
+The content for the demo should be checked out in /RadicalRumbleUnity/Assets/Content
+Add any new (commercial) content there to stay private.
+It is a separate git repo (not submodule) and is .gitignored
 
-] Implement Click/Drag on cards.
-] Implement button 'ready'/'not ready'
-] Use particles for the ranged projectiles instead of lines.
-] Use some 'vfx' for melees instead of lines.
+notes on event 5
 
-] Improve the editor.
+// thinking in terms of single entities vs sets
+DrawHealthBar( size, position, ... )
 
+// actually, this is an example of a filter
+    vs Draw All Healthbars on filtered entities
 
+=== TODO ===
 
-] Pawn avoidance
-    ] issues with gym:
-        * pawns go through enemy pawns to get to their target
-            + maybe they should just stop and attack the first possible if in 'avoidance mode'
-        * !! sometimes attack animation is not played (either skipped or never)
-            -- if one-shot clip is set at the end of the current same clip, it dies
-        !! guys get CLIENT teleported on client reconnect
-        projectiles fly and 'shoot' animation moment, should match
-            maybe we should sync the 'load time' and the 'shoot' moment
-        no damage is dealed on attack
-        melees attack flyers?
-        game over
-        ====> towers don't shoot
+] (UI) healthbars scripting
+    ] load them ingame
+    ] script them on top of the units, fixing sizes
 
+] (UI) QUI should be able to work with Text Mesh Pro to handle the bought assets.
+] (UI) Use the lightning icon from PlayType3 panel in the GUI pack for mana
 
-    + Go around inert/attacking teammates
-        - each pawn has a 'feeler' -- sphere in the direction of movement, defines 'velocity'
-        - feeler is radius-times-speed away from z
-        - when avoiding inerts, moving feeler is offset by xx perpendicular to focus xx current direction
-            -- nope? better check if badly compressed distance constraint
-                -- nope nope: the feeler may go away, in the opposite direction from focus
-                        and constraint still not compressed?
-                        make sure that dotproduct with move focus is always non-negative
-                if non-positive dot toward target, do perpendicular, add to totarget, solve for that
-            -- and take care of it there?
-        - direction of perpendicular is the least-sig-bit of z to give it some noise
-        - collect all feelers and do separation and distance constraint solve
-            - inerts z and z_feeler match
-            - use distance constraint on the z -> z_feeler pairs with z being inert in the constraint
+] Unit hp decrease and death in the gym version.
+] Replace the server tick with the gym version.
+] (UI) Unit icons with drag and drop
+] (UI) interesting mana bar
+] (UI) make a nice win animation, see the one with the GUI pack
+] (UI) show off at least two states (lobby+play)
 
-    * Unclutter on spawn
-    2. Unclutter 'formations' on patrol -- if collide at endpos and end timestamps are close enough
-        if close to eachother, use current offsets as constraints for the endpos unclutter
-        put the void hexes as particles in the solver too
-    3. ?Unclutter attack points?
-    4. ?Unclutter while moving? ?Speculate it on the client?
-    
+] (BUG) Fast clicking leads to no-spawn
+] (IMP) Binary (compressed) deltas.
+] (IMP) Turn the cached pather lists into arrays on cache.
+] (IMP) DNS support
 
-] Player (not client) reconnect.
+] (IMP) Implement button 'ready'/'not ready'
 
-== Implement a routine to get a proper attack position for given attacker and defender. ==
-    ] Optimization: Fill potential-colliders list by enumerating tiles in max-pawn-radius range.
-        * Store the max-pawn-radius in a nice global, derive it in Pawn.Defs and stuff.
-        ] The potential-collider-pawns and potential-collider-hexes lists are Game.List<> members.
-        ] Make a potential-collider-hexes pattern before hand.
-        ] Use that to generate a list of hexes by offsetting it from defender origin hex.
-        ] Use the hexes list to gather the pawns from the game.gridPawn filter into the pawns list
-        
-    * Check the solver in gallium/10min-phisics. Later use that, to pick a nice spot for attack.
-        * Distribute the editor test pawns on spawn.
-        * Implemented SolveOverlapping routine.
+] (IMP) Improve the editor.
+] (IMP) Player (not client) reconnect.
 
-    Testing the proper-attack-position routine inside the Map Editor.
-        * Use lists for def and origin
-        * Implement command place fake pawns of team
-        * Implement command remove fake pawns of team
-        * Bind these commands to keys
-        * Draw the pawns with colors by team
-        * Show the keybinds on screen using WBUI
-        -> Imagine the moving attacker is at the mouse cursor and solve when the mouse moves.
-
-    Integrate the ground units proper-attack-position in the actual multiplayer.
-        ] Implement filter 'groundUnits'
-        ] Keep the attack slots (position to attack from) in the moving attacker pawns.
-        ] Implement filter 'groundUnits/focusedOnMe' -- moving pawns focused on me.
-        ] Implement filter 'groundUnits/avoidingMe' -- moving pawns on my team trying to avoid me
-        ] focusedOnMe being sorted by distance is a good idea.
-        ] ? Implement filter 'groundUnits/attackingMe' -- pawns currently attacking me
-
-        ] Attack slot with position 0,0 is considered invalid and need to be picked again.
-            To get an attack slot for a pawn:
-                ] Get the defender -> moving attacker segment.
-                ] Place the moving attacker slot at defender-radius distance along the segment.
-                ] SolveOverlapping() for all slots on defender (inv mass 1) combined with all
-                  active (non-moving/arrived) attackers (inv mass 0 -- inert).
-
-        Once picked (valid != 0,0), the slots are kept until:
-            defender moves.
-            defender dies.
-            moving attacker dies.
-            moving attacker is interrupted / interested in another target.
-        ] If any of these is false -- go through the defender's 'focusedOnMe' filter and erase
-          the moving attackers attack slots, forcing them to be eventually redistributed.
-
-== Implement teammates avoidance. ==
-
-] ...
-
+] (INPUT) make the spawns to work in 3d too
 == Thoughts and prayers ==
 
 Finer state machine

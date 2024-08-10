@@ -24,6 +24,7 @@ public static Def Tower = Register( new Def {
     damage = 60,
     radius = 1.4f,
     color = Color.magenta,
+    healthbar = 3,
 } );
 
 public static Def Turret = Register( new Def {
@@ -37,6 +38,7 @@ public static Def Turret = Register( new Def {
     radius = 1f,
     color = new Color( 1f, 0.8f, 0 ),
     symbol = 'U',
+    healthbar = 2,
 } );
 
 public static Def Brute = Register( new Def {
@@ -52,6 +54,7 @@ public static Def Brute = Register( new Def {
     animIdle = 5,
     animMove = 6,
     animAttack = 7,
+    healthbar = 1,
 } );
 
 public static Def Archer = Register( new Def {
@@ -84,6 +87,7 @@ public static Def Flyer = Register( new Def {
     animAttack = 6,
 
     momentAttackOut = 0.7f,
+    healthbar = 1,
 } );
 
 public static Def Zombie = Register( new Def {
@@ -117,6 +121,8 @@ public class Def {
         WinObjective    = 1 << 3,
     }
 
+    public const int MAX_HEALTH_BAR = 4;
+
     public static float MaxRadius;
 
     public string name;
@@ -143,6 +149,9 @@ public class Def {
     // animation event moments
     public float momentLandHit = 0.3f;
     public float momentAttackOut = 1f;
+
+    // healthbar size
+    public int healthbar = 0;
 
     public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }

@@ -54,7 +54,7 @@ public static void Tick() {
     IMGO.Begin();
 
     if ( ! _initialized ) {
-        Initialize();
+        Init();
         _initialized = true;
     }
 
@@ -534,6 +534,16 @@ public static void Tick() {
 
     IMGO.End();
 
+    // === GUI ===
+
+    if ( ! QUI.canvas ) {
+        QUI.canvas = new GameObject( "QUI Root" ).AddComponent<Canvas>();
+        QUI.canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+    }
+    
+    QUI.Begin( 0, 0 );
+    GUIUnity.TickHealthBars();
+    QUI.End();
 }
 
 static void UpdateEmissive( int z, ImObject imo  ) {
@@ -594,7 +604,7 @@ static void Event4() {
     }
 }
 
-static void Initialize() {
+static void Init() {
     for ( int i = 0; i < _crossfade.Length; i++ ) {
         _crossfade[i] = new Animo.Crossfade();
     }
@@ -641,6 +651,8 @@ static void Initialize() {
     if ( ! _projectileFallback ) {
         _projectileFallback = _dummy;
     }
+
+    GUIUnity.Init();
 }
 
 static UnityEngine.Object UnityLoad( string name ) {
