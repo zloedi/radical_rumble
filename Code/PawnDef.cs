@@ -24,7 +24,7 @@ public static Def Tower = Register( new Def {
     damage = 60,
     radius = 1.4f,
     color = Color.magenta,
-    healthbar = 3,
+    u_healthbar = 3,
 } );
 
 public static Def Turret = Register( new Def {
@@ -38,7 +38,7 @@ public static Def Turret = Register( new Def {
     radius = 1f,
     color = new Color( 1f, 0.8f, 0 ),
     symbol = 'U',
-    healthbar = 2,
+    u_healthbar = 2,
 } );
 
 public static Def Brute = Register( new Def {
@@ -54,7 +54,7 @@ public static Def Brute = Register( new Def {
     animIdle = 5,
     animMove = 6,
     animAttack = 7,
-    healthbar = 1,
+    u_healthbar = 1,
 } );
 
 public static Def Archer = Register( new Def {
@@ -62,6 +62,7 @@ public static Def Archer = Register( new Def {
     loadTime = 400,
     damage = 40,
     range = 5,
+    count = 2,
 
     color = Color.red,
     maxHP = 120,
@@ -87,7 +88,9 @@ public static Def Flyer = Register( new Def {
     animAttack = 6,
 
     momentAttackOut = 0.7f,
-    healthbar = 1,
+
+    u_healthbar = 1,
+    u_healthbarOffset = new Vector3( 0, 3.5f, 0 ),
 } );
 
 public static Def Zombie = Register( new Def {
@@ -150,8 +153,10 @@ public class Def {
     public float momentLandHit = 0.3f;
     public float momentAttackOut = 1f;
 
-    // healthbar size
-    public int healthbar = 0;
+    // Unity healthbar size
+    public int u_healthbar = 0;
+    // Unity healthbar offset from origin
+    public Vector3 u_healthbarOffset = new Vector3( 0, 2.5f, 0 );
 
     public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }

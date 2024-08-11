@@ -47,10 +47,23 @@ static Transform [] _emitterAttack = new Transform[Pawn.MAX_PAWN];
 static float [] _emitterAttackDuration = new float[Pawn.MAX_PAWN];
 static float [] _emitterAttackDelay = new float[Pawn.MAX_PAWN];
 
-static Pawn _pawn => Cl.game.pawn;
 static Projectile _projectile = new Projectile();
 
+static Player player => Cl.game.player;
+static Pawn _pawn => Cl.game.pawn;
+
 public static void Tick() {
+    int myPlayer;
+
+    if ( player.IsPlayer( Cl.zport ) ) {
+        myPlayer = player.GetByZPort( Cl.zport );
+        GUIUnity.localTeam = player.team[myPlayer];
+        GUIUnity.localMana = player.Mana( myPlayer, Cl.clock );
+        GUIUnity.isObserver = false;
+    } else {
+        GUIUnity.isObserver = true;
+    }
+
     IMGO.Begin();
 
     if ( ! _initialized ) {
@@ -542,7 +555,7 @@ public static void Tick() {
     }
     
     QUI.Begin( 0, 0 );
-    GUIUnity.TickHealthBars();
+    GUIUnity.DrawHealthBars();
     QUI.End();
 }
 

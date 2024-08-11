@@ -156,10 +156,6 @@ partial class Pawn {
         return GetDef( z ).cost;
     }
 
-    public int Healthbar( int z ) {
-        return GetDef( z ).healthbar;
-    }
-
     public int MaxHP( int z ) {
         return GetDef( z ).maxHP;
     }
@@ -418,7 +414,7 @@ partial class Pawn {
 
         for ( int i = 0; i < filter.team.Length; i++ ) {
             foreach ( int z in filter.team[i] ) {
-                int hb = GetDef( z ).healthbar;
+                int hb = GetDef( z ).u_healthbar;
                 filter.Assign( z, filter.healthbar[i][hb] );
             }
         }

@@ -12,21 +12,30 @@ DrawHealthBar( size, position, ... )
 // actually, this is an example of a filter
     vs Draw All Healthbars on filtered entities
 
+// boiler plate code executes once
+
 === TODO ===
 
 ] (UI) healthbars scripting
-    ] load them ingame
-    ] script them on top of the units, fixing sizes
+    ] adjust sliders to hp
+    ] colorize properly
+    * adjust healthbar sizes
+    * adjust healthbar positions
+    * load them ingame
+    * script them on top of the units, fixing sizes
 
-] (UI) QUI should be able to work with Text Mesh Pro to handle the bought assets.
-] (UI) Use the lightning icon from PlayType3 panel in the GUI pack for mana
-
-] Unit hp decrease and death in the gym version.
-] Replace the server tick with the gym version.
+] (UI) Timer
 ] (UI) Unit icons with drag and drop
 ] (UI) interesting mana bar
+] (UI) QUI should be able to work with Text Mesh Pro to handle the bought assets.
+] (UI) Use the lightning icon from PlayType3 panel in the GUI pack for mana
 ] (UI) make a nice win animation, see the one with the GUI pack
 ] (UI) show off at least two states (lobby+play)
+
+] (INP) no input in the Unity client yet.
+
+] (GYM) Unit hp decrease and death in the gym version.
+] (GYM) Replace the server tick with the gym version.
 
 ] (BUG) Fast clicking leads to no-spawn
 ] (IMP) Binary (compressed) deltas.
