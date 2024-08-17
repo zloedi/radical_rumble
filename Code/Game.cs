@@ -169,6 +169,14 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];
                 }
+
+                if ( row == pawn.hp && pawnTrig != null ) {
+                    for ( int i = 0; i < deltaChange.Count; i++ ) {
+                        if ( deltaNumbers[i] == 0 ) {
+                            pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Death;
+                        }
+                    }
+                }
             } else if ( shadowRow.type == ArrayShadow.DeltaType.Int32 ) {
                 for ( int i = 0; i < deltaChange.Count; i++ ) {
                     ( ( int [] )row )[deltaChange[i]] = ( int )deltaNumbers[i];

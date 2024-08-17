@@ -102,6 +102,21 @@ public static void Tick() {
                 }
             }
             _forward[z] = lookat - _pawn.mvPos[z];
+            Cl.Log( $"{Time.time} Fixed lookat on {_pawn.DN( z )}" ); 
+        }
+    }
+
+    // === death ===
+
+    foreach ( var z in _pawn.filter.no_garbage ) {
+        if ( Cl.TrigIsOn( z, Trig.Death ) ) {
+            Vector2 posGame = _pawn.mvPos[z];
+            Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
+            _pawn.mvEnd[z] = _pawn.mvPos[z];
+            _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z];
+            _animOneShot[z] = 0;
+            _animOneShotSpeed[z] = 1;
+            Cl.Log( $"{_pawn.DN( z )} dies." ); 
         }
     }
 
@@ -450,7 +465,7 @@ public static void Tick() {
         if ( _pawn.mvEnd_ms[z] <= Cl.serverClock && _pawn.mvStart_ms[z] != _pawn.mvEnd_ms[z] ) {
             // FIXME: should lerp to actual end pos if offshoot
             _pawn.mvStart_ms[z] = _pawn.mvEnd_ms[z] = Cl.clock;
-            return;
+            continue;
         }
 
         var prev = _pawn.mvPos[z];
@@ -496,16 +511,23 @@ public static void Tick() {
     }
 
     foreach ( var z in _pawn.filter.no_structures ) {
-        int zf = _pawn.focus[z];
+        // FIXME: what if we have dead that are not hp
+        // FIXME: death animations/sequence
+        if ( _pawn.hp[z] == 0 ) {
+            continue;
+        }
+
+        bool isMoving = _pawn.IsMovingOnClient( z );
         Vector2 posGame = _pawn.mvPos[z];
         Vector2 toEnd = _pawn.mvEnd[z] - _pawn.mvPos[z];
-        Vector2 fwdGame = _pawn.mvStart_ms[z] == _pawn.mvEnd_ms[z]
-                            ? _pawn.mvPos[zf] - posGame
-                            : toEnd;
+
+        int zf = _pawn.focus[z];
+        Vector2 fwdGame = isMoving ?  toEnd : _pawn.mvPos[zf] - posGame;
         fwdGame = ( fwdGame.normalized * 4 * Cl.clockDeltaSec + _forward[z] ).normalized;
         _forward[z] = fwdGame;
+
         Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
-        Vector3 fwdWorld = new Vector3( fwdGame.x, 0, fwdGame.y );
+        Vector3 fwdWorld = new Vector3( _forward[z].x, 0, _forward[z].y );
 
         string [] lookup = { "vfx_muzzle", "vfx_bullseye", "vfx_emitter_attack" };
         ImObject imo = DrawPawn( z, posWorld, fwdWorld, lookup: lookup );
@@ -522,8 +544,6 @@ public static void Tick() {
         if ( animSrc == 0 ) {
             continue;
         }
-
-        bool isMoving = _pawn.IsMovingOnClient( z );
 
         // moving is with higher priority than one-shots, interrupt any one-shot here
         int oneShot = isMoving ? 0 : _animOneShot[z];
@@ -680,6 +700,10 @@ static UnityEngine.Object UnityLoad( string name ) {
 
 static bool IsValidAttackTrigger( int z ) {
     if ( ! Cl.TrigIsOn( z, Trig.Attack ) ) {
+        return false;
+    }
+
+    if ( _pawn.hp[z] == 0 ) {
         return false;
     }
 

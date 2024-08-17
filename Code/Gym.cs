@@ -919,10 +919,6 @@ static void GymSetState_kmd( string [] argv ) {
 
 
 
-enum Flags {
-    None,
-}
-
 static Pawn svPawn => Sv.game.pawn;
 
 // inverted mass -- either 0 (inert, infinite mass) or 1 (can be pushed aside)
@@ -1207,16 +1203,36 @@ public static int TickServer() {
             avdW[zAtk] = 0;
 
             // start attacking
-            // FIXME: just use chase when moved from gym, scrap focus
+            // FIXME: just use 'chase' property when moved from gym, scrap focus
+            // FIXME: it is synced and used on the debug client
             svPawn.focus[zAtk] = ( byte )zDfn;
             // the initial attack loop is shorter
+            // FIXME: maybe should be def thing
             svPawn.atkEnd_ms[zAtk] = ZServer.clock + svPawn.AttackTime( zAtk ) / 2;
         }
     }
 
+    // === attack loop: apply damage, reload another attack ====
+
     foreach ( var z in avdAttacking ) {
+        // pawns in the list may die while walking the list
+        if ( svPawn.IsDead( z ) ) {
+            continue;
+        }
 
         if ( InAttackLoop( z ) ) {
+            continue;
+        }
+
+        // damage application
+        int zDfn = avdChase[z];
+        svPawn.hp[zDfn] = ( ushort )Mathf.Max( 0, svPawn.hp[zDfn] - svPawn.Damage( z ) );
+
+        // death
+        if ( svPawn.hp[zDfn] == 0 ) {
+            svPawn.SetState( zDfn, PS.Dead );
+            StopAttack( zDfn );
+            StopAttack( z );
             continue;
         }
 
@@ -1236,6 +1252,25 @@ public static int TickServer() {
         svPawn.atkEnd_ms[z] = ZServer.clock + svPawn.AttackTime( z ) - extra;
     }
 
+    // === handle dead pawns ===
+
+    foreach ( var z in svPawn.filter.ByState( PS.Dead ) ) {
+        svPawn.MvSnapToEnd( z );
+
+        // if dead and couldn't reload, destroy pawn, cancelling this attack
+        int t = svPawn.AttackTime( z ) - svPawn.LoadTime( z );
+        if ( svPawn.atkEnd_ms[z] - t > ZServer.clock ) {
+            Sv.game.Destroy( z );
+            continue;
+        }
+
+        // the dead pawns attacks may still connect (ranged only?), postpone garbage until attack end
+        if ( svPawn.atkEnd_ms[z] <= ZServer.clock ) {
+            Sv.game.Destroy( z );
+        }
+    }
+
+    // copy move position to the synced fixed point transmit
     foreach ( var z in svPawn.filter.no_garbage ) {
         svPawn.mvEnd_tx[z] = Game.VToTx( svPawn.mvEnd[z] );
     }

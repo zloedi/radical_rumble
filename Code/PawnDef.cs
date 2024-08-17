@@ -135,7 +135,10 @@ public class Def {
     public int cost = 3;
     public int maxHP;
     public int speed = 60;
+    // total attack loop time
     public int attackTime = 1000;
+    // part of the attack loop spent in 'reloading'
+    // if it has not passed, won't connect i.e. on death
     public int loadTime = 600;
     public float range;
     public int damage;

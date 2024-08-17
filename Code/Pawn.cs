@@ -38,6 +38,7 @@ partial class Pawn {
         Move        = 1 << 1,
         Attack      = 1 << 2,
         HurtVisuals = 1 << 3,
+        Death       = 1 << 3,
     }
 
     public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );
@@ -180,7 +181,7 @@ partial class Pawn {
     }
 
     public bool IsMovingOnClient( int z ) {
-        return mvStart_ms[z] != mvEnd_ms[z];
+        return mvStart_ms[z] != mvEnd_ms[z] && mvPos[z] != mvEnd[z];
     }
 
     public bool IsRanged( int z ) {

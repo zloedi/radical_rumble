@@ -62,6 +62,10 @@ public static void DrawHealthBars() {
         for ( int size = 0; size < sizeByTeam.Length; size++ ) {
             var pawns = sizeByTeam[size];
             foreach ( var z in pawns ) {
+                // FIXME: what if we have dead that are not hp
+                if ( _pawn.hp[z] == 0 ) {
+                    continue;
+                }
                 Color c = _pawn.team[z] == localTeam ? new Color( 0, 0.45f, 1f ) : Color.red;
                 Vector2 posGame = _pawn.mvPos[z];
                 Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
@@ -69,11 +73,12 @@ public static void DrawHealthBars() {
                 // FIXME: make a QUI analog
                 Vector2 pt = Camera.main.WorldToScreenPoint( posWorld );
                 pt.y = Screen.height - pt.y;
+                int def = _pawn.def[z];
                 RectTransform [] children = QUI.Prefab( pt.x, pt.y, scale: scale,
-                                                            prefab: prefab.HealthBarSz[size],
-                                                            refChildren: refChildren, handle: z );
-                ChildSlider( children, 0 ).value = 0.5f * ( Mathf.Sin( Time.time ) + 1 );
-                ChildImage( children, 1 ).color = c;
+                                                prefab: prefab.HealthBarSz[size],
+                                                refChildren: refChildren, handle: def << 16 | z );
+                Child<Slider>( children, 0 ).value = _pawn.hp[z] / ( float )_pawn.MaxHP( z );
+                Child<Image>( children, 1 ).color = c;
             }
         }
     }
