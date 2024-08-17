@@ -170,7 +170,7 @@ public bool UndeltaState( string [] argv, int clock, out bool updateBoard,
                     ( ( ushort [] )row )[deltaChange[i]] = ( ushort )deltaNumbers[i];
                 }
 
-                if ( row == pawn.hp && pawnTrig != null ) {
+                if ( pawnTrig != null && row == pawn.hp ) {
                     for ( int i = 0; i < deltaChange.Count; i++ ) {
                         if ( deltaNumbers[i] == 0 ) {
                             pawnTrig[deltaChange[i]] |= Pawn.ClientTrigger.Death;

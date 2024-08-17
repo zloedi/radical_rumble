@@ -38,7 +38,7 @@ partial class Pawn {
         Move        = 1 << 1,
         Attack      = 1 << 2,
         HurtVisuals = 1 << 3,
-        Death       = 1 << 3,
+        Death       = 1 << 4,
     }
 
     public static readonly State [] AllStates = ( State[] )Enum.GetValues( typeof( State ) );

@@ -183,24 +183,17 @@ public static void Tick() {
         int zf = _pawn.focus[z];
         int start = Cl.clock;
         int end = _pawn.atkEnd_ms[z];
-
         int landHit = GetLandHitMoment( z );
 
+        // FIXME: we should use looping animation for the mellee attacks
+        // FIXME: calculate the time in the loop, so the impact and land hit match
+        // FIXME: and transition to that, fix Animo to be able to crossfade at specified time
         // clock the time until impact and trigger 'hurt'
         SingleShot.AddConditional( dt => {
-
-            // impact moment -- programmed as an animation event
-            // this doesn't match the damage moment on the server,
-            // but its simpler and good enough I guess
-            if ( landHit > Cl.clock ) {
+            if ( end > Cl.clock ) {
                 return true;
             }
-
-            // notify the target it is hit
             Cl.TrigRaise( zf, Trig.HurtVisuals );
-
-            // TODO: handle any vfx management on impact here
-
             return false;
         } );
 
