@@ -1252,15 +1252,6 @@ public static int TickServer() {
 
     // === handle dead pawns ===
 
-    // remove engagement to dead
-    foreach ( var zd in svPawn.filter.ByState( PS.Dead ) ) {
-        foreach ( var z in svPawn.filter.no_garbage ) {
-            if ( avdChase[z] == zd ) {
-                avdChase[z] = 0;
-            }
-        }
-    }
-
     foreach ( var z in svPawn.filter.ByState( PS.Dead ) ) {
         svPawn.MvSnapToEnd( z );
 
@@ -1274,6 +1265,15 @@ public static int TickServer() {
         // the dead pawns attacks may still connect (ranged only?), postpone garbage until attack end
         if ( svPawn.atkEnd_ms[z] <= ZServer.clock ) {
             Sv.game.Destroy( z );
+        }
+    }
+
+    foreach ( var zd in svPawn.filter.ByState( PS.Dead ) ) {
+        // remove engagement to dead
+        foreach ( var z in svPawn.filter.no_garbage ) {
+            if ( avdChase[z] == zd ) {
+                svPawn.focus[z] = avdChase[z] = 0;
+            }
         }
     }
 
@@ -1509,5 +1509,7 @@ static void AvdFilter() {
 }
 
 
+}
 
-} }
+
+}
