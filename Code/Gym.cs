@@ -1232,7 +1232,6 @@ public static int TickServer() {
         if ( svPawn.hp[zDfn] == 0 ) {
             svPawn.SetState( zDfn, PS.Dead );
             StopAttack( zDfn );
-            StopAttack( z );
             continue;
         }
 
@@ -1241,7 +1240,6 @@ public static int TickServer() {
         int b = avdChase[z];
         float dsq = svPawn.SqDist( a, b );
         float dneed = svPawn.DistanceForAttack( a, b );
-
         if ( dsq > dneed * dneed ) {
             StopAttack( z );
             continue;
@@ -1253,6 +1251,15 @@ public static int TickServer() {
     }
 
     // === handle dead pawns ===
+
+    // remove engagement to dead
+    foreach ( var zd in svPawn.filter.ByState( PS.Dead ) ) {
+        foreach ( var z in svPawn.filter.no_garbage ) {
+            if ( avdChase[z] == zd ) {
+                avdChase[z] = 0;
+            }
+        }
+    }
 
     foreach ( var z in svPawn.filter.ByState( PS.Dead ) ) {
         svPawn.MvSnapToEnd( z );
@@ -1372,25 +1379,13 @@ static void AvdFilter() {
         no_avdWaypoints[team].Clear();
     }
 
-    // FIXME: move to kill-pawn routine if any
+    // FIXME: move to 'destroy' routine if any, don't do it for all non-garbage each tick
     foreach ( var z in svPawn.filter.garbage ) {
         avdW[z] = 0; 
         avdFocus[z] = Vector2.zero; 
         svPawn.focus[z] = avdChase[z] = 0; 
         avdChaseMin[z] = 0; 
         avdFeeler[z] = Vector2.zero; 
-    }
-
-    // FIXME: move to kill-pawn routine if any
-    foreach ( var z in svPawn.filter.no_garbage ) {
-        if ( svPawn.IsDead( avdChase[z] ) || svPawn.IsGarbage( avdChase[z] ) )  {
-            svPawn.focus[z] = avdChase[z] = 0;
-            avdChaseMin[z] = 0; 
-            svPawn.MvInterruptSoft( z, ZServer.clock );
-            avdFocus[z] = svPawn.mvPos[z];
-            avdFeeler[z] = svPawn.mvPos[z];
-            StopAttack( z );
-        }
     }
 
     // we need to let the client snap the position on spawn, do nothing for a tick

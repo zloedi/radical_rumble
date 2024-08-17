@@ -16,7 +16,7 @@ DrawHealthBar( size, position, ... )
 
 === TODO ===
 
-] <=== (GYM) Unit hp decrease and death in the gym version.
+* (GYM) Unit hp decrease and death in the gym version.
 ] (GYM) Replace the server tick with the gym version.
 
 
