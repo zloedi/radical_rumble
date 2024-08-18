@@ -593,8 +593,10 @@ public static void Tick() {
         QUI.canvas.renderMode = RenderMode.ScreenSpaceOverlay;
     }
     
+    WrapBox.EnableCanvasScale();
     QUI.Begin( 0, 0 );
     GUIUnity.DrawHealthBars();
+    GUIUnity.DrawManaBar();
     QUI.End();
 }
 

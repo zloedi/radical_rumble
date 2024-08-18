@@ -23,11 +23,15 @@ public static class GUIUnity {
 [Description( "Show healthbars: 0 -- show damaged healthbars, 1 -- show all healthbars, 2 -- don't show any healthbars." )]
 static int GuiShowHealthbars_kvar = 0;
 
+[Description( "The mana bar stretches" )]
+static bool GuiManabarStretch_kvar = false;
+
 public static int localTeam = 0;
 public static float localMana = 0;
 public static bool isObserver = false;
 
 public static class prefab {
+    public static GameObject ManaBar;
     public static GameObject [] HealthBarSz = new GameObject[Pawn.Def.MAX_HEALTH_BAR];
 }
 
@@ -52,7 +56,7 @@ public static void DrawHealthBars() {
         return;
     }
 
-    float scale = Screen.height / 1500f;
+    float scale = Screen.height / 1800f;
 
     string [] refChildren = {
         "gui_slider",
@@ -90,6 +94,18 @@ public static void DrawHealthBars() {
     }
 }
 
+public static void DrawManaBar() {
+    var wbScreen = new WrapBox( 0, 0, Screen.width, Screen.height );
+    if ( GuiManabarStretch_kvar ) {
+        QUI.Prefab( 0, Screen.height - 60, rtW: Screen.width, rtH: 48, prefab: prefab.ManaBar );
+    } else {
+        var wb = wbScreen.BottomCenter( 1000, 200 );
+        wb = wb.Center( wb.W, wb.H / 2 );
+        QUI.PrefabScaled( wb.x, wb.y, wb.w, wb.h, prefab: prefab.ManaBar );
+    }
+
+}
+
 static void LoadPrefabs() {
     FieldInfo [] fields = typeof( GUIUnity.prefab ).GetFields();
     foreach ( FieldInfo fi in fields ) {
@@ -101,7 +117,7 @@ static void LoadPrefabs() {
             }
         } else {
             var go = UnityLoad( $"gui_{Cellophane.NormalizeName( fi.Name )}" ) as GameObject;
-            fi.SetValue( null, _dummyPrefab );
+            fi.SetValue( null, go ? go : _dummyPrefab );
         }
     }
 }
@@ -109,10 +125,10 @@ static void LoadPrefabs() {
 static UnityEngine.Object UnityLoad( string name ) {
     UnityEngine.Object result = Resources.Load( name );
     if ( ! result ) {
-        Cl.Error( $"[GUI] Failed to load '{name}'" );
+        Cl.Error( $"GUI: Failed to load '{name}'" );
         return null;
     }
-    Cl.Log( $"[GUI] Loaded '{name}'" );
+    Cl.Log( $"GUI: Loaded '{name}'" );
     return result;
 }
 
@@ -120,14 +136,6 @@ static T Child<T>( RectTransform [] children, int child ) {
     var dummy = _dummyPrefab.GetComponent<T>();
     var comp = children[child].GetComponent<T>();
     return comp != null ? comp : dummy;
-}
-
-static Image ChildImage( RectTransform [] children, int child ) {
-    return Child<Image>( children, child );
-}
-
-static Slider ChildSlider( RectTransform [] children, int child ) {
-    return Child<Slider>( children, child );
 }
 
 

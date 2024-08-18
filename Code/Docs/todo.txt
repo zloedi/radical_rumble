@@ -16,6 +16,17 @@ DrawHealthBar( size, position, ... )
 
 === TODO ===
 
+] <==== Use the loading bar for mana with a nice anim for the number
+] (UI) Use the lightning icon from PlayType3 panel in the GUI pack for mana
+
+] (UI) Unit icons with drag and drop
+    * make the 3d client vertical for phones.
+        * fix the camera position/angle/fov
+            + automatic bounds and initial camera position
+        * implement panning 
+    ] spawn zones
+] (INP) no input in the Unity client yet.
+    ] (INP/UI) should demonstrate some serious shit with dragging though
 ] (PTH) units get stuck if endup on impassable hex after avoidance
     pathing should just add the nearest hex to the path
 ] (GYM) Replace the server tick with the gym version.
@@ -23,14 +34,8 @@ DrawHealthBar( size, position, ... )
 
 ] (DOC) put the discord server in the event 5 doc
 
-] (INP) no input in the Unity client yet.
-    ] (INP/UI) should demonstrate some serious shit with dragging though
-
 ] (UI) Timer?
-] (UI) Unit icons with drag and drop
-    ] (UI) Spawn Zones
 ] (UI) interesting mana bar
-] (UI) Use the lightning icon from PlayType3 panel in the GUI pack for mana
 ] (UI) make a nice win animation, see the one with the GUI pack
 ] (UI) show off at least two states (lobby+play)
 
@@ -45,6 +50,8 @@ DrawHealthBar( size, position, ... )
 ] (IMP) Player (not client) reconnect.
 
 ] (INPUT) make the spawns to work in 3d too
+
+] (SV) projectiles should travel with constant speed, not constant time
 
 == Thoughts and prayers ==
 
