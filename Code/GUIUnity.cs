@@ -20,7 +20,8 @@ using PDF = RR.Pawn.Def.Flags;
 public static class GUIUnity {
 
 
-static bool GuiSkipHealthbars_cvar = false;
+[Description( "Show healthbars: 0 -- show damaged healthbars, 1 -- show all healthbars, 2 -- don't show any healthbars." )]
+static int GuiShowHealthbars_kvar = 0;
 
 public static int localTeam = 0;
 public static float localMana = 0;
@@ -43,7 +44,7 @@ public static void Init()
 }
 
 public static void DrawHealthBars() {
-    if ( GuiSkipHealthbars_cvar ) {
+    if ( GuiShowHealthbars_kvar >= 2 ) {
         return;
     }
          
@@ -66,6 +67,11 @@ public static void DrawHealthBars() {
                 if ( _pawn.hp[z] == 0 ) {
                     continue;
                 }
+
+                if ( GuiShowHealthbars_kvar == 0 && _pawn.hp[z] == _pawn.MaxHP( z ) ) {
+                    continue;
+                }
+
                 Color c = _pawn.team[z] == localTeam ? new Color( 0, 0.45f, 1f ) : Color.red;
                 Vector2 posGame = _pawn.mvPos[z];
                 Vector3 posWorld = new Vector3( posGame.x, 0, posGame.y );
