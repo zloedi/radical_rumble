@@ -1203,12 +1203,10 @@ public static int TickServer() {
             avdW[zAtk] = 0;
 
             // start attacking
-            // FIXME: just use 'chase' property when moved from gym, scrap focus
-            // FIXME: it is synced and used on the debug client
-            svPawn.focus[zAtk] = ( byte )zDfn;
             // the initial attack loop is shorter
             // FIXME: maybe should be def thing
             svPawn.atkEnd_ms[zAtk] = ZServer.clock + svPawn.AttackTime( zAtk ) / 2;
+            //Sv.Log( $"{svPawn.DN( zAtk )} starts attacking {svPawn.DN( zDfn )}" );
         }
     }
 
@@ -1220,6 +1218,7 @@ public static int TickServer() {
             continue;
         }
 
+        // waiting for impact
         if ( InAttackLoop( z ) ) {
             continue;
         }
@@ -1227,11 +1226,20 @@ public static int TickServer() {
         // damage application
         int zDfn = avdChase[z];
         svPawn.hp[zDfn] = ( ushort )Mathf.Max( 0, svPawn.hp[zDfn] - svPawn.Damage( z ) );
+        //Sv.Log( $"{svPawn.DN( z )} attacks {svPawn.DN( zDfn )}" );
 
         // death
         if ( svPawn.hp[zDfn] == 0 ) {
             svPawn.SetState( zDfn, PS.Dead );
+
             StopAttack( zDfn );
+            svPawn.MvSnapToEnd( zDfn );
+            avdChase[zDfn] = 0;
+            avdW[zDfn] = 0; 
+            avdFocus[zDfn] = Vector2.zero; 
+            avdChaseMin[zDfn] = 0; 
+            avdFeeler[zDfn] = Vector2.zero; 
+
             continue;
         }
 
@@ -1252,9 +1260,20 @@ public static int TickServer() {
 
     // === handle dead pawns ===
 
-    foreach ( var z in svPawn.filter.ByState( PS.Dead ) ) {
-        svPawn.MvSnapToEnd( z );
+    // keep disengage before the potential recycling of dead
+    foreach ( var zd in svPawn.filter.ByState( PS.Dead ) ) {
+        // remove engagement to dead
+        foreach ( var z in svPawn.filter.no_garbage ) {
+            if ( avdChase[z] == zd ) {
+                //Sv.Log( $"Disengage {svPawn.DN( z )} from dead {svPawn.DN( zd )}" );
+                StopAttack( z );
+                avdChase[z] = 0;
+            }
+        }
+    }
 
+    // wait for any running attacks and recycle
+    foreach ( var z in svPawn.filter.ByState( PS.Dead ) ) {
         // if dead and couldn't reload, destroy pawn, cancelling this attack
         int t = svPawn.AttackTime( z ) - svPawn.LoadTime( z );
         if ( svPawn.atkEnd_ms[z] - t > ZServer.clock ) {
@@ -1262,24 +1281,21 @@ public static int TickServer() {
             continue;
         }
 
-        // the dead pawns attacks may still connect (ranged only?), postpone garbage until attack end
+        // the dead pawns attacks may still connect, postpone garbage until attack end
         if ( svPawn.atkEnd_ms[z] <= ZServer.clock ) {
             Sv.game.Destroy( z );
-        }
-    }
-
-    foreach ( var zd in svPawn.filter.ByState( PS.Dead ) ) {
-        // remove engagement to dead
-        foreach ( var z in svPawn.filter.no_garbage ) {
-            if ( avdChase[z] == zd ) {
-                svPawn.focus[z] = avdChase[z] = 0;
-            }
         }
     }
 
     // copy move position to the synced fixed point transmit
     foreach ( var z in svPawn.filter.no_garbage ) {
         svPawn.mvEnd_tx[z] = Game.VToTx( svPawn.mvEnd[z] );
+    }
+
+    // FIXME: remove focus, use chase when moved to pawn
+    // FIXME: just used for transmit
+    foreach ( var z in svPawn.filter.no_garbage ) {
+        svPawn.focus[z] = avdChase[z];
     }
 
 #if false
@@ -1379,23 +1395,10 @@ static void AvdFilter() {
         no_avdWaypoints[team].Clear();
     }
 
-    // FIXME: move to 'destroy' routine if any, don't do it for all non-garbage each tick
-    foreach ( var z in svPawn.filter.garbage ) {
-        avdW[z] = 0; 
-        avdFocus[z] = Vector2.zero; 
-        svPawn.focus[z] = avdChase[z] = 0; 
-        avdChaseMin[z] = 0; 
-        avdFeeler[z] = Vector2.zero; 
-    }
-
     // we need to let the client snap the position on spawn, do nothing for a tick
     foreach ( var z in svPawn.filter.no_garbage ) {
         assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
     }
-
-    //foreach ( var z in svPawn.filter.flying ) {
-    //    assign( z, svPawn.GetState( z ) == PS.None, avdNew, no_avdNew );
-    //}
 
     foreach ( var z in no_avdNew ) {
         assign( z, IsChasingEnemy( z ), avdChasing, no_avdChasing );
@@ -1463,9 +1466,9 @@ static void AvdFilter() {
 
     }
 
-    // === pawns with clipping feelers ==
+    // === pawns with clipping feelers on the same team ===
 
-    for ( int team = 0; team < 2; team++ ) {
+    for ( int team = 0; team < avdPairClip.Length; team++ ) {
         var clip = avdPairClip[team];
         var tl = svPawn.filter.team[team];
 
