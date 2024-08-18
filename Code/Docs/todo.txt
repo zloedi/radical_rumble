@@ -19,6 +19,7 @@ DrawHealthBar( size, position, ... )
 ] (PTH) units get stuck if endup on impassable hex after avoidance
     pathing should just add the nearest hex to the path
 ] (GYM) Replace the server tick with the gym version.
+] (GYM) Dead are pawns with maxhp > 0 and hp == 0
 
 ] (DOC) put the discord server in the event 5 doc
 
