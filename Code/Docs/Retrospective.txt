@@ -1,4 +1,5 @@
 1. Modelling data for client-server multiplayer games.
 2. Pathing for RTS-like games.
 3. Agent avoidance.
-4. Skinning with models and animations.
+4. Skinning the client with models and animations.
+5. GUI

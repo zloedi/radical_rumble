@@ -72,6 +72,7 @@
             Use the Cellophane for client commands, server can push 'tail' commands in packets.
             Map keys to Cellophane commands, store in the Cellophane cfg.
             Cellophane on the standalone.
+        * IMM 3d models and animation
     
     
     
