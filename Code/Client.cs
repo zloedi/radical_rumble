@@ -99,8 +99,11 @@ public static bool Init() {
     ZClient.onConnected_f = OnConnected;
 
     //QUI.DrawLineRect = (x,y,w,h) => QGL.LateDrawLineRect(x,y,w,h,color:Color.magenta);
-    TickUtil.Log = QUI.Log = s => ZClient.Log( "TickUtil: " + s );
-    TickUtil.Error = QUI.Error = s => ZClient.Error( "TickUtil: " + s );
+    TickUtil.Log = s => ZClient.Log( "TickUtil: " + s );
+    TickUtil.Error = s => ZClient.Error( "TickUtil: " + s );
+
+    QUI.Log = s => ZClient.Log( "QUI: " + s );
+    QUI.Error = s => ZClient.Error( "QUI: " + s );
 
     // we don't need shadow copies of game state on the client
     return game.Init( skipShadowClones: true );
