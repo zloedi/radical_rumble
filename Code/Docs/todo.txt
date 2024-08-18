@@ -17,18 +17,10 @@ DrawHealthBar( size, position, ... )
 === TODO ===
 
 ] (PTH) units get stuck if endup on impassable hex after avoidance
+    pathing should just add the nearest hex to the path
 ] (GYM) Replace the server tick with the gym version.
 
 ] (DOC) put the discord server in the event 5 doc
-
-] (UI) healthbars scripting
-    ] hide the healthbars until some damage
-    * adjust sliders to hp (needs GYM stuff)
-    * colorize properly
-    * adjust healthbar sizes
-    * adjust healthbar positions
-    * load them ingame
-    * script them on top of the units, fixing sizes
 
 ] (INP) no input in the Unity client yet.
     ] (INP/UI) should demonstrate some serious shit with dragging though
