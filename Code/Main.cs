@@ -136,10 +136,10 @@ public static void PreConfig() {
         bind F8 ""cl_set_state edit ; ed_set_state place_spawn_zones"";
         bind F9 ""cl_set_state gym ; gym_set_state steer"";
 
-        //bind A +client_pan_left;
-        //bind D +client_pan_right;
-        //bind S +client_pan_down;
-        //bind W +client_pan_up;
+        bind A +unity_camera_left;
+        bind D +unity_camera_right;
+        bind W +unity_camera_up;
+        bind S +unity_camera_down;
 
         sdl_screen_height 1000;
         sdl_screen_width 900;

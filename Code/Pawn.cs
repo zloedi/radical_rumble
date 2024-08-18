@@ -409,7 +409,7 @@ partial class Pawn {
         for ( int i = 0; i < filter.team.Length; i++ ) {
             foreach ( int z in filter.team[i] ) {
                 filter.Assign( z, IsWinObjective( z ), filter.objectives[i],
-                                                                        filter.no_objectives[1] );
+                                                                        filter.no_objectives[i] );
             }
         }
 

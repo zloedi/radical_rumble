@@ -52,17 +52,30 @@ static Projectile _projectile = new Projectile();
 static Player player => Cl.game.player;
 static Pawn _pawn => Cl.game.pawn;
 
-public static void Tick() {
-    int myPlayer;
+static Camera _camera;
+static Vector2 _cameraMoveDir;
+static float _cameraSpeed;
+static Vector2 _cameraLookat;
+static Vector3 _cameraOffset;
 
-    if ( player.IsPlayer( Cl.zport ) ) {
-        myPlayer = player.GetByZPort( Cl.zport );
-        GUIUnity.localTeam = player.team[myPlayer];
-        GUIUnity.localMana = player.Mana( myPlayer, Cl.clock );
-        GUIUnity.isObserver = false;
-    } else {
-        GUIUnity.isObserver = true;
+public static void Tick() {
+    int localPlayer = 0;
+    int localTeam;
+    float localMana;
+    bool isObserver;
+
+    isObserver = ! player.IsPlayer( Cl.zport );
+
+    if ( ! isObserver ) {
+        localPlayer = player.GetByZPort( Cl.zport );
     }
+
+    localTeam = player.team[localPlayer];
+    localMana = player.Mana( localPlayer, Cl.clock );
+
+    GUIUnity.localTeam = localTeam;
+    GUIUnity.localMana = localMana;
+    GUIUnity.isObserver = isObserver;
 
     IMGO.Begin();
 
@@ -73,6 +86,19 @@ public static void Tick() {
 
     _pawn.UpdateFilters();
     _projectile.UpdateFilters();
+
+    if ( _camera == null && _pawn.filter.objectives[localTeam].Count > 0 ) {
+        int zLookat = _pawn.filter.objectives[localTeam][0];
+        _camera = Camera.main;
+        Plane p = new Plane( Vector3.up, Vector3.zero );
+        Ray r = new Ray( _camera.transform.position, _camera.transform.forward );
+        p.Raycast( r, out float d );
+        _cameraOffset = _camera.transform.position - r.GetPoint( d );
+        _cameraLookat = _pawn.mvEnd[zLookat];
+        Cl.Log( $"Camera is looking at {_pawn.DN( zLookat )}; local team: {localTeam}" ); 
+    }
+
+    UpdateLookat();
 
     // === newly created pawns initialization ===
 
@@ -102,7 +128,7 @@ public static void Tick() {
                 }
             }
             _forward[z] = lookat - _pawn.mvPos[z];
-            Cl.Log( $"{Time.time} Fixed lookat on {_pawn.DN( z )}" ); 
+            Cl.Log( $"Fixed pawn lookat on {_pawn.DN( z )}" ); 
         }
     }
 
@@ -729,6 +755,40 @@ static int GetLandHitMoment( int z ) {
 
 static int GetAttackOutMoment( int z ) {
     return GetMoment( z, _pawn.GetDef( z ).momentAttackOut );
+}
+
+static void UpdateLookat() {
+    if ( ! _camera ) {
+        return;
+    }
+    Vector3 lookat = new Vector3( _cameraLookat.x, 0, _cameraLookat.y );
+    _camera.transform.position = lookat + _cameraOffset;
+    _cameraLookat += CameraVelocity() * 10 * Time.deltaTime;
+    _cameraSpeed -= 4 * Time.deltaTime;
+}
+
+static Vector2 CameraVelocity() {
+    return Vector2.Lerp( _cameraMoveDir, Vector2.zero, 1 - _cameraSpeed );
+}
+
+static void UnityCameraUp_kmd( string [] argv ) {
+    _cameraMoveDir = ( CameraVelocity() + Vector2.down ).normalized;
+    _cameraSpeed = 1;
+}
+
+static void UnityCameraDown_kmd( string [] argv ) {
+    _cameraMoveDir = ( CameraVelocity() + Vector2.up ).normalized;
+    _cameraSpeed = 1;
+}
+
+static void UnityCameraLeft_kmd( string [] argv ) {
+    _cameraMoveDir = ( CameraVelocity() + Vector2.right ).normalized;
+    _cameraSpeed = 1;
+}
+
+static void UnityCameraRight_kmd( string [] argv ) {
+    _cameraMoveDir = ( CameraVelocity() + Vector2.left ).normalized;
+    _cameraSpeed = 1;
 }
 
 
