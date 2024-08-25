@@ -36,6 +36,7 @@ public static Font font;
 public static class prefab {
     public static GameObject Window;
     public static GameObject Panel;
+    public static GameObject SliderScroll;
     public static GameObject ManaBar;
     public static GameObject [] HealthBarSz = new GameObject[Pawn.Def.MAX_HEALTH_BAR];
 }
@@ -51,7 +52,7 @@ public static void Init()
     _dummyPrefab.AddComponent<Slider>();
     _dummyPrefab.AddComponent<TMP_Text>();
     LoadPrefabs();
-    font = UnityLoad( "fonts/Alata-Regular" ) as Font;
+    font = UnityLoad( "Alata-Regular" ) as Font;
 }
 
 public static void DrawHealthBars() {

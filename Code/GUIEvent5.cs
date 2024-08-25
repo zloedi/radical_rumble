@@ -17,6 +17,7 @@ using Cl = RR.Client;
 using prefab = GUIUnity.prefab;
 
 using static GUIUnity;
+using static QUI.WidgetResult;
 
 public static class GuiEvent5 {
 
@@ -24,7 +25,7 @@ public static class GuiEvent5 {
 static int NumCollections_cvar = 2;
 static int _numCollections => Mathf.Clamp( NumCollections_cvar, 2, 8 );
 
-static int PanelSize_cvar = 200;
+static int PanelSize_cvar = 400;
 static int _panelSize => Mathf.Clamp( PanelSize_cvar, 20, 500 );
 
 static int SizeTitle_cvar = 30;
@@ -40,6 +41,8 @@ static Pawn _pawn => Cl.game.pawn;
 static List<List<byte>> _collections = new List<List<byte>>();
 static int _collectionIdx;
 static List<byte> _collection => _collections[_collectionIdx];
+static List<float> _sliders = new List<float>();
+static float _slider { get => _sliders[_collectionIdx]; set { _sliders[_collectionIdx] = value; } }
 
 // TODO: draggable main window
 // TODO: collapse main window
@@ -47,6 +50,7 @@ static List<byte> _collection => _collections[_collectionIdx];
 public static void Tick_ui( WrapBox wbox ) {
     if ( _collections.Count == 0 ) {
         _collections.Add( new List<byte>() );
+        _sliders.Add( 0 );
         for ( int z = 0; z < Pawn.MAX_PAWN; z++ ) {
             _collections[0].Add( ( byte )z );
         }
@@ -55,6 +59,7 @@ public static void Tick_ui( WrapBox wbox ) {
     if ( _collections.Count < _numCollections ) {
         for ( int i = _collections.Count; i < _numCollections; i++ ) {
             _collections.Add( new List<byte>() );
+            _sliders.Add( 0 );
         }
     }
 
@@ -66,6 +71,7 @@ public static void Tick_ui( WrapBox wbox ) {
                 colDst.Add( z );
             }
             _collections.RemoveAt( i );
+            _sliders.RemoveAt( i );
         }
     }
 
@@ -104,27 +110,24 @@ static void Panel_ui( WrapBox wbox ) {
                                                 handle: wbox.id );
     Child<TMP_Text>( children, 0 ).text = $"Collection {(char)('A' + _collectionIdx)}";
     List_ui( wbox );
-    //WrapBox wbSlider = Slider_ui( wbox, out float sliderValue );
-    //WrapBox wbList = wbox.TopLeft( wbox.W - wbSlider.W, wbox.H );
-    //List_ui( wbList, _collectionA, slider );
-}
-
-static WrapBox Slider_ui( WrapBox wbox, out float sliderValue ) {
-    wbox = wbox.TopCenter( wbox.W - 40, wbox.H - 80 - 60, y: 90 );
-    wbox = wbox.TopRight( 30, wbox.H );
-    WBUI.ClickRect( wbox );
-    sliderValue = 0;
-    return wbox;
 }
 
 static void List_ui( WrapBox wbox ) {
     wbox = wbox.TopCenter( wbox.W - 50, wbox.H - 80 - 60, y: 90 );
-    //WBUI.ClickRect( wbox );
+    var wboxScissor = wbox.TopLeft( wbox.W - 20, wbox.H );
+    var wboxList = wbox.TopLeft( wboxScissor.W, wbox.H + _slider, y: -_slider );
+
+    WBUI.ClickRect( wboxList );
 
     float y = 0;
-    for ( int i = 0; i < _collection.Count; i++ ) {
-        ListItem_ui( wbox, i, ref y );
+
+    WBUI.EnableScissor( wboxScissor );
+    for ( int i = 0; i < Mathf.Min( 32, _collection.Count ); i++ ) {
+        ListItem_ui( wboxList, i, ref y );
     }
+    WBUI.DisableScissor();
+
+    Slider_ui( wbox, y );
 }
 
 static void ListItem_ui( WrapBox wbox, int i, ref float y ) {
@@ -141,17 +144,46 @@ static void ListItem_ui( WrapBox wbox, int i, ref float y ) {
     y += SizeText_cvar * 3;
 
     float doText( string contents, float textY ) {
-        WrapBox wboxText = wbox.TopLeft( wbox.W, wbox.H, y: textY );
+        var wboxText = wbox.TopLeft( wbox.W, wbox.H, y: textY );
         int handle = WBUI.MeasuredText( contents, wboxText, out float measureW, out float measureH,
                                             font: GUIUnity.font, fontSize: -1, handle: element );
+        wboxText = wboxText.TopLeft( wboxText.W, measureH );
+        WBUI.ClickRect( wboxText );
         WBUI.Text_wg( contents, wboxText, font: GUIUnity.font, fontSize: -1, handle: handle );
-
-        //wboxText = wboxText.TopLeft( wboxText.W, measureH );
-        //WBUI.ClickRect( wboxText );
 
         element++;
 
         return measureH;
+    }
+}
+
+static void Slider_ui( WrapBox wbox, float total ) {
+    var wboxSlider = wbox.TopRight( 20, wbox.H );
+
+    string [] refChildren = { "gui_slider", "gui_handle" };
+
+    RectTransform [] children = QUI.PrefabScaled( wboxSlider.x, wboxSlider.y,
+                                                wboxSlider.w, wboxSlider.h,
+                                                rtW: wboxSlider.W, rtH: wboxSlider.H,
+                                                prefab: GUIUnity.prefab.SliderScroll,
+                                                refChildren: refChildren,
+                                                handle: wbox.id );
+    var slider = Child<Slider>( children, 0 );
+    var rt = Child<RectTransform>( children, 1 );
+    var img = Child<Image>( children, 1 );
+
+    var wboxHandle = WBUI.FromRectTransform( rt );
+    var clickResult = WBUI.ClickRect( wboxHandle );
+    if ( clickResult != Idle ) {
+        img.color = Color.white;
+        if ( clickResult == Active ) {
+            float n = wboxSlider.h;
+            float s = Mathf.Clamp( ( QUI.cursorY - wboxSlider.y ) / wboxSlider.h, 0, 1 );
+            _slider = s * ( total - wbox.H );
+            slider.value = 1 - s;
+        }
+    } else {
+        img.color = new Color( 0.75f, 0.75f, 0.75f );
     }
 }
 

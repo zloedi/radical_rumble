@@ -595,11 +595,9 @@ public static void Tick() {
     
     WrapBox.EnableCanvasScale();
     var wbScreen = new WrapBox( 0, 0, Screen.width, Screen.height );
-    QUI.Begin( 0, 0 );
     GUIUnity.DrawHealthBars();
     GUIUnity.DrawManaBar( wbScreen );
     GuiEvent5.Tick_ui( wbScreen );
-    QUI.End();
 }
 
 static void UpdateEmissive( int z, ImObject imo  ) {
