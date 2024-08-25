@@ -59,7 +59,7 @@ static Vector2 _cameraLookat;
 static Vector3 _cameraOffset;
 
 public static void Tick() {
-    int localPlayer = 0;
+    int localPlayer = 1; // player 0 is invalid, just to show the mana bar on observers
     int localTeam;
     float localMana;
     bool isObserver;
@@ -594,9 +594,11 @@ public static void Tick() {
     }
     
     WrapBox.EnableCanvasScale();
+    var wbScreen = new WrapBox( 0, 0, Screen.width, Screen.height );
     QUI.Begin( 0, 0 );
     GUIUnity.DrawHealthBars();
-    GUIUnity.DrawManaBar();
+    GUIUnity.DrawManaBar( wbScreen );
+    GuiEvent5.Tick_ui( wbScreen );
     QUI.End();
 }
 

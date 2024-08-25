@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace RR {
     
@@ -30,7 +31,11 @@ public static int localTeam = 0;
 public static float localMana = 0;
 public static bool isObserver = false;
 
+public static Font font;
+
 public static class prefab {
+    public static GameObject Window;
+    public static GameObject Panel;
     public static GameObject ManaBar;
     public static GameObject [] HealthBarSz = new GameObject[Pawn.Def.MAX_HEALTH_BAR];
 }
@@ -44,7 +49,9 @@ public static void Init()
     _dummyPrefab = new GameObject( "__GUI_DUMMY_PREFAB__" );
     _dummyPrefab.AddComponent<Image>();
     _dummyPrefab.AddComponent<Slider>();
+    _dummyPrefab.AddComponent<TMP_Text>();
     LoadPrefabs();
+    font = UnityLoad( "fonts/Alata-Regular" ) as Font;
 }
 
 public static void DrawHealthBars() {
@@ -94,16 +101,40 @@ public static void DrawHealthBars() {
     }
 }
 
-public static void DrawManaBar() {
-    var wbScreen = new WrapBox( 0, 0, Screen.width, Screen.height );
+public static void DrawManaBar( WrapBox wbScreen ) {
+    //if ( isObserver ) {
+    //    return;
+    //}
+
+    string [] refChildren = {
+        "gui_slider",
+        "gui_fill",
+        "gui_text",
+    };
+
+    RectTransform [] children;
+
     if ( GuiManabarStretch_kvar ) {
-        QUI.Prefab( 0, Screen.height - 60, rtW: Screen.width, rtH: 48, prefab: prefab.ManaBar );
+        children = QUI.Prefab( 0, Screen.height - 60,
+                                                rtW: Screen.width, rtH: 48, prefab: prefab.ManaBar,
+                                                refChildren: refChildren );
     } else {
         var wb = wbScreen.BottomCenter( 1000, 200 );
         wb = wb.Center( wb.W, wb.H / 2 );
-        QUI.PrefabScaled( wb.x, wb.y, wb.w, wb.h, prefab: prefab.ManaBar );
+        children = QUI.PrefabScaled( wb.x, wb.y, wb.w, wb.h, prefab: prefab.ManaBar,
+                                                                        refChildren: refChildren );
     }
 
+    Child<Slider>( children, 0 ).value = localMana / 10f;
+    float bump = 0.2f * ( 1 + 0.5f * Mathf.Sin( Time.time * 3 ) );
+    Child<Image>( children, 1 ).color = new Color( 0.6f, 0.1f, 0.6f ) + new Color( 1, 1, 1 ) * bump;
+    Child<TMP_Text>( children, 2 ).text = ( ( int )localMana ).ToString();
+}
+
+public static T Child<T>( RectTransform [] children, int child ) {
+    var dummy = _dummyPrefab.GetComponent<T>();
+    var comp = children[child].GetComponent<T>();
+    return comp != null ? comp : dummy;
 }
 
 static void LoadPrefabs() {
@@ -130,12 +161,6 @@ static UnityEngine.Object UnityLoad( string name ) {
     }
     Cl.Log( $"GUI: Loaded '{name}'" );
     return result;
-}
-
-static T Child<T>( RectTransform [] children, int child ) {
-    var dummy = _dummyPrefab.GetComponent<T>();
-    var comp = children[child].GetComponent<T>();
-    return comp != null ? comp : dummy;
 }
 
 

@@ -25,6 +25,9 @@ public static Def Tower = Register( new Def {
     radius = 1.4f,
     color = Color.magenta,
     u_healthbar = 3,
+
+    description = "A towering stone structure, its walls are thick and fortified with iron spikes. The tower provides a strategic vantage point and a powerful deterrent to any would-be attackers.",
+
 } );
 
 public static Def Turret = Register( new Def {
@@ -39,6 +42,8 @@ public static Def Turret = Register( new Def {
     color = new Color( 1f, 0.8f, 0 ),
     symbol = 'U',
     u_healthbar = 2,
+
+    description = "A massive, wooden ballista stands tall. Its massive bolts are tipped with sharp metal points, capable of piercing even the hardest enemy. The ballista is a fearsome weapon of war, capable of turning the tide of even the most desperate battle.",
 } );
 
 public static Def Brute = Register( new Def {
@@ -55,6 +60,9 @@ public static Def Brute = Register( new Def {
     animMove = 6,
     animAttack = 7,
     u_healthbar = 1,
+
+    description = "A towering knight, clad in heavy plate armor, wields a massive sword. His muscles bulge beneath his armor. He is able to crush even the toughest opponents. However, his heavy armor limits his speed and agility, making him vulnerable to ranged attacks.",
+
 } );
 
 public static Def Archer = Register( new Def {
@@ -68,6 +76,9 @@ public static Def Archer = Register( new Def {
     maxHP = 120,
     radius = 0.35f,
     symbol = 'a',
+
+    description = "A seasoned archer, clad in leather armor, wields a longbow. Her eyes are sharp and focused, and her movements are precise. She possesses incredible accuracy, able to hit targets from incredible distances. Her arrows are crafted with the finest materials, ensuring a deadly impact upon their target.",
+
 } );
 
 public static Def Flyer = Register( new Def {
@@ -91,6 +102,9 @@ public static Def Flyer = Register( new Def {
 
     u_healthbar = 1,
     u_healthbarOffset = new Vector3( 0, 3.5f, 0 ),
+
+    description = "A massive, winged beast dominates the skies. Its armored scales and immense size make it nearly invincible. Its powerful wings can generate hurricane-force winds.",
+
 } );
 
 public static Def Zombie = Register( new Def {
@@ -110,6 +124,9 @@ public static Def Zombie = Register( new Def {
     animIdle = 5,
     animMove = 6,
     animAttack = 7,
+
+    description = "A skeletal figure, clad in a tattered cloak. Its empty eye sockets are filled with a cold, calculating gaze. Despite its weak appearance, it possesses incredible speed and agility.",
+
 } );
 
 // =============================
@@ -127,6 +144,8 @@ public class Def {
     public const int MAX_HEALTH_BAR = 4;
 
     public static float MaxRadius;
+
+    public bool IsStructure => ( flags & Flags.Structure ) != 0;
 
     public string name;
     public int count = 1;
@@ -156,12 +175,12 @@ public class Def {
     public float momentLandHit = 0.3f;
     public float momentAttackOut = 1f;
 
+    public string description;
+
     // Unity healthbar size
     public int u_healthbar = 0;
     // Unity healthbar offset from origin
     public Vector3 u_healthbarOffset = new Vector3( 0, 2.5f, 0 );
-
-    public bool IsStructure => ( flags & Flags.Structure ) != 0;
 }
 
 public static List<Def> defs;

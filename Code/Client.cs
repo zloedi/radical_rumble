@@ -98,10 +98,10 @@ public static bool Init() {
     ZClient.onServerPacket_f = OnServerPacket;
     ZClient.onConnected_f = OnConnected;
 
-    //QUI.DrawLineRect = (x,y,w,h) => QGL.LateDrawLineRect(x,y,w,h,color:Color.magenta);
     TickUtil.Log = s => ZClient.Log( "TickUtil: " + s );
     TickUtil.Error = s => ZClient.Error( "TickUtil: " + s );
 
+    QUI.DrawLineRect = (x,y,w,h) => QGL.LateDrawLineRect(x,y,w,h,color:Color.magenta);
     QUI.Log = s => ZClient.Log( "QUI: " + s );
     QUI.Error = s => ZClient.Error( "QUI: " + s );
 

@@ -65,6 +65,9 @@
     <Reference Include="UnityEngine.UI">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.UI.dll</HintPath>
     </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ZloediUtils/Animo.cs" />
@@ -110,6 +113,7 @@
     <Compile Include="ClientPlayUnity.cs" />
     <Compile Include="ClientEdit.cs" />
     <Compile Include="GUIUnity.cs" />
+    <Compile Include="GUIEvent5.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="ArrayShadow.cs" />
     <Compile Include="FilterUtil.cs" />
