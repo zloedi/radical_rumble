@@ -229,6 +229,7 @@ static Def Register( Def def ) {
     if ( defs == null ) {
         var dummy = new Def();
         dummy.name = "GARBAGE";
+        dummy.description = "A towering pile of refuse, its stench is overpowering and its appearance is unsightly.";
         defs = new List<Def>{ dummy };
     }
     defs.Add( def );
