@@ -52,7 +52,7 @@ static WrapBox _dragItemBox, _dropItemBox;
 static List<byte> _dragCollection => _collections[_dragCollectionIdx];
 static List<byte> _dropCollection => _collections[_dropCollectionIdx];
 
-static float _windowX = float.MaxValue, _windowY = float.MaxValue;
+static WrapBox _wboxWindow = new WrapBox{ id = -1 };
 
 // TODO: collapse main window
 // TODO: procedural tooltip
@@ -89,22 +89,17 @@ public static void Tick_ui( WrapBox wbox ) {
 }
 
 static void Window_ui( WrapBox wbox ) {
-    wbox = wbox.TopCenter( _numCollections * _panelSize, wbox.H - 320, y: 80 );
 
-    _windowX = _windowX == float.MaxValue ? wbox.x : _windowX;
-    _windowY = _windowY == float.MaxValue ? wbox.y : _windowY;
-
-    wbox.x = _windowX;
-    wbox.y = _windowY;
-
+    if ( _wboxWindow.w != wbox.w || _wboxWindow.h != wbox.h ) {
+        _wboxWindow = wbox;
+    }
+        
+    wbox = _wboxWindow.TopCenter( _numCollections * _panelSize, wbox.H - 320, y: 80 );
     var wboxFrame = wbox.Center( wbox.W + 100, wbox.H + 100 );
 
     var res = WBUI.ClickRect( wboxFrame );
     if ( res == Active ) {
-        QUI.DragPosition( res, ref _windowX, ref _windowY );
-    } else {
-        _windowX = wbox.x;
-        _windowY = wbox.y;
+        QUI.DragPosition( res, ref _wboxWindow.x, ref _wboxWindow.y );
     }
 
     string [] refChildren = { "gui_text", };
@@ -238,7 +233,27 @@ static WrapBox ListItemVisuals_ui( WrapBox wbox, int i, ref float y ) {
     y += doText( text, y );
     y += SizeText_cvar * 3;
 
-    return wbox.TopLeft( wbox.W, y - y0, y: y0, id: i );
+    var wboxItem = wbox.TopLeft( wbox.W, y - y0, y: y0, id: i );
+
+    if ( ! _pawn.IsGarbage( z ) ) {
+        string [] refChildren = {
+            "gui_slider",
+            "gui_fill",
+        };
+
+        var wboxHB = wboxItem.TopRight( SizeTitle_cvar * 2, SizeTitle_cvar );
+        RectTransform [] children = QUI.PrefabScaled( wboxHB.x, wboxHB.y,
+                                                    wboxHB.w, wboxHB.h,
+                                                    rtW: wboxHB.W, rtH: wboxHB.H,
+                                                    prefab: prefab.HealthBarSz[1],
+                                                    refChildren: refChildren,
+                                                    handle: ( _pawn.def[z] << 16 ) | z );
+        Color c = _pawn.team[z] == localTeam ? new Color( 0, 0.45f, 1f ) : Color.red;
+        Child<Slider>( children, 0 ).value = _pawn.hp[z] / ( float )_pawn.MaxHP( z );
+        Child<Image>( children, 1 ).color = c;
+    }
+
+    return wboxItem;
 
     float doText( string contents, float textY ) {
         var wboxText = wbox.TopLeft( wbox.W, wbox.H, y: textY );
