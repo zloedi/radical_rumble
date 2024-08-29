@@ -44,8 +44,17 @@ static List<byte> _collection => _collections[_collectionIdx];
 static List<float> _sliders = new List<float>();
 static float _slider { get => _sliders[_collectionIdx]; set { _sliders[_collectionIdx] = value; } }
 
+static int _dragItem, _dropItem, _itemUnderCursor;
+static int _dragCollectionIdx, _dropCollectionIdx;
+static float _dragX, _dragY;
+static WrapBox _dragItemBox, _dropItemBox;
+
+static List<byte> _dragCollection => _collections[_dragCollectionIdx];
+static List<byte> _dropCollection => _collections[_dropCollectionIdx];
+
 // TODO: draggable main window
 // TODO: collapse main window
+// TODO: procedural tooltip
 
 public static void Tick_ui( WrapBox wbox ) {
     if ( _collections.Count == 0 ) {
@@ -92,10 +101,43 @@ static void Window_ui( WrapBox wbox ) {
                                         + $"Mana: {localMana:00.00}; "
                                         + $"Clock: {Mathf.Repeat( Cl.clock/1000f, 20 ):00.00}";
 
+    _dropItem = -1;
+
     for ( wbox = wbox.TopLeft( _panelSize, wbox.H ), _collectionIdx = 0;
             _collectionIdx < _numCollections;
             _collectionIdx++, wbox = wbox.NextRight( _collectionIdx ) ) {
         Panel_ui( wbox );
+    }
+
+    // draw the dragged item on top of everything
+    if ( _dragItem >= 0 ) {
+        float y = 0;
+        _collectionIdx = _dragCollectionIdx;
+        ListItemVisuals_ui( _dragItemBox, _dragItem, ref y );
+    }
+
+    // handle 'drop'
+    if ( _dropItem >= 0 && _dropCollectionIdx >= 0 ) {
+        byte z = _dragCollection[_dragItem];
+
+        _dropItem += _dragItemBox.midPoint.y > _dropItemBox.midPoint.y ? 1 : 0;
+        _dropItem = Mathf.Clamp( _dropItem, 0, _dropCollection.Count );
+
+        _dragCollection.RemoveAt( _dragItem );
+        _dropCollection.Insert( _dropItem, z );
+
+        _dragItem = -1;
+        _dropItem = -1;
+    }
+
+    if ( _dragItem < 0 && _dropItem < 0 ) {
+        _dragCollectionIdx = -1;
+        _dropCollectionIdx = -1;
+    }
+
+    // just in case if the app got out of focus while dragging
+    if ( QUI.activeWidget == 0 ) {
+        _dragItem = -1;
     }
 }
 
@@ -117,10 +159,14 @@ static void List_ui( WrapBox wbox ) {
     var wboxScissor = wbox.TopLeft( wbox.W - 20, wbox.H );
     var wboxList = wbox.TopLeft( wboxScissor.W, wbox.H + _slider, y: -_slider );
 
-    WBUI.ClickRect( wboxList );
+    // select list to drop dragged item if dragging
+    if ( _dragItem >= 0 && WBUI.CursorInRect( wboxList ) ) {
+        WBUI.FillRect( wboxScissor, color: new Color( 1, 1, 1, 0.15f ) );
+        _dropCollectionIdx = _collectionIdx;
+    }
 
+    // draw the list while scissor
     float y = 0;
-
     WBUI.EnableScissor( wboxScissor );
     for ( int i = 0; i < Mathf.Min( 32, _collection.Count ); i++ ) {
         ListItem_ui( wboxList, i, ref y );
@@ -131,28 +177,55 @@ static void List_ui( WrapBox wbox ) {
 }
 
 static void ListItem_ui( WrapBox wbox, int i, ref float y ) {
+    var wboxItem = ListItemVisuals_ui( wbox, i, ref y );
+
+    // keep track of the item under the cursor, we want to insert the dragged there
+    if ( _dragItem >= 0 && WBUI.CursorInRect( wboxItem ) ) {
+        _itemUnderCursor = i;
+        _dropItemBox = wboxItem;
+    }
+
+    // handle hover, click and drag input
+    var res = WBUI.ClickRect( wboxItem );
+    if ( res != Idle ) {
+        WBUI.FillRect( wboxItem, color: new Color( 1, 1, 1, 0.15f ) );
+        if ( res == Active ) {
+            QUI.DragPosition( res, ref _dragX, ref _dragY );
+            _dragItemBox = new WrapBox( _dragX, _dragY, wboxItem.w, wboxItem.h, wboxItem.id * 17 ); 
+            _dragCollectionIdx = _collectionIdx;
+            _dragItem = i;
+        } else if ( res == Dropped ) {
+            _dragItem = i;
+            _dropItem = _itemUnderCursor;
+        } else {
+            _dragX = wboxItem.x;
+            _dragY = wboxItem.y;
+        }
+    }
+}
+
+static WrapBox ListItemVisuals_ui( WrapBox wbox, int i, ref float y ) {
     int z = _collection[i];
     Pawn.Def def = _pawn.GetDef( z );
 
-    string title = $"<size={WrapBox.ScaleRound( SizeTitle_cvar )}><color={ColorTitle_cvar}>{def.name}</color></size>";
+    string title = $"<size={WrapBox.ScaleRound( SizeTitle_cvar )}><color={ColorTitle_cvar}>{def.name} {z}</color></size>";
     string text = $"<size={WrapBox.ScaleRound( SizeText_cvar )}><color={ColorText_cvar}>{def.description}</color></size>";
 
-    int element = i * 31;
-
+    int childHandle = WBUI.Hash( wbox, i ) * 17;
+    float y0 = y;
     y += doText( title, y );
     y += doText( text, y );
     y += SizeText_cvar * 3;
 
+    return wbox.TopLeft( wbox.W, y - y0, y: y0, id: i );
+
     float doText( string contents, float textY ) {
         var wboxText = wbox.TopLeft( wbox.W, wbox.H, y: textY );
         int handle = WBUI.MeasuredText( contents, wboxText, out float measureW, out float measureH,
-                                            font: GUIUnity.font, fontSize: -1, handle: element );
+                                        font: GUIUnity.font, fontSize: -1, handle: childHandle );
         wboxText = wboxText.TopLeft( wboxText.W, measureH );
-        WBUI.ClickRect( wboxText );
         WBUI.Text_wg( contents, wboxText, font: GUIUnity.font, fontSize: -1, handle: handle );
-
-        element++;
-
+        childHandle++;
         return measureH;
     }
 }
