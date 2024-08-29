@@ -24,6 +24,8 @@ static float TestFloat_cvar = 0;
 static bool ClSkipStructureProjectiles_kvar = false;
 [Description( "Skip all projectile visuals" )]
 static bool ClSkipProjectiles_kvar = false;
+[Description( "Show the event 5 test UI" )]
+static bool ClEvent5UI_kvar = false;
 
 static bool _initialized;
 static GameObject _dummy;
@@ -582,8 +584,6 @@ public static void Tick() {
         Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
     }
 
-    //Event4();
-
     IMGO.End();
 
     // === GUI ===
@@ -597,7 +597,9 @@ public static void Tick() {
     var wbScreen = new WrapBox( 0, 0, Screen.width, Screen.height );
     GUIUnity.DrawHealthBars();
     GUIUnity.DrawManaBar( wbScreen );
-    GuiEvent5.Tick_ui( wbScreen );
+    if ( ClEvent5UI_kvar ) {
+        GuiEvent5.Tick_ui( wbScreen );
+    }
 }
 
 static void UpdateEmissive( int z, ImObject imo  ) {
@@ -644,18 +646,6 @@ static ImObject DrawPawn( int z, Vector3 pos, Vector3? forward = null, float sca
         imo.go.transform.localScale = Vector3.one * scale;
     }
     return imo;
-}
-
-static void Event4() {
-    for ( int i = 0, y = 0; y < 10; y++ ) {
-        for ( int x = 0; x < 10; x++, i++ ) {
-
-            GameObject model = _model[i % Pawn.defs.Count];
-            ImObject imo = IMGO.RegisterPrefab( model, handle: i );
-            imo.go.transform.position = new Vector3( x * 4, 0, y * 4 );
-
-        }
-    }
 }
 
 static void Init() {

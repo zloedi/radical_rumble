@@ -178,6 +178,8 @@ public static void Tick( double timeDeltaDbl ) {
 
     InputBegin();
 
+    QUI.Begin( ( int )mousePosScreen.x, ( int )mousePosScreen.y );
+
     _ticks[ClState_kvar % _ticks.Length]();
 
     // make sure the events are cleared each tick, before any incoming deltas
@@ -190,6 +192,8 @@ public static void Tick( double timeDeltaDbl ) {
     if ( ShowBoardBounds_kvar ) {
         Draw.BoardBounds();
     }
+
+    QUI.End();
 
     InputEnd();
 
@@ -320,12 +324,9 @@ static void InputBegin() {
 
     // tick the global (no context) keybinds
     TickKeybinds();
-
-    QUI.Begin( ( int )mousePosScreen.x, ( int )mousePosScreen.y );
 }
 
 static void InputEnd() {
-    QUI.End();
 }
 
 static void UpdateTraceLevel() {

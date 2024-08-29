@@ -28,13 +28,13 @@ static int _numCollections => Mathf.Clamp( NumCollections_cvar, 2, 8 );
 static int PanelSize_cvar = 400;
 static int _panelSize => Mathf.Clamp( PanelSize_cvar, 20, 500 );
 
-static int SizeTitle_cvar = 30;
-static string ColorTitle_cvar = "#ffffff";
-
 static int SizeText_cvar = 18;
+
+static string ColorTitle_cvar = "#ffffff";
 static string ColorText_cvar = "#c0c0c0";
 
-//static float Test_cvar = 0;
+//static float Test1_cvar = 0;
+//static float Test2_cvar = 0;
 
 static Pawn _pawn => Cl.game.pawn;
 
@@ -224,14 +224,14 @@ static WrapBox ListItemVisuals_ui( WrapBox wbox, int i, ref float y ) {
     int z = _collection[i];
     Pawn.Def def = _pawn.GetDef( z );
 
-    string title = $"<size={WrapBox.ScaleRound( SizeTitle_cvar )}><color={ColorTitle_cvar}>{def.name} {z}</color></size>";
+    string title = $"<size={WrapBox.ScaleRound( SizeText_cvar * 1.6f)}><color={ColorTitle_cvar}>{def.name} {z}</color></size>";
     string text = $"<size={WrapBox.ScaleRound( SizeText_cvar )}><color={ColorText_cvar}>{def.description}</color></size>";
 
     int childHandle = WBUI.Hash( wbox, i ) * 17;
     float y0 = y;
     y += doText( title, y );
     y += doText( text, y );
-    y += SizeText_cvar * 3;
+    y += SizeText_cvar * 2;
 
     var wboxItem = wbox.TopLeft( wbox.W, y - y0, y: y0, id: i );
 
@@ -241,13 +241,14 @@ static WrapBox ListItemVisuals_ui( WrapBox wbox, int i, ref float y ) {
             "gui_fill",
         };
 
-        var wboxHB = wboxItem.TopRight( SizeTitle_cvar * 2, SizeTitle_cvar );
-        RectTransform [] children = QUI.PrefabScaled( wboxHB.x, wboxHB.y,
-                                                    wboxHB.w, wboxHB.h,
-                                                    rtW: wboxHB.W, rtH: wboxHB.H,
-                                                    prefab: prefab.HealthBarSz[1],
-                                                    refChildren: refChildren,
-                                                    handle: ( _pawn.def[z] << 16 ) | z );
+        float hbW = wboxItem.W / 2;
+        float hbH = SizeText_cvar * 2f;
+        var wboxHB = wboxItem.TopRight( hbW, hbH );
+        RectTransform [] children = QUI.Prefab( wboxHB.midPoint.x, wboxHB.midPoint.y,
+                                                            scale: wboxHB.h * 0.03f, 
+                                                            prefab: prefab.HealthBarSz[1],
+                                                            refChildren: refChildren,
+                                                            handle: ( _pawn.def[z] << 16 ) | z );
         Color c = _pawn.team[z] == localTeam ? new Color( 0, 0.45f, 1f ) : Color.red;
         Child<Slider>( children, 0 ).value = _pawn.hp[z] / ( float )_pawn.MaxHP( z );
         Child<Image>( children, 1 ).color = c;
