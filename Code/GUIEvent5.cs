@@ -52,7 +52,8 @@ static WrapBox _dragItemBox, _dropItemBox;
 static List<byte> _dragCollection => _collections[_dragCollectionIdx];
 static List<byte> _dropCollection => _collections[_dropCollectionIdx];
 
-// TODO: draggable main window
+static float _windowX = float.MaxValue, _windowY = float.MaxValue;
+
 // TODO: collapse main window
 // TODO: procedural tooltip
 
@@ -89,7 +90,23 @@ public static void Tick_ui( WrapBox wbox ) {
 
 static void Window_ui( WrapBox wbox ) {
     wbox = wbox.TopCenter( _numCollections * _panelSize, wbox.H - 320, y: 80 );
+
+    _windowX = _windowX == float.MaxValue ? wbox.x : _windowX;
+    _windowY = _windowY == float.MaxValue ? wbox.y : _windowY;
+
+    wbox.x = _windowX;
+    wbox.y = _windowY;
+
     var wboxFrame = wbox.Center( wbox.W + 100, wbox.H + 100 );
+
+    var res = WBUI.ClickRect( wboxFrame );
+    if ( res == Active ) {
+        QUI.DragPosition( res, ref _windowX, ref _windowY );
+    } else {
+        _windowX = wbox.x;
+        _windowY = wbox.y;
+    }
+
     string [] refChildren = { "gui_text", };
     RectTransform [] children = QUI.PrefabScaled( wboxFrame.x, wboxFrame.y,
                                                 wboxFrame.w, wboxFrame.h,
@@ -111,6 +128,8 @@ static void Window_ui( WrapBox wbox ) {
 
     // draw the dragged item on top of everything
     if ( _dragItem >= 0 ) {
+        var wboxBgr = _dragItemBox.Center( _dragItemBox.W + 10, _dragItemBox.H + 10 );
+        WBUI.FillRect( wboxBgr, color: new Color( 0.15f, 0.1f, 0.2f, 0.75f ) );
         float y = 0;
         _collectionIdx = _dragCollectionIdx;
         ListItemVisuals_ui( _dragItemBox, _dragItem, ref y );
@@ -143,6 +162,8 @@ static void Window_ui( WrapBox wbox ) {
 
 static void Panel_ui( WrapBox wbox ) {
     wbox = wbox.BottomLeft( wbox.W - 10, wbox.H - 60 );
+    // so we don't drag while inside a panel
+    WBUI.ClickRect( wbox );
     string [] refChildren = { "gui_text", };
     RectTransform [] children = QUI.PrefabScaled( wbox.x, wbox.y,
                                                 wbox.w, wbox.h,
