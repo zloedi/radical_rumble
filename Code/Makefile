@@ -1,3 +1,6 @@
+bootstrap_unity:
+	rm ./bin/Debug/bootstrap.dll; make ./bin/Debug/bootstrap.dll
+
 debug_unity:
 	rm ./bin/Debug/game.dll; make ./bin/Debug/game.dll
 
@@ -17,6 +20,9 @@ all: debug_sdl release_sdl debug_unity release_unity
 
 ./bin/Release/game_sdl.exe:
 	dotnet build game_sdl.csproj --nologo --configuration Release \
+
+./bin/Debug/bootstrap.dll:
+	dotnet build bootstrap.csproj --nologo --configuration Debug \
 
 ./bin/Debug/game.dll:
 	dotnet build game_unity.csproj --nologo --configuration Debug \

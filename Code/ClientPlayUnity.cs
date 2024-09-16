@@ -18,6 +18,8 @@ using PDF = RR.Pawn.Def.Flags;
     
 public static class ClientPlayUnity {
 
+public static Action script = () => {};
+
 static float TestFloat_cvar = 0;
 
 [Description( "Skip structures projectile visuals" )]
@@ -600,6 +602,8 @@ public static void Tick() {
     if ( ClEvent5UI_kvar ) {
         GuiEvent5.Tick_ui( wbScreen );
     }
+
+    Qonsole.TryExecute( "roslyn_script" );
 }
 
 static void UpdateEmissive( int z, ImObject imo  ) {

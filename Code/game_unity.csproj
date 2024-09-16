@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>game</RootNamespace>
-    <AssemblyName>game</AssemblyName>
+    <AssemblyName>.game</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -20,7 +20,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -29,7 +29,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;UNITY_STANDALONE;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -121,10 +121,18 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\
+      <PostBuildEvent>
+rm $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\.game.dll
+rm $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\.game.pdb
+rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\.game.dll
+rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.game.dll
+rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.game.pdb
 copy $(TargetPath) $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
-copy $(TargetDir)\game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
-copy $(TargetDir)\game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
+copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\
+copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\
+copy $(TargetDir)\.game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\
+copy $(TargetDir)\.game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
+copy $(TargetDir)\.game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
 copy $(ProjectDir)*.map $(ProjectDir)..\BuildUnity</PostBuildEvent>
   </PropertyGroup>
 </Project>
