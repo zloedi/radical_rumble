@@ -52,25 +52,19 @@ public class Bootstrap : MonoBehaviour {
             Debug.Log( "Already have Bootstrap" );
         }
 
-        Debug.Log( "Start " + AppDomain.CurrentDomain.BaseDirectory );
-        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-        foreach ( var a in assemblies ) {
-            Debug.Log( a.Location );
-        }
+        Debug.Log( "Start" );
+        //var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        //foreach ( var a in assemblies ) {
+        //    Debug.Log( a.Location );
+        //}
 
         _options = ScriptOptions.Default;
+        //_options = _options.WithImports( "UnityEngine", "UnityEngine.CoreModule" );
         _options = _options.AddReferences( Assembly.LoadFrom( $"{Application.dataPath}/.game.dll" ) );
 
         string code;
         
         code = @"
-            public class some {
-                public some() {
-                    var p = new RR.Pawn();
-                    Qonsole.Log( p.filter.no_garbage.Count );
-                }
-            }
-            new some();
             Qonsole.Init();
             Qonsole.Start();
         "; 
@@ -91,6 +85,7 @@ public class Bootstrap : MonoBehaviour {
         _compiledUpdate = CSharpScript.Create( code, _options );
 
         Setup().Wait();
+        SetupWatcher();
     }
 
     static async Task Setup() {
@@ -118,7 +113,61 @@ public class Bootstrap : MonoBehaviour {
         await _compiledUpdate.RunAsync();
     }
 
+    static async Task CompiledRoslyn() {
+        await _roslyn.RunAsync();
+    }
+
+    static void SetupWatcher() {
+        var watcher = new FileSystemWatcher(@"c:\cygwin64\tmp\roslyn_scripts");
+
+        watcher.NotifyFilter = NotifyFilters.Attributes
+                                //| NotifyFilters.CreationTime
+                                //| NotifyFilters.DirectoryName
+                                //| NotifyFilters.FileName
+                                //| NotifyFilters.LastAccess
+                                | NotifyFilters.LastWrite
+                                //| NotifyFilters.Security
+                                | NotifyFilters.Size;
+
+        watcher.Changed += OnChanged;
+        //watcher.Created += OnCreated;
+        //watcher.Deleted += OnDeleted;
+        //watcher.Renamed += OnRenamed;
+        watcher.Error += OnError;
+
+        watcher.Filter = "*.cs";
+        watcher.IncludeSubdirectories = true;
+        watcher.EnableRaisingEvents = true;
+        Debug.Log( "Watcher setup done." );
+    }
+
+    static Script _roslyn;
+    private static void OnChanged( object sender, FileSystemEventArgs e ) {
+        Debug.Log( "Script changed: " + e.FullPath );
+        if (e.ChangeType != WatcherChangeTypes.Changed) {
+            return;
+        }
+        try {
+            var code = File.ReadAllText( e.FullPath );
+            _roslyn = CSharpScript.Create( code, _options );
+        } catch ( Exception ex ) {
+            Debug.LogError( ex );
+        }
+    }
+
+    private static void OnError(object sender, ErrorEventArgs e) {
+        Debug.LogError( e.GetException() );
+    }
+
     static void RoslynScript_kmd( string [] _ ) {
+        if ( _roslyn != null ) {
+            try {
+                CompiledRoslyn().Wait();
+            } catch ( Exception ex ) {
+                Debug.LogError( ex );
+                _roslyn = null;
+            }
+        }
     }
 }
 
