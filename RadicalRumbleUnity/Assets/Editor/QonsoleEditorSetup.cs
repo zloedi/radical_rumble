@@ -1,3 +1,4 @@
+#if false
 using UnityEditor;
 
 [InitializeOnLoad]
@@ -14,3 +15,4 @@ public static class QonsoleEditorSetup {
         Qonsole.Log( "Qonsole setup to work in the editor." );
     }
 }
+#endif
