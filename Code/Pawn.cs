@@ -16,7 +16,7 @@ using static Pawn.Def;
 using PDF = RR.Pawn.Def.Flags;
 
 
-partial class Pawn {
+public partial class Pawn {
     public enum State {
         None,
         Spawning,

@@ -153,7 +153,8 @@ public static void PreConfig() {
     KeyBinds.Error = s => Qonsole.Error( "Keybinds: " + s );
     QGL.Log = o => Qonsole.Log( "QGL: " + o );
     QGL.Error = s => Qonsole.Error( "QGL: " + s );
-
+    Roslyn.Log = o => Qonsole.Log( "Roslyn: " + o );
+    Roslyn.Error = s => Qonsole.Error( "Roslyn: " + s );
 }
 
 public static void PostStart() {
@@ -178,6 +179,8 @@ public static void PostStart() {
     _clockDate = DateTime.UtcNow;
     _clockPrevDate = DateTime.UtcNow;
     _initialized = true;
+
+    Roslyn.Init();
 
     } catch ( Exception e ) {
         Qonsole.Error( e );

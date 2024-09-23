@@ -6,8 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "game_sdl", "game_sdl.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "game_unity", "game_unity.csproj", "{0C5EB150-874C-487C-8D2A-A3D28D4B23B6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "bootstrap", "bootstrap.csproj", "{1C5EB151-874C-487C-8D2A-A3D28D4B23B6}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -22,10 +20,6 @@ Global
 		{0C5EB150-874C-487C-8D2A-A3D28D4B23B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C5EB150-874C-487C-8D2A-A3D28D4B23B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C5EB150-874C-487C-8D2A-A3D28D4B23B6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1C5EB151-874C-487C-8D2A-A3D28D4B23B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1C5EB151-874C-487C-8D2A-A3D28D4B23B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1C5EB151-874C-487C-8D2A-A3D28D4B23B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1C5EB151-874C-487C-8D2A-A3D28D4B23B6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

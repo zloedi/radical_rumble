@@ -12,7 +12,7 @@ using SDLPorts;
 namespace RR {
     
     
-static class Client {
+public static class Client {
 
 
 [Description( @"Connect to this server for multiplayer.

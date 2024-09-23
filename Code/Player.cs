@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace RR {
 
 
-class Player {
+public class Player {
     // player 0 is invalid though, bump it up if you need 4 players
     public const int MAX_PLAYER = 4;
 

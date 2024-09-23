@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>game</RootNamespace>
-    <AssemblyName>.game</AssemblyName>
+    <AssemblyName>game</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -20,7 +20,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -29,7 +29,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;UNITY_STANDALONE;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -38,6 +38,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.CodeAnalysis" />
+    <Reference Include="Microsoft.CodeAnalysis.Scripting" />
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
     <Reference Include="Unity.AnimationModule">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
@@ -96,43 +99,39 @@
     <Compile Include="ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="ArrayShadow.cs" />
     <Compile Include="ArrayUtil.cs" />
+    <Compile Include="Board.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="ClientEdit.cs" />
+    <Compile Include="ClientPlayQGL.cs" />
+    <Compile Include="ClientPlayUnity.cs" />
     <Compile Include="Draw.cs" />
+    <Compile Include="FilterUtil.cs" />
+    <Compile Include="GUIEvent5.cs" />
+    <Compile Include="GUIUnity.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="Game_sv.cs" />
     <Compile Include="Gym.cs" />
     <Compile Include="Main.cs" />
-    <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Projectile.cs" />
-    <Compile Include="TickUtil.cs" />
-    <Compile Include="Client.cs" />
-    <Compile Include="ClientPlayQGL.cs" />
-    <Compile Include="ClientPlayUnity.cs" />
-    <Compile Include="ClientEdit.cs" />
-    <Compile Include="GUIUnity.cs" />
-    <Compile Include="GUIEvent5.cs" />
+    <Compile Include="Roslyn.cs" />
     <Compile Include="Server.cs" />
-    <Compile Include="ArrayShadow.cs" />
-    <Compile Include="FilterUtil.cs" />
+    <Compile Include="TickUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-      <PostBuildEvent>
-rm $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\.game.dll
-rm $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\.game.pdb
-rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\.game.dll
-rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.game.dll
-rm $(ProjectDir)..\RadicalRumbleUnity\Assets\.game.pdb
-copy $(TargetPath) $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
-copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\
+    <PostBuildEvent>
+rm $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\game.dll
+rm $(ProjectDir)..\RadicalRumbleUnity\Assets\game.dll
 copy $(TargetPath) $(ProjectDir)..\RadicalRumbleUnity\Assets\
-copy $(TargetDir)\.game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\.Assembly\
-copy $(TargetDir)\.game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
-copy $(TargetDir)\.game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
+copy $(TargetPath) $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
+copy $(TargetDir)\game.pdb $(ProjectDir)..\RadicalRumbleUnity\Assets\
+copy $(TargetDir)\game.pdb $(ProjectDir)..\BuildUnity\RadicalRumble_Data\Managed\
 copy $(ProjectDir)*.map $(ProjectDir)..\BuildUnity</PostBuildEvent>
   </PropertyGroup>
 </Project>
