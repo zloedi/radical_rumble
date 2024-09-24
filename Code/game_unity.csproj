@@ -37,10 +37,22 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\System.Collections.Immutable.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.CodeAnalysis" />
-    <Reference Include="Microsoft.CodeAnalysis.Scripting" />
-    <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting" />
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.Scripting">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.Scripting.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp.Scripting">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.CSharp.Scripting.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AnimationModule">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>

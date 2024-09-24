@@ -586,8 +586,6 @@ public static void Tick() {
         Animo.SampleAnimations( animSrc, imo.go.GetComponent<Animator>(), _crossfade[z] );
     }
 
-    IMGO.End();
-
     // === GUI ===
 
     if ( ! QUI.canvas ) {
@@ -604,6 +602,8 @@ public static void Tick() {
     }
 
     Qonsole.TryExecute( "roslyn_script" );
+
+    IMGO.End();
 }
 
 static void UpdateEmissive( int z, ImObject imo  ) {
