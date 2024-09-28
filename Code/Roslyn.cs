@@ -25,6 +25,8 @@ public static class Roslyn {
 
     static ScriptOptions _options;
 
+    static Script _a, _b;
+
     public static void Init() {
         Assembly gameAssembly = null;
 
@@ -58,11 +60,11 @@ public static class Roslyn {
         } else {
             _options = _options.AddReferences( gameAssembly );
             // use 'using static Script' (this class contains the compiled stuff)
-            CompileString( @"public static class zloedixxx { public static void print() => Qonsole.Log( ""xx"" ); }", out Script a );
-            CompileString( @"public static class yy { public static void print() => Qonsole.Log( ""yy"" ); }", out Script b );
+            CompileString( @"public static class zloedixxx { public static void print() => Qonsole.Log( ""xx"" ); }", out _a );
+            CompileString( @"public static class yy { public static void print() => Qonsole.Log( ""yy"" ); }", out _b );
 
-            GetAssemblyFromScript( a, className: "ScriptA", out Assembly asmA );
-            GetAssemblyFromScript( b, className: "ScriptB", out Assembly asmB );
+            GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
+            GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
 
             var assemblies = new Assembly[] {
                 asmA,
@@ -71,20 +73,25 @@ public static class Roslyn {
 
             _options = _options.AddReferences( assemblies );
 
-            domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach ( var aa in domainAssemblies ) {
-                Log( aa.Location );
-                Log( aa.GetName() );
-                if ( aa.Location.Contains( "df12" ) ) {
-                    foreach ( var t in aa.GetTypes() ) {
-                        Log( "type: " + t + " '" + t.Namespace + "'" );
-                    }
-                    break;
-                }
-            }
+            //domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+            //foreach ( var aa in domainAssemblies ) {
+            //    Log( aa.Location );
+            //    Log( aa.GetName() );
+            //    if ( aa.Location.Contains( "df12" ) ) {
+            //        foreach ( var t in aa.GetTypes() ) {
+            //            Log( "type: " + t + " '" + t.Namespace + "'" );
+            //        }
+            //        break;
+            //    }
+            //}
         }
 
         SetupWatcher();
+    }
+
+    static void ReloadAssemblies_kmd( string [] _ ) {
+        GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
+        GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
     }
 
     static async Task CompiledRoslyn() => await _roslyn.RunAsync();
@@ -140,9 +147,9 @@ public static class Roslyn {
         try {
             File.WriteAllBytes( path, scriptAssemblyBytes );
             Log( $"Saved '{path}'" );
-            // the roslyn ScriptOptions refs need Assembly.Location...
+            // the roslyn ScriptOptions refs need Assembly.Location, thus the write/read from file...
             assembly = Assembly.LoadFrom( path );
-            // assembly = Assembly.Load( scriptAssemblyBytes );
+            //assembly = Assembly.Load( scriptAssemblyBytes );
             Log( "Compiled assembly " + assembly.GetName() );
         } catch ( Exception ) {
             Error( $"Failed to compile '{path}'" );
@@ -196,6 +203,38 @@ public static class Roslyn {
             }
         }
     }
+
+    /*
+
+    the roslyn 'script' GetCompilation() and friends create a new assembly named like this:
+
+    s_globalAssemblyNamePrefix = "\u211B*" + Guid.NewGuid().ToString();
+    _assemblyNamePrefix = s_globalAssemblyNamePrefix + "#" + Interlocked.Increment(ref s_engineIdDispenser).ToString();
+    assemblyName = _assemblyNamePrefix + "-" + idAsString;
+
+    and loads/adds the newly compiled assembly to the app domain (without unloading)
+
+    it is possible to 'link' multiple assemblies generated from script into a single 'main' assembly:
+    https://www.codeproject.com/Articles/1215168/Using-Roslyn-for-Compiling-Code-into-Separate-Net
+
+    we already have enough knowledge to compile and 'link' assemblies
+    downsides:
+        scripts don't support namespaces
+        exposing stuff from scripts to the other assemblies is ?'hard'?
+
+    the goals:
+        1. compile the entire 'unity player' part of the client from scripts
+            ClientPlayUnity.cs
+            GUIUnity.cs
+        2. add qonsole hooks for scripts i.e.
+            client-tick-prolog, 
+            client-tick-epilog,
+            client-draw-prolog
+            client-draw-epilog
+            client-incoming-packet
+            etc.
+    */
+
 }
 
 }
