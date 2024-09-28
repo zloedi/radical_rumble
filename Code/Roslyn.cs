@@ -206,7 +206,8 @@ public static class Roslyn {
 
     /*
 
-    the roslyn 'script' GetCompilation() and friends create a new assembly named like this:
+    the roslyn 'script' GetCompilation() and friends create a new assembly
+    assembly names are hardcoded (no option to change) 
 
     s_globalAssemblyNamePrefix = "\u211B*" + Guid.NewGuid().ToString();
     _assemblyNamePrefix = s_globalAssemblyNamePrefix + "#" + Interlocked.Increment(ref s_engineIdDispenser).ToString();
