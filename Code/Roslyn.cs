@@ -6,6 +6,7 @@ supplied i.e. by the NuGet package with same/similar? name
 */
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -22,25 +23,22 @@ namespace RR {
 public static class Roslyn {
     public static Action<object> Log = o => {};
     public static Action<object> Error = o => {};
+    public static Assembly gameAssembly;
+    public static ScriptOptions options;
+    public static List<MetadataReference> domainReferences = new List<MetadataReference>();
 
-    static ScriptOptions _options;
-
-    static Script _a, _b;
+    //static Script _a, _b;
 
     public static void Init() {
-        Assembly gameAssembly = null;
-
         var domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
         foreach ( var a in domainAssemblies ) {
-            if ( a.Location.EndsWith( "game.dll" ) ) {
-                gameAssembly = a;
-                break;
-            }
-            //Log( a.Location );
-            //Log( a.GetName() );
+            var reference = AssemblyMetadata.CreateFromFile( a.Location ).GetReference();
+            domainReferences.Add( reference );
         }
 
-        _options = ScriptOptions.Default;
+        gameAssembly = typeof( Qonsole ).Assembly;
+
+        options = ScriptOptions.Default;
         if (Application.isEditor ) {
             ////CompileString( @"public static class xx { void print() => Qonsole.Log( ""zloedi"" ) }", out Script a );
             //CompileString( @"public class xx { int ab; }", out Script a );
@@ -56,43 +54,54 @@ public static class Roslyn {
             //    Assembly.LoadFrom( $"{dir}game.dll" ),
             //    Assembly.LoadFrom( $"{dir}UnityEngine.dll" )
             //};
-            //_options = _options.AddReferences( assemblies );
+            //options = options.AddReferences( assemblies );
         } else {
-            _options = _options.AddReferences( gameAssembly );
+            options = options.AddReferences( gameAssembly );
+
             // use 'using static Script' (this class contains the compiled stuff)
-            CompileString( @"public static class zloedixxx { public static void print() => Qonsole.Log( ""xx"" ); }", out _a );
-            CompileString( @"public static class yy { public static void print() => Qonsole.Log( ""yy"" ); }", out _b );
+            //CompileString( @"public static class xx { public static void print() => Qonsole.Log( ""xx"" ); }", out _a );
+            //CompileString( @"public static class yy { public static void print() => Qonsole.Log( ""yy"" ); }", out _b );
 
-            GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
-            GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
+            //GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
+            //GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
 
-            var assemblies = new Assembly[] {
-                asmA,
-                asmB,
-            };
+            //var assemblies = new Assembly[] {
+            //    asmA,
+            //    asmB,
+            //};
 
-            _options = _options.AddReferences( assemblies );
-
-            //domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-            //foreach ( var aa in domainAssemblies ) {
-            //    Log( aa.Location );
-            //    Log( aa.GetName() );
-            //    if ( aa.Location.Contains( "df12" ) ) {
-            //        foreach ( var t in aa.GetTypes() ) {
-            //            Log( "type: " + t + " '" + t.Namespace + "'" );
-            //        }
-            //        break;
-            //    }
-            //}
+            //options = options.AddReferences( assemblies );
         }
 
         SetupWatcher();
     }
 
-    static void ReloadAssemblies_kmd( string [] _ ) {
-        GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
-        GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
+    public static bool CompileFileToScript( string path, out Script script ) {
+        try {
+            var code = File.ReadAllText( path );
+            return CompileStringToScript( code, out script );
+        } catch ( Exception ex ) {
+            Error( ex );
+            script = null;
+            return false;
+        }
     }
+
+    public static bool CompileStringToScript( string code, out Script script ) {
+        try {
+            script = CSharpScript.Create( code, options );
+            return true;
+        } catch ( Exception ex ) {
+            Error( ex );
+            script = null;
+            return false;
+        }
+    }
+
+    //static void ReloadAssemblies_kmd( string [] _ ) {
+    //    GetAssemblyFromScript( _a, className: "ScriptA", out Assembly asmA );
+    //    GetAssemblyFromScript( _b, className: "ScriptB", out Assembly asmB );
+    //}
 
     static async Task CompiledRoslyn() => await _roslyn.RunAsync();
 
@@ -158,35 +167,13 @@ public static class Roslyn {
         return assembly != null;
     }
 
-    static bool CompileFile( string path, out Script script ) {
-        try {
-            var code = File.ReadAllText( path );
-            return CompileString( code, out script );
-        } catch ( Exception ex ) {
-            Error( ex );
-            script = null;
-            return false;
-        }
-    }
-
-    static bool CompileString( string code, out Script script ) {
-        try {
-            script = CSharpScript.Create( code, _options );
-            return true;
-        } catch ( Exception ex ) {
-            Error( ex );
-            script = null;
-            return false;
-        }
-    }
-
     static Script _roslyn;
     static void OnChanged( object sender, FileSystemEventArgs e ) {
         Log( "Script changed: " + e.FullPath );
         if (e.ChangeType != WatcherChangeTypes.Changed) {
             return;
         }
-        CompileFile( e.FullPath, out _roslyn );
+        CompileFileToScript( e.FullPath, out _roslyn );
     }
 
     static void OnError(object sender, ErrorEventArgs e) {
@@ -207,7 +194,7 @@ public static class Roslyn {
     /*
 
     the roslyn 'script' GetCompilation() and friends create a new assembly
-    assembly names are hardcoded (no option to change) 
+    assembly names are hardcoded (no option to change later) 
 
     s_globalAssemblyNamePrefix = "\u211B*" + Guid.NewGuid().ToString();
     _assemblyNamePrefix = s_globalAssemblyNamePrefix + "#" + Interlocked.Increment(ref s_engineIdDispenser).ToString();

@@ -131,6 +131,7 @@
     <Compile Include="Player.cs" />
     <Compile Include="Projectile.cs" />
     <Compile Include="Roslyn.cs" />
+    <Compile Include="RoslynPlayer.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="TickUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />

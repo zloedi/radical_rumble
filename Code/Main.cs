@@ -185,6 +185,7 @@ public static void PostStart() {
 
 #if UNITY_STANDALONE
     Roslyn.Init();
+    RoslynPlayer.Init();
 #endif
 
     } catch ( Exception e ) {

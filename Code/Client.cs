@@ -417,7 +417,11 @@ static void OnServerPacket( List<byte> packet ) {
 
 static void Play_tck() {
     if ( ClRunUnityPlayer_kvar ) {
-        ClientPlayUnity.Tick();
+        var executed = new bool[1];
+        Qonsole.TryExecute( "roslyn_tick_override", executed );
+        if ( ! executed[0] ) {
+            ClientPlayUnity.Tick();
+        }
     } else {
         ClientPlayQGL.Tick();
     }
