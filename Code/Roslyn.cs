@@ -193,25 +193,16 @@ public static class Roslyn {
 
     /*
 
-    the roslyn 'script' GetCompilation() and friends create a new assembly
-    assembly names are hardcoded (no option to change later) 
+    compile multiple c# files into 'new' assembly
 
-    s_globalAssemblyNamePrefix = "\u211B*" + Guid.NewGuid().ToString();
-    _assemblyNamePrefix = s_globalAssemblyNamePrefix + "#" + Interlocked.Increment(ref s_engineIdDispenser).ToString();
-    assemblyName = _assemblyNamePrefix + "-" + idAsString;
-
-    and loads/adds the newly compiled assembly to the app domain (without unloading)
-
-    it is possible to 'link' multiple assemblies generated from script into a single 'main' assembly:
-    https://www.codeproject.com/Articles/1215168/Using-Roslyn-for-Compiling-Code-into-Separate-Net
-
-    we already have enough knowledge to compile and 'link' assemblies
     downsides:
-        scripts don't support namespaces
-        exposing stuff from scripts to the other assemblies is ?'hard'?
+        you need to hack your dll-s
+        you need to structure your programs in a cerain way
+            mono behaviours will kill you
+        keeps garbagbe around
 
     the goals:
-        1. compile the entire 'unity player' part of the client from scripts
+        * 1. compile the entire 'unity player' part of the client from scripts
             ClientPlayUnity.cs
             GUIUnity.cs
         2. add qonsole hooks for scripts i.e.

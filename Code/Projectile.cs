@@ -12,7 +12,7 @@ using GalliumMath;
 namespace RR {
 
 
-class Projectile {
+public class Projectile {
     public const int MAX_PROJECTILE = 256;
 
     public byte [] zSrc = null;

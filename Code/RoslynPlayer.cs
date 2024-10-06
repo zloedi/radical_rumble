@@ -30,11 +30,7 @@ static string [] _scriptSources = {
 };
 
 public static void Init() {
-    if ( Application.isEditor ) {
-        _sourcesDir = $"{Application.dataPath}/../../Code/";
-    } else {
-        _sourcesDir = $"{Application.dataPath}/../../Code/";
-    }
+    _sourcesDir = $"{Application.dataPath}/../../Code/";
 
     Roslyn.Log( $"Setup File Watcher to {_sourcesDir}" );
 
