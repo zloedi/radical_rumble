@@ -601,7 +601,7 @@ public static void Tick() {
         GuiEvent5.Tick_ui( wbScreen );
     }
 
-    Qonsole.TryExecute( "roslyn_script" );
+    //Qonsole.TryExecute( "roslyn_script" );
 
     IMGO.End();
 }

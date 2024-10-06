@@ -1,3 +1,5 @@
+#if false
+
 /*
 The unity editor uses a borked version of System.Runtime.Loader.
 and throws NotImplementedException: The method or operation is not implemented
@@ -25,17 +27,10 @@ public static class Roslyn {
     public static Action<object> Error = o => {};
     public static Assembly gameAssembly;
     public static ScriptOptions options;
-    public static List<MetadataReference> domainReferences = new List<MetadataReference>();
 
     //static Script _a, _b;
 
     public static void Init() {
-        var domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-        foreach ( var a in domainAssemblies ) {
-            var reference = AssemblyMetadata.CreateFromFile( a.Location ).GetReference();
-            domainReferences.Add( reference );
-        }
-
         gameAssembly = typeof( Qonsole ).Assembly;
 
         options = ScriptOptions.Default;
@@ -217,3 +212,5 @@ public static class Roslyn {
 }
 
 }
+
+#endif

@@ -1,0 +1,9 @@
+/Packages/Microsoft*
+/Library
+/Logs
+/UserSettings
+/**/*.sln
+/**/*.csproj
+/**/*.pdb
+/**/*.pdb.meta
+/Temp

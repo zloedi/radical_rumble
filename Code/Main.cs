@@ -155,8 +155,8 @@ public static void PreConfig() {
     QGL.Error = s => Qonsole.Error( "QGL: " + s );
 
 #if UNITY_STANDALONE
-    Roslyn.Log = o => Qonsole.Log( "Roslyn: " + o );
-    Roslyn.Error = s => Qonsole.Error( "Roslyn: " + s );
+    RoslynPlayer.Log = o => Qonsole.Log( "Roslyn: " + o );
+    RoslynPlayer.Error = s => Qonsole.Error( "Roslyn: " + s );
 #endif
 }
 
@@ -184,7 +184,7 @@ public static void PostStart() {
     _initialized = true;
 
 #if UNITY_STANDALONE
-    Roslyn.Init();
+    //Roslyn.Init();
     RoslynPlayer.Init();
 #endif
 
@@ -236,6 +236,7 @@ public static void Tick() {
 }
 
 public static void Done() {
+    RoslynPlayer.Done();
     Cl.Done();
     Sv.Done();
 }

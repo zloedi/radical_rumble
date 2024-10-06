@@ -6,15 +6,18 @@ using System.Reflection;
 using UnityEngine;
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Scripting;
 
 namespace RR {
 
 
 public static class RoslynPlayer {
 
+
+public static Action<object> Log = o => {};
+public static Action<object> Error = o => {};
+
+static List<MetadataReference> _domainReferences = new List<MetadataReference>();
 
 static int _reloads;
 static Assembly _playerAssembly;
@@ -29,10 +32,13 @@ static string [] _scriptSources = {
     "ClientPlayUnity.cs",
 };
 
+static bool _initialized;
 public static void Init() {
-    _sourcesDir = $"{Application.dataPath}/../../Code/";
+    if ( _initialized ) {
+        return;
+    }
 
-    Roslyn.Log( $"Setup File Watcher to {_sourcesDir}" );
+    _sourcesDir = $"{Application.dataPath}/../../Code/";
 
     var watcher = new FileSystemWatcher( _sourcesDir );
     watcher.Filter = "*.cs";
@@ -43,6 +49,32 @@ public static void Init() {
 
     watcher.IncludeSubdirectories = false;
     watcher.EnableRaisingEvents = true;
+
+    Log( $"Setup File Watcher to {_sourcesDir}" );
+
+    _initialized = true;
+}
+
+// make sure we are detach from the Unity editor on play mode off.
+public static void Done() {
+    _domainReferences.Clear();
+}
+
+// will cause the game assembly dll to be grabbed by Unity,
+// won't be able to replace with a new version.
+static bool _initializedCompiler;
+static void TryInitCompiler() {
+    if ( _initializedCompiler )
+        return;
+
+    var domainAssemblies = AppDomain.CurrentDomain.GetAssemblies();
+    foreach ( var a in domainAssemblies ) {
+        MetadataReference reference = AssemblyMetadata
+                                        .CreateFromFile( a.Location )
+                                        .GetReference();
+        _domainReferences.Add( reference );
+    }
+    _initializedCompiler = true;
 }
 
 static void OnScriptChanged( object sender, FileSystemEventArgs e ) {
@@ -53,7 +85,9 @@ static void OnScriptChanged( object sender, FileSystemEventArgs e ) {
     if ( Array.IndexOf( _scriptSources, e.Name ) < 0 )
         return;
 
-    Roslyn.Log( $"Script changed: {e.FullPath}, recompiling..." );
+    TryInitCompiler();
+
+    Log( $"Script changed: {e.FullPath}, recompiling..." );
 
     var trees = new SyntaxTree[_scriptSources.Length];
 
@@ -62,7 +96,7 @@ static void OnScriptChanged( object sender, FileSystemEventArgs e ) {
         if ( ! ParseFile( path, true, out trees[i] ) ) {
             return;
         }
-        Roslyn.Log( $"Parsed {path}" );
+        Log( $"Parsed {path}" );
     }
 
     if ( ! CompileSyntaxTrees( trees, out byte [] image ) ) {
@@ -76,12 +110,12 @@ static void OnScriptChanged( object sender, FileSystemEventArgs e ) {
         _roslynTick = mi.CreateDelegate( typeof( Action ) ) as Action;
         _reloads++;
     } catch ( Exception ex ) {
-        Roslyn.Error( ex );
+        Error( ex );
     }
 }
 
 static void OnScriptError( object sender, ErrorEventArgs e ) {
-    Roslyn.Error( e.GetException() );
+    Error( e.GetException() );
 }
 
 static bool ParseFile( string path, bool dll, out SyntaxTree tree ) {
@@ -90,7 +124,7 @@ static bool ParseFile( string path, bool dll, out SyntaxTree tree ) {
         return true;
     } catch ( Exception ex ) {
         tree = null;
-        Roslyn.Error( ex );
+        Error( ex );
         return false;
     }
 }
@@ -105,9 +139,9 @@ static bool CompileSyntaxTrees( SyntaxTree [] trees, out byte [] image ) {
         using ( var ms = new MemoryStream() ) {
             var result = compilation.Emit( ms );
             if ( ! result.Success ) {
-                Roslyn.Error( "Compilation failed." );
+                Error( "Compilation failed." );
                 foreach ( var d in result.Diagnostics ) {
-                    Roslyn.Error( d );
+                    Error( d );
                 }
                 return false;
             }
@@ -118,7 +152,7 @@ static bool CompileSyntaxTrees( SyntaxTree [] trees, out byte [] image ) {
         return true;
 
     } catch ( Exception ex ) {
-        Roslyn.Error( ex );
+        Error( ex );
         image = null;
         return false;
     }
@@ -134,7 +168,7 @@ static CSharpCompilation CreateCompilation( string assemblyOrModuleName, SyntaxT
                                                 CSharpCompilationOptions compilerOptions = null,
                                                 IEnumerable<MetadataReference> references = null) {
 
-    List<MetadataReference> allReferences = new List<MetadataReference>( Roslyn.domainReferences );
+    List<MetadataReference> allReferences = new List<MetadataReference>( _domainReferences );
     if ( references != null ) {
         allReferences.AddRange( references );
     }
