@@ -191,10 +191,10 @@ public static class Roslyn {
     compile multiple c# files into 'new' assembly
 
     downsides:
-        you need to hack your dll-s
-        you need to structure your programs in a cerain way
-            mono behaviours will kill you
-        keeps garbagbe around
+        no debugger yet
+        assemblies dont unolad, keeps garbagbe around
+        you need to structure your programs in a cerain way to allow code flow replacement
+        you need to hack your dll-s to use the roslyn 'script' API
 
     the goals:
         * 1. compile the entire 'unity player' part of the client from scripts
@@ -207,6 +207,8 @@ public static class Roslyn {
             client-draw-epilog
             client-incoming-packet
             etc.
+
+    IMM / polling -- having less state, means easier hot reloading too
     */
 
 }
