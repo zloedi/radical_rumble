@@ -153,7 +153,6 @@ public static void PreConfig() {
     KeyBinds.Error = s => Qonsole.Error( "Keybinds: " + s );
     QGL.Log = o => Qonsole.Log( "QGL: " + o );
     QGL.Error = s => Qonsole.Error( "QGL: " + s );
-
 }
 
 public static void PostStart() {
@@ -174,6 +173,8 @@ public static void PostStart() {
     if ( ! Cl.Init() ) {
         return;
     }
+
+    Recompile.Init();
 
     _clockDate = DateTime.UtcNow;
     _clockPrevDate = DateTime.UtcNow;
@@ -205,21 +206,12 @@ public static void Tick() {
 
     Cl.Tick( timeDelta );
 
+    Recompile.Tick();
+
     if ( ShowFrameTime_kvar ) {
         QGL.LatePrint( ( ( int )( Time.deltaTime * 1000 ) ).ToString("000"),
                                                                             Screen.width - 50, 20 );
     }
-
-#if false
-    QGL.LateBlit( AppleFont.GetTexture(), 100, 100, 100, 100, angle: Time.time * 5f );
-    var pts = new Vector2 [] { 
-        new Vector2( 100, 100 ),
-        new Vector2( 200, 100 ),
-        new Vector2( 300, 300 ),
-        new Vector2( 100, 200 ),
-    };
-    QGL.LateDrawLineLoop( pts, color: Color.yellow );
-#endif
 
     } catch ( Exception e ) {
         Qonsole.Error( e );
@@ -227,6 +219,7 @@ public static void Tick() {
 }
 
 public static void Done() {
+    Recompile.Done();
     Cl.Done();
     Sv.Done();
 }

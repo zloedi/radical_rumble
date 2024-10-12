@@ -10,7 +10,7 @@ using GalliumMath;
 namespace RR {
 
 
-partial class Game {
+public partial class Game {
 
 
 public Action<string> Log = s => Qonsole.Log( s );

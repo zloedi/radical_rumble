@@ -2,6 +2,9 @@
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
+      <LangVersion>9.0</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{0C5EB150-874C-487C-8D2A-A3D28D4B23B6}</ProjectGuid>
@@ -20,7 +23,7 @@
     <DebugType>portable</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;ROSLYN;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI;UNITY_STANDALONE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -29,7 +32,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;UNITY_STANDALONE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI</DefineConstants>
+    <DefineConstants>TRACE;QONSOLE_BOOTSTRAP;HEXES_QONSOLE;HEXES_QGL;QUI_USE_QGL;ROSLYN;QONSOLE_INVERTED_PLAY_Y;QUI_USE_UNITY_UI;UNITY_STANDALONE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -37,7 +40,16 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\System.Collections.Immutable.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.AnimationModule">
       <HintPath>..\BuildUnity\RadicalRumble_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
     </Reference>
@@ -77,6 +89,7 @@
     <Compile Include="ZloediUtils/Delta.cs" />
     <Compile Include="ZloediUtils/Hexes.cs" />
     <Compile Include="ZloediUtils/HexPather.cs" />
+    <Compile Include="ZloediUtils/HotRoslyn.cs" />
     <Compile Include="ZloediUtils/IMGO.cs" />
     <Compile Include="ZloediUtils/KeyBinds.cs" />
     <Compile Include="ZloediUtils/Net.cs" />
@@ -96,27 +109,28 @@
     <Compile Include="ZloediUtils/GalliumMath/Vector2Int.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3.cs" />
     <Compile Include="ZloediUtils/GalliumMath/Vector3Int.cs" />
+    <Compile Include="ArrayShadow.cs" />
     <Compile Include="ArrayUtil.cs" />
+    <Compile Include="Board.cs" />
+    <Compile Include="Client.cs" />
+    <Compile Include="ClientEdit.cs" />
+    <Compile Include="ClientPlayQGL.cs" />
+    <Compile Include="ClientPlayUnity.cs" />
     <Compile Include="Draw.cs" />
+    <Compile Include="FilterUtil.cs" />
+    <Compile Include="GUIEvent5.cs" />
+    <Compile Include="GUIUnity.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="Game_sv.cs" />
     <Compile Include="Gym.cs" />
     <Compile Include="Main.cs" />
-    <Compile Include="Board.cs" />
     <Compile Include="Pawn.cs" />
     <Compile Include="PawnDef.cs" />
     <Compile Include="Player.cs" />
     <Compile Include="Projectile.cs" />
-    <Compile Include="TickUtil.cs" />
-    <Compile Include="Client.cs" />
-    <Compile Include="ClientPlayQGL.cs" />
-    <Compile Include="ClientPlayUnity.cs" />
-    <Compile Include="ClientEdit.cs" />
-    <Compile Include="GUIUnity.cs" />
-    <Compile Include="GUIEvent5.cs" />
+    <Compile Include="Recompile.cs" />
     <Compile Include="Server.cs" />
-    <Compile Include="ArrayShadow.cs" />
-    <Compile Include="FilterUtil.cs" />
+    <Compile Include="TickUtil.cs" />
     <Compile Include="Properties/AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

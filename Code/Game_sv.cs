@@ -17,7 +17,7 @@ using Sv = Server;
 using PS = Pawn.State;
 
 
-partial class Game {
+public partial class Game {
 
 
 #if UNITY_STANDALONE || SDL

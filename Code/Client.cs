@@ -12,7 +12,7 @@ using SDLPorts;
 namespace RR {
     
     
-static class Client {
+public static class Client {
 
 
 [Description( @"Connect to this server for multiplayer.
@@ -263,6 +263,15 @@ static DateTime _pingStart;
 public static void Ping() {
     _pingStart = DateTime.UtcNow;
     SvCmd( "sv_ping" );
+}
+
+public static void OverrideTick( string tickName, Action tick ) {
+    int tickNum;
+    if ( ( tickNum = Array.IndexOf( _tickNames, tickName ) ) < 0 ) {
+        Error( $"Can't find tick {tickName}" );
+        return;
+    }
+    _ticks[tickNum] = tick;
 }
 
 static void InputBegin() {
