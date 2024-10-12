@@ -1,5 +1,3 @@
-#if UNITY_STANDALONE
-
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,8 +20,8 @@ using static QUI.WidgetResult;
 public static class GuiEvent5 {
 
 
-static int NumCollections_cvar = 2;
-static int _numCollections => Mathf.Clamp( NumCollections_cvar, 2, 8 );
+static int NumPanels_cvar = 2;
+static int _numPanels => Mathf.Clamp( NumPanels_cvar, 2, 8 );
 
 static int PanelSize_cvar = 400;
 static int _panelSize => Mathf.Clamp( PanelSize_cvar, 20, 500 );
@@ -66,15 +64,15 @@ public static void Tick_ui( WrapBox wbox ) {
         }
     }
 
-    if ( _collections.Count < _numCollections ) {
-        for ( int i = _collections.Count; i < _numCollections; i++ ) {
+    if ( _collections.Count < _numPanels ) {
+        for ( int i = _collections.Count; i < _numPanels; i++ ) {
             _collections.Add( new List<byte>() );
             _sliders.Add( 0 );
         }
     }
 
-    if ( _collections.Count > _numCollections ) {
-        for ( int i = _collections.Count - 1; i >= _numCollections; i-- ) {
+    if ( _collections.Count > _numPanels ) {
+        for ( int i = _collections.Count - 1; i >= _numPanels; i-- ) {
             var colSrc = _collections[i - 0];
             var colDst = _collections[i - 1];
             foreach (var z in colSrc) {
@@ -94,7 +92,7 @@ static void Window_ui( WrapBox wbox ) {
         _wboxWindow = wbox;
     }
         
-    wbox = _wboxWindow.TopCenter( _numCollections * _panelSize, wbox.H - 320, y: 80 );
+    wbox = _wboxWindow.TopCenter( _numPanels * _panelSize, wbox.H - 320, y: 80 );
     var wboxFrame = wbox.Center( wbox.W + 100, wbox.H + 100 );
 
     var res = WBUI.ClickRect( wboxFrame );
@@ -116,7 +114,7 @@ static void Window_ui( WrapBox wbox ) {
     _dropItem = -1;
 
     for ( wbox = wbox.TopLeft( _panelSize, wbox.H ), _collectionIdx = 0;
-            _collectionIdx < _numCollections;
+            _collectionIdx < _numPanels;
             _collectionIdx++, wbox = wbox.NextRight( _collectionIdx ) ) {
         Panel_ui( wbox );
     }
@@ -302,5 +300,3 @@ static void Slider_ui( WrapBox wbox, float total ) {
 
 
 } // RR
-
-#endif

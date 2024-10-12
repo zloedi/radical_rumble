@@ -119,6 +119,7 @@
     <Compile Include="Draw.cs" />
     <Compile Include="FilterUtil.cs" />
     <Compile Include="GUIEvent5.cs" />
+    <Compile Include="GUIEvent6.cs" />
     <Compile Include="GUIUnity.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="Game_sv.cs" />

@@ -26,6 +26,8 @@ static bool ClSkipStructureProjectiles_kvar = false;
 static bool ClSkipProjectiles_kvar = false;
 [Description( "Show the event 5 test UI" )]
 static bool ClEvent5UI_kvar = false;
+[Description( "Show the event 6 test UI" )]
+static bool ClEvent6UI_kvar = false;
 
 static bool _initialized;
 static GameObject _dummy;
@@ -599,6 +601,9 @@ public static void Tick() {
     GUIUnity.DrawManaBar( wbScreen );
     if ( ClEvent5UI_kvar ) {
         GuiEvent5.Tick_ui( wbScreen );
+    }
+    if ( ClEvent6UI_kvar ) {
+        GuiEvent6.Tick_ui( wbScreen );
     }
 }
 
