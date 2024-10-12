@@ -15,7 +15,7 @@ namespace RR {
 using static Pawn.Def.Flags;
 
 
-partial class Pawn {
+public partial class Pawn {
 
 public static Def Tower = Register( new Def {
     flags = Structure | PatrolWaypoint | WinObjective,
