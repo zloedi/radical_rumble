@@ -3,9 +3,10 @@
 *.zip
 *.swo
 *.csproj.user
-game.dll
 
-*.dll.meta
+/game.dll
+/*.dll.meta
+
 bin
 obj
 .vsconfig
