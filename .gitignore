@@ -18,6 +18,7 @@ RadicalRumbleUnity/**/*.csproj
 RadicalRumbleUnity/**/*.pdb
 RadicalRumbleUnity/**/*.pdb.meta
 RadicalRumbleUnity/Temp
+RadicalRumbleUnity/Packages/Microsoft.*
 Code/**/*.pdb
 Code/**/*.exe
 Code/tags
