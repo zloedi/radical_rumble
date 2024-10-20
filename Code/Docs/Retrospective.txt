@@ -1,5 +1,63 @@
+Radical multiplyer is a series of events at prostranstvoto.bg, dedicated to programming a casual multiplayer game like clash/rubmle using C# and SDL or Unity.
+
+Here are some of the topics covered:
+
 1. Modelling data for client-server multiplayer games.
 2. Pathing for RTS-like games.
 3. Agent avoidance.
 4. Skinning the client with models and animations.
 5. GUI
+6. Live code and hot reloading with Roslyn.
+
+
+Modelling data for client-server multiplayer games.
+
+The demo for the events uses somewhat unusual representation of the game state (pawns, tilse, players, etc).
+Instead of using lists of entities, these aspects are represented by 'tables'.
+The tables are pre-allocated, and never change size. For example, there is a hard limit of 256 pawns in the game, board size has a hard limit of 4k, etc.
+Each row of each table represents the value of a property for all 'objects' of a given type.
+
+For example
+
+class Pawn
+{
+    ushort [] hp     // the hitpoints for each unit in the game
+    byte [] team     // the team of each unit
+    Vector2 [] mvPos // movement position of each unit
+    ...
+}
+
+This utilization of simple Arrays of primitive types allows for trivial serilization, copying and initialization of the game state.
+The demo uses a client-server network model, where each tick the server game state is delta-ed against previous tick, and the delta is sent over to the clients.
+The used data layout fits nicely to this model.
+
+
+Pathing for RTS-like games.
+
+Since the game state is tiny compared to full-blown RTS games, it uses a simple flood pather to navigate a hex grid.
+All paths returned by the pather are split down to individual sub-paths and cached.
+Further path lookups boil down to finding them in the cache table.
+
+
+Agent avoidance
+
+The agent avoidance utilizes a simple constraint solver between unit spheres.
+It boils down to:
+1. Separate all unit spheres at arbitrary 'future' positions.
+2. For each unit, separate spheres at 'future' and 'present' positions.
+
+
+Skinning the client with models and animations.
+
+At the talk we demonstrated using 'immediate mode drawing' of Unity models and animation playback.
+The Unity game objects hierarchy is wrapped in a simple API, allowing game objects lifetime and animation frame to be corrected each client frame.
+This way we don't keep any explicit state for i.e. the unit models and can sync the movement and animation to the 'server clock'
+
+We bought some models off the Unity asset store for the demo.
+Join the discord server and ask for the download link there.
+https://discord.gg/nWfq9HcGYB
+
+
+GUI
+
+Similar to the animated unit models, we use an 'immediate mode' wrapper over the retained mode Unity GUI. We demonstrated implementation world-space GUI elements and custom controls using this model.
