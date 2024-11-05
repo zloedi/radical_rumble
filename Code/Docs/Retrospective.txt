@@ -61,3 +61,9 @@ https://discord.gg/nWfq9HcGYB
 GUI
 
 Similar to the animated unit models, we use an 'immediate mode' wrapper over the retained mode Unity GUI. We demonstrated implementation world-space GUI elements and custom controls using this model.
+
+
+Live code and hot reloading with Roslyn
+
+We integrated the Roslyn compiler infrastructure with our Unity project and used it to implement hot reloading of selected C# files. The resulting utility can be found here:
+https://github.com/zloedi/ZloediUtils/blob/master/HotRoslyn.cs
